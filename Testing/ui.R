@@ -1,5 +1,6 @@
 library(shiny)
 library(shinydashboard)
+library(leaflet)
 
 ui <- dashboardPage(
   
@@ -7,14 +8,21 @@ ui <- dashboardPage(
   # Header with Logo + Title
   # -----------------------------
   dashboardHeader(
+    titleWidth = 300,   # ✅ THIS IS THE KEY FIX
+    
     title = tags$div(
-      style = "display: flex; align-items: center;",
+      style = "display:flex; align-items:center;",
       
-      tags$img(src = "logo.png", height = "35px",
-               style = "margin-right: 10px;"),
+      tags$img(
+        src = "logo.png",
+        height = "30px",
+        style = "margin-right:10px;"
+      ),
       
-      tags$span("PTM Emulator Dashboard",
-                style = "font-family: Segoe UI Semibold; font-size: 18px;")
+      tags$span(
+        "PTM Emulator",
+        style = "font-family: Segoe UI Semibold; font-size: 16px;"
+      )
     )
   ),
   
@@ -50,60 +58,143 @@ ui <- dashboardPage(
     
     tags$head(
       tags$style(HTML("
-        
-        /* Main background */
-        .content-wrapper, .right-side {
-          background-color: #f4f6f9;
-        }
-        
-        /* Header */
-        .main-header .navbar {
-          background-color: #0a7e8c;
-        }
-        
-        .main-header .logo {
-          background-color: #0a7e8c;
-          font-family: Segoe UI Semibold;
-        }
-        
-        /* Sidebar */
-        .main-sidebar {
-          background-color: #2c3e50;
-        }
-        
-        /* Active tab */
-        .sidebar-menu .active > a {
-          background-color: #0a7e8c !important;
-          color: white !important;
-        }
-        
-        /* Hover effect */
-        .sidebar-menu li:hover > a {
-          background-color: #0a7e8c !important;
-          color: white !important;
-        }
-        
-        /* Box styling */
-        .box {
-          border-top: 3px solid #0a7e8c;
-        }
-        
-        /* Typography */
-        h1, h2, h3, h4 {
-          font-family: Segoe UI Semibold;
-        }
-        
-        body {
-          font-family: Segoe UI;
-        }
-        
-        /* Divider */
-        hr {
-          border-top: 1px solid #0a7e8c;
-          opacity: 0.6;
-        }
-        
-      "))
+      
+      /* Fix logo container width */
+    .main-header .logo {
+      width: 300px !important;
+    }
+    
+    /* Expand sidebar width to match */
+    .main-sidebar {
+      width: 300px !important;
+    }
+    
+    /* Adjust content to match */
+    .content-wrapper, .right-side {
+      margin-left: 300px !important;
+    }
+    
+      
+      /* =========================
+       FIX HEADER LOGO CUTTING
+    ========================= */
+    
+    /* Allow logo container to show full image */
+    .main-header .logo {
+      overflow: visible !important;
+      height: 60px !important;
+      line-height: 60px !important;
+      padding: 5px 10px;
+    }
+    
+    /* Fix image sizing and alignment */
+    .main-header .logo img {
+      max-height: 45px;
+      height: auto;
+      width: auto;
+      vertical-align: middle;
+    }
+    
+    /* Fix navbar height to match */
+    .main-header .navbar {
+      min-height: 60px;
+    }
+
+    /* =========================
+       PAGE BACKGROUND
+    ========================= */
+    .content-wrapper, .right-side {
+      background-color: #f9fbfc;
+      padding: 15px;
+    }
+
+    /* =========================
+       HEADER (TOP BAR)
+    ========================= */
+    .main-header .navbar {
+      background-color: white;
+      border-bottom: 3px solid #0a7e8c;
+    }
+
+    .main-header .logo {
+      background-color: white;
+      color: #0a7e8c;
+      font-family: Segoe UI Semibold;
+      border-bottom: 3px solid #0a7e8c;
+    }
+
+    /* =========================
+       SIDEBAR (LIGHT STYLE)
+    ========================= */
+    .main-sidebar {
+      background-color: #ffffff;
+      border-right: 1px solid #e0e0e0;
+    }
+
+    /* Sidebar text */
+    .sidebar-menu > li > a {
+      color: #444;
+      font-size: 14px;
+    }
+
+    /* Active tab */
+    .sidebar-menu .active > a {
+      background-color: #e6f4f6 !important;
+      color: #0a7e8c !important;
+      border-left: 4px solid #0a7e8c;
+    }
+
+    /* Hover */
+    .sidebar-menu li:hover > a {
+      background-color: #f2f9fa !important;
+      color: #0a7e8c !important;
+    }
+
+    /* =========================
+       SIDEBAR INPUTS
+    ========================= */
+    .sidebar .form-group {
+      margin-bottom: 15px;
+    }
+
+    /* =========================
+       BOX (CARD) STYLE
+    ========================= */
+    .box {
+      border-top: 3px solid #0a7e8c;
+      border-radius: 6px;
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .box-header {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    /* =========================
+       TYPOGRAPHY
+    ========================= */
+    h1, h2, h3, h4 {
+      font-family: Segoe UI Semibold;
+      color: #333;
+    }
+
+    body {
+      font-family: Segoe UI;
+      color: #333;
+    }
+
+    /* =========================
+       DIVIDERS
+    ========================= */
+    hr {
+      border-top: 1px solid #0a7e8c;
+      opacity: 0.4;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+  "))
     ),
     
     tabItems(
