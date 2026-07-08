@@ -1,0 +1,9 @@
+scenario,route,probability
+baseline,OldRiver,0.44256028777737955
+baseline,Georgiana,0.13287332881056546
+baseline,Mokelumne,0.2678894661683806
+baseline,Turner,0.26401748687733817
+high_flow,OldRiver,0.466355781701026
+high_flow,Georgiana,0.2139177268081104
+high_flow,Mokelumne,0.17624038545459142
+high_flow,Turner,0.3221752293131468
