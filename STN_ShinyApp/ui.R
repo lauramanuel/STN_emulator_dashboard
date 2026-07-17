@@ -26,7 +26,7 @@ timeseries_tab <- function(tab_name, title, theme_class, output_id, summary_id) 
       fluidRow(
         box(
           width = 12,
-          title = "Summary",
+          title = "Selected Node Detail",
           status = NULL,
           solidHeader = FALSE,
           tableOutput(summary_id)
@@ -185,12 +185,15 @@ ui <- dashboardPage(
     div(
       class = "sidebar-controls",
       
-      dateRangeInput(
-        "dates",
-        "Date Range:",
-        start = NULL,
-        end = NULL
-      ),
+      # Selects which dated run folder's master xlsx drives the app,
+      # e.g. "20260623" -> Jun 23, 2026. Choices are populated from
+      # the folder names found under STN_EMULATOR/Output/.
+      selectInput("run_date", "Model Run Date:", choices = NULL),
+      
+      # Informational display of the active scenario's date window
+      # (e.g. "Jun 15 - Jun 21, 2026 (7-day average)"). Not a filter --
+      # each averaging window is a fixed snapshot in the master file.
+      uiOutput("date_window"),
       
       uiOutput("scenario_control"),
       
@@ -207,6 +210,15 @@ ui <- dashboardPage(
           input.tabs == 'forecast7_ecoptm'
         ",
         selectInput("node", "Node:", choices = NULL)
+      ),
+      
+      conditionalPanel(
+        condition = "
+          input.tabs == 'current7_event' ||
+          input.tabs == 'current30_event' ||
+          input.tabs == 'forecast7_event'
+        ",
+        selectInput("eh_risk", "Event Horizon Risk:", choices = c(15, 30, 80), selected = 30)
       )
     )
   ),
@@ -297,22 +309,6 @@ ui <- dashboardPage(
           color: #2f7f8d;
           font-size: 13px;
           font-weight: 500;
-          padding-left: 38px;
-        }
-        
-        /* Nested submenu icons */
-        .sidebar-menu .treeview-menu > li > a > .fa,
-        .sidebar-menu .treeview-menu > li > a > .glyphicon,
-        .sidebar-menu .treeview-menu > li > a > .ion {
-          color: #5aaebc;
-        }
-        
-        /* Active menu item */
-        .sidebar-menu .active > a {
-          background-color: #e5f6f8 !important;
-          color: #075f6d !important;
-          border-left: 4px solid #0a7e8c;
-          font-weight: 700;
         }
         
         /* Active nested submenu item */
@@ -450,7 +446,7 @@ ui <- dashboardPage(
                 style = "margin-left: 20px;",
                 
                 h2("PTM Emulator Dashboard"),
-                h4("Version 1.0.0", style = "font-style: italic;"),
+                h4("Version 1.1.0", style = "font-style: italic;"),
                 
                 tags$hr(),
                 
@@ -464,7 +460,7 @@ ui <- dashboardPage(
                   )
                 ),
                 
-                h5("Data Sources:", "DSM2, SACPAS, PTM outputs")
+                h5("Data Sources:", "All_PTM_ECOPTM_Event_Horizon_Results.xlsx (DSM2, SACPAS, PTM outputs)")
               )
             )
           )
@@ -604,6 +600,7 @@ ui <- dashboardPage(
               href = "https://github.com/rojkv/PTM_Emulator_Workflow"
             )
           ),
+          tags$li("Master results file: All_PTM_ECOPTM_Event_Horizon_Results.xlsx"),
           tags$li("Model input datasets"),
           tags$li("Emulator output files"),
           tags$li("Machine learning notebooks")
