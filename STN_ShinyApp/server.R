@@ -644,7 +644,10 @@ server <- function(input, output, session) {
       ) %>%
       arrange(Prediction_Final)
     
-    df$node_label <- factor(df$node_label, levels = df$node_label)
+    df$node_label <- factor(
+      df$node_label,
+      levels = unique(df$node_label)
+    )
     
     ggplot(df, aes(x = node_label, y = Prediction_Final, fill = is_selected)) +
       geom_col() +
