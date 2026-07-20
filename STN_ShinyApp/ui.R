@@ -19,7 +19,7 @@ timeseries_tab <- function(tab_name, title, theme_class, output_id, summary_id) 
           title = title,
           status = NULL,
           solidHeader = FALSE,
-          plotOutput(output_id, height = 380)
+          plotOutput(output_id, height = "900px")
         )
       ),
       

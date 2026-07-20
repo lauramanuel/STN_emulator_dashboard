@@ -9,7 +9,19 @@ library(leaflet)
 library(lwgeom)
 
 server <- function(input, output, session) {
-  
+  find_master_file <- function(run_folder) {
+    
+    candidate_files <- list.files(
+      path = file.path(RUN_BASE_DIR, run_folder),
+      pattern = "^All_PTM_ECOPTM_Event_Horizon_Results.*\\.xlsx$",
+      full.names = TRUE
+    )
+    
+    req(length(candidate_files) > 0)
+    
+    candidate_files[1]
+    
+  }
   # =====================================================
   # Available Model Run Dates
   # =====================================================
@@ -66,7 +78,9 @@ server <- function(input, output, session) {
     
     req(input$run_date)
     
-    master_path <- file.path(RUN_BASE_DIR, input$run_date, RUN_FILENAME)
+    master_path <- find_master_file(
+      input$run_date
+    )
     req(file.exists(master_path))
     
     # -----------------------------
@@ -626,7 +640,7 @@ server <- function(input, output, session) {
     df <- df %>%
       mutate(
         node_label = paste0(DSM2_Node, " - ", Location),
-        is_selected = !is.null(input$node) && DSM2_Node == input$node
+        is_selected = !is.null(input$node) & DSM2_Node == input$node
       ) %>%
       arrange(Prediction_Final)
     
@@ -646,9 +660,28 @@ server <- function(input, output, session) {
       ) +
       theme_minimal() +
       theme(
-        plot.title = element_text(size = 15, face = "bold"),
-        axis.text = element_text(size = 9),
-        axis.title = element_text(size = 12)
+        plot.title = element_text(
+          size = 16,
+          face = "bold"
+        ),
+        
+        axis.text.y = element_text(
+          size = 14
+        ),
+        
+        axis.text.x = element_text(
+          size = 10
+        ),
+        
+        axis.title = element_text(
+          size = 13
+        ),
+        plot.margin = margin(
+          t = 10,
+          r = 10,
+          b = 10,
+          l = 120
+        )
       )
   }
   
@@ -689,7 +722,7 @@ server <- function(input, output, session) {
     active_results() %>%
       filter(Model %in% c("ECO-PTM Survival", "ECO-PTM Interior Routing")) %>%
       transmute(
-        Scenario          = Emulatorscenario,
+        Scenario          = Emulator_Scenario,
         Forecast_Scenario = Scenario,
         Window            = paste(format(Start_Date), "to", format(End_Date)),
         Metric            = Output_Metric,
