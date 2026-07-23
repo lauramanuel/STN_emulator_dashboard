@@ -630,8 +630,26 @@ server <- function(input, output, session) {
   make_entrainment_bar_plot <- function(model_name, title) {
     
     df <- active_results() %>%
-      filter(Model == model_name, !is.na(DSM2_Node)) %>%
-      left_join(master_data()$node_meta, by = "DSM2_Node")
+      filter(
+        Model == model_name,
+        !is.na(DSM2_Node)
+      ) %>%
+      group_by(
+        DSM2_Node,
+        Output_Metric,
+        Output_Unit
+      ) %>%
+      summarise(
+        Prediction_Final = mean(
+          Prediction_Final,
+          na.rm = TRUE
+        ),
+        .groups = "drop"
+      ) %>%
+      left_join(
+        master_data()$node_meta,
+        by = "DSM2_Node"
+      )
     
     validate(
       need(nrow(df) > 0, "No data available for the selected filters.")
