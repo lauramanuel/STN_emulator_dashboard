@@ -622,11 +622,9 @@ server <- function(input, output, session) {
     
     req(input$tabs)
     
-    model <- if (input$tabs == "current30_event") {
-      "PTM 30-Day Entrainment"
-    } else {
-      "PTM 7-Day Entrainment"
-    }
+    req(input$event_ptm_model)
+    
+    model <- input$event_ptm_model
     
     active_results() %>%
       filter(
@@ -781,7 +779,7 @@ server <- function(input, output, session) {
       Forecast_Scenario = sel$Scenario,
       Window            = paste(format(sel$Start_Date), "to", format(sel$End_Date)),
       Metric            = sel$Output_Metric,
-      Value             = round(sel$Prediction_Final, 2),
+      Value             = as.integer(round(sel$Prediction_Final, 0)),
       Unit              = sel$Output_Unit,
       Rank              = paste0(sel$rank, " of ", nrow(df))
     )
@@ -797,17 +795,30 @@ server <- function(input, output, session) {
         Forecast_Scenario = Scenario,
         Window            = paste(format(Start_Date), "to", format(End_Date)),
         Metric            = Output_Metric,
-        Value             = round(Prediction_Final, 2),
+        Value             = as.integer(round(Prediction_Final, 0)),
         Unit              = Output_Unit,
-        EXP               = round(EXP, 0),
-        VER               = round(VER, 0)
+        Exports               = as.integer(round(EXP, 0)),
+        Vernailis               = as.integer(round(VER, 0))
       )
   }
   
   make_event_map <- function() {
     
     df <- map_data_display()
-    
+    eh_display <- list(
+      high_line = st_transform(
+        eh_geom()$high_line,
+        4326
+      ),
+      low_line = st_transform(
+        eh_geom()$low_line,
+        4326
+      ),
+      eh_point = st_transform(
+        eh_geom()$eh_point,
+        4326
+      )
+    )
     pal <- colorNumeric(
       palette = "viridis",
       domain = range(df$entrainment, na.rm = TRUE),
@@ -835,14 +846,36 @@ server <- function(input, output, session) {
         group = "High Zone"
       ) %>%
       
+      addPolylines(
+        data = eh_display$high_line,
+        color = "red",
+        weight = 6,
+        opacity = 1
+      ) %>%
       
+      addPolylines(
+        data = eh_display$low_line,
+        color = "grey40",
+        weight = 3,
+        opacity = 0.8
+      ) %>%
       
       
       addCircleMarkers(
-        data = eh_geom()$eh_point,
-        radius = 8,
+        data = eh_display$eh_point,
+        radius = 9,
         color = "red",
-        fillOpacity = 1
+        weight = 3,
+        fillColor = "red",
+        fillOpacity = 1,
+        label = paste0(
+          "Event Horizon: ",
+          round(
+            event_horizon_distance(),
+            1
+          ),
+          " miles"
+        )
       )%>%
       
       addPolylines(
@@ -876,36 +909,27 @@ server <- function(input, output, session) {
         title = "Entrainment (%)",
         opacity = 1
       ) %>%
-      
+      addLegend(
+        position = "topright",
+        colors = c("#e8b5b5", "#a9d4e6"),
+        labels = c(
+          "High Entrainment Zone",
+          "Low Entrainment Zone"
+        ),
+        title = "Risk Zones",
+        opacity = 0.7
+      )%>%
       addLayersControl(
         overlayGroups = c("Boundary", "Channels", "Nodes"),
         options = layersControlOptions(collapsed = FALSE)
       )%>%
-      addLabelOnlyMarkers(
-        lng = -121.55,
-        lat = 38.15,
-        label = "High Entrainment Zone",
-        labelOptions = labelOptions(
-          noHide = TRUE,
-          textOnly = TRUE
-        )
-      ) %>%
+      
       
       fitBounds(
         lng1 = -122.15,
         lat1 = 37.75,
         lng2 = -121.15,
         lat2 = 38.85
-      )%>%
-      
-      addLabelOnlyMarkers(
-        lng = -121.65,
-        lat = 38.55,
-        label = "Low Entrainment Zone",
-        labelOptions = labelOptions(
-          noHide = TRUE,
-          textOnly = TRUE
-        )
       )
     
   }

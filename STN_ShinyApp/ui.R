@@ -218,7 +218,23 @@ ui <- dashboardPage(
           input.tabs == 'current30_event' ||
           input.tabs == 'forecast7_event'
         ",
-        selectInput("eh_risk", "Event Horizon Risk:", choices = c(25, 50, 75), selected = 50)
+        selectInput(
+          "eh_risk",
+          "Event Horizon Risk:",
+          choices = c(25,50,75),
+          selected = 25
+        ),
+        
+        radioButtons(
+          "event_ptm_model",
+          "Risk Layer:",
+          choices = c(
+            "7-Day PTM" = "PTM 7-Day Entrainment",
+            "30-Day PTM" = "PTM 30-Day Entrainment"
+          ),
+          selected = "PTM 7-Day Entrainment",
+          inline = TRUE
+        )
       )
     )
   ),
