@@ -607,19 +607,73 @@ ui <- dashboardPage(
       tabItem(
         tabName = "data",
         
-        h3("Data Access"),
-        
-        tags$ul(
-          tags$li(
-            tags$a(
-              "PTM Emulator GitHub Repo",
-              href = "https://github.com/rojkv/PTM_Emulator_Workflow"
+        fluidRow(
+          box(
+            width = 12,
+            title = "Data Access",
+            solidHeader = FALSE,
+            
+            h3("Data Availability"),
+            
+            p(
+              "Data and tools supporting the PTM Emulator dashboard are provided below."
+            ),
+            
+            tags$hr(),
+            
+            # ---------------------
+            # GitHub
+            # ---------------------
+            div(
+              style = "
+          padding:15px;
+          border:1px solid #d9d9d9;
+          border-radius:6px;
+          margin-bottom:15px;
+          background:white;
+        ",
+              
+              tags$h4("PTM Emulator GitHub Repository"),
+              
+              p(
+                "Access source code, model workflow documentation, emulator development resources, and supporting scripts."
+              ),
+              
+              tags$a(
+                class = "btn btn-success",
+                href = "https://github.com/rojkv/PTM_Emulator_Workflow",
+                target = "_blank",
+                icon("github"),
+                " View on GitHub"
+              )
+            ),
+            
+            # ---------------------
+            # SacPAS
+            # ---------------------
+            div(
+              style = "
+          padding:15px;
+          border:1px solid #d9d9d9;
+          border-radius:6px;
+          background:white;
+        ",
+              
+              tags$h4("SacPAS Weekly Assessment"),
+              
+              p(
+                "Weekly Sacramento River Winter-Run assessment forecasts and supporting evaluation products."
+              ),
+              
+              tags$a(
+                class = "btn btn-primary",
+                href = "https://can01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fcbr.washington.edu%2Fsacramento%2Fassessments%2Ftest%2Fforecast_sacpas.html&data=05%7C02%7CLaura.Manuel%40stantec.com%7C7d690048e1804ee4cc7408deccc5ac84%7C413c6f2c219a469297d3f2b4d80281e7%7C0%7C0%7C639173346569845423%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=OIZCfSzN%2BkO8UrHo3QV4D4Aike6mQpP7LvkmfgoCKa0%3D&reserved=0",
+                target = "_blank",
+                icon("external-link-alt"),
+                " Open SacPAS Assessment"
+              )
             )
-          ),
-          tags$li("Master results file: All_PTM_ECOPTM_Event_Horizon_Results.xlsx"),
-          tags$li("Model input datasets"),
-          tags$li("Emulator output files"),
-          tags$li("Machine learning notebooks")
+          )
         )
       )
     )
