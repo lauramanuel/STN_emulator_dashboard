@@ -7,13 +7,11 @@ library(viridis)
 library(sf)
 library(leaflet)
 library(lwgeom)
-<<<<<<< HEAD
 library(gstat)
 library(terra)
 library(sp)
-=======
 library(gt)
->>>>>>> 5f2f0be (update About page)
+library( plotly)
 
 server <- function(input, output, session) {
   find_master_file <- function(run_folder) {
@@ -550,7 +548,8 @@ server <- function(input, output, session) {
   make_event_horizon_scatter <- function(
     risk_value,
     title
-  ) {    
+  ) {
+    
     background_df <- get_eh_background(
       risk_value
     )
@@ -559,12 +558,22 @@ server <- function(input, output, session) {
       risk_value
     )
     
-    ggplot(
+    p <- ggplot(
       background_df,
       aes(
         x = EXP,
         y = VER,
-        color = predicted_event_horizon_distance
+        color = predicted_event_horizon_distance,
+        text = paste(
+          "Export:", round(EXP,0),
+          "<br>Vernalis:", round(VER,0),
+          "<br>Predicted EH:",
+          round(
+            predicted_event_horizon_distance,
+            1
+          ),
+          " miles"
+        )
       )
     ) +
       
@@ -577,7 +586,14 @@ server <- function(input, output, session) {
         data = point_df,
         aes(
           x = EXP,
-          y = VER
+          y = VER,
+          text = paste(
+            "Current Scenario",
+            "<br>Export:",
+            round(EXP,0),
+            "<br>Vernalis:",
+            round(VER,0)
+          )
         ),
         inherit.aes = FALSE,
         shape = 21,
@@ -594,7 +610,7 @@ server <- function(input, output, session) {
           global_eh_min,
           global_eh_max
         ),
-        name = "Predicted Event\nHorizon (miles)"
+        name = "Predicted Event Horizon (miles)"
       ) +
       
       labs(
@@ -615,6 +631,20 @@ server <- function(input, output, session) {
       ) +
       
       theme_bw()
+    
+    ggplotly(
+      p,
+      tooltip = "text"
+    ) %>%
+      config(
+        displaylogo = FALSE
+      )%>%
+      layout(
+        legend = list(
+          orientation = "v"
+        )
+      )
+    
   }
   
   # -----------------------------
@@ -965,16 +995,17 @@ server <- function(input, output, session) {
     make_event_map()
   })
   
-  output$current7_event_scatter25 <- renderPlot({
-    make_event_horizon_scatter(25, "Current 7d Average Flow - Event Horizon - 25% Risk")
-  })
-  
-  output$current7_event_scatter50 <- renderPlot({
-    make_event_horizon_scatter(50, "Current 7d Average Flow - Event Horizon - 50% Risk")
-  })
-  
-  output$current7_event_scatter75 <- renderPlot({
-    make_event_horizon_scatter(75, "Current 7d Average Flow - Event Horizon - 75% Risk")
+  output$current7_event_scatter <- renderPlotly({
+    
+    make_event_horizon_scatter(
+      as.numeric(input$eh_risk),
+      paste0(
+        "Current 7d Average Flow - Event Horizon - ",
+        input$eh_risk,
+        "% Risk"
+      )
+    )
+    
   })
   
   # -----------------------------
@@ -1004,16 +1035,17 @@ server <- function(input, output, session) {
     make_event_map()
   })
   
-  output$current30_event_scatter25 <- renderPlot({
-    make_event_horizon_scatter(25, "Current 30d Average Flow - Event Horizon - 25% Risk")
-  })
-  
-  output$current30_event_scatter50 <- renderPlot({
-    make_event_horizon_scatter(50, "Current 30d Average Flow - Event Horizon - 50% Risk")
-  })
-  
-  output$current30_event_scatter75 <- renderPlot({
-    make_event_horizon_scatter(75, "Current 30d Average Flow - Event Horizon - 75% Risk")
+  output$current30_event_scatter <- renderPlotly({
+    
+    make_event_horizon_scatter(
+      as.numeric(input$eh_risk),
+      paste0(
+        "Current 30d Average Flow - Event Horizon - ",
+        input$eh_risk,
+        "% Risk"
+      )
+    )
+    
   })
   
   # -----------------------------
@@ -1043,16 +1075,17 @@ server <- function(input, output, session) {
     make_event_map()
   })
   
-  output$forecast7_event_scatter25 <- renderPlot({
-    make_event_horizon_scatter(25, "Forecast 7d Average Flow - Event Horizon - 25% Risk")
-  })
-  
-  output$forecast7_event_scatter50 <- renderPlot({
-    make_event_horizon_scatter(50, "Forecast 7d Average Flow - Event Horizon - 50% Risk")
-  })
-  
-  output$forecast7_event_scatter75 <- renderPlot({
-    make_event_horizon_scatter(75, "Forecast 7d Average Flow - Event Horizon - 75% Risk")
+  output$forecast7_event_scatter <- renderPlotly({
+    
+    make_event_horizon_scatter(
+      as.numeric(input$eh_risk),
+      paste0(
+        "Forecast 7d Average Flow - Event Horizon - ",
+        input$eh_risk,
+        "% Risk"
+      )
+    )
+    
   })
   
   output$about_info_table <- render_gt({

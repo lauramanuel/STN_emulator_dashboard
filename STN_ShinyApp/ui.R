@@ -2,6 +2,7 @@ library(shiny)
 library(shinydashboard)
 library(leaflet)
 library(gt)
+library( plotly)
 
 # -----------------------------
 # Helper UI Functions
@@ -88,21 +89,9 @@ event_horizon_tab <- function(
       fluidRow(
         
         box(
-          width = 4,
-          title = paste(title, "- 25% Risk"),
-          plotOutput(scatter25_id, height = 400)
-        ),
-        
-        box(
-          width = 4,
-          title = paste(title, "- 50% Risk"),
-          plotOutput(scatter50_id, height = 400)
-        ),
-        
-        box(
-          width = 4,
-          title = paste(title, "- 75% Risk"),
-          plotOutput(scatter75_id, height = 400)
+          width = 12,
+          title = paste(title, "- Event Horizon Scatter"),
+          plotlyOutput(scatter25_id, height = 600)
         )
         
       )
@@ -461,7 +450,7 @@ ui <- dashboardPage(
               div(
                 style = "margin-left: 30px;margin-right:50px;",
                 
-                h1("PTM Emulator Dashboard",),
+                h1("PTM Emulator Dashboard"),
                 h4("Version:", weight = "bold",
                    tags$code("  1.2.2  ", style = "margin-left:20px"),
                    tags$a("[Release Notes]", style = "font-style: italic; margin-left:20px;", href = "#release-notes")
@@ -542,7 +531,7 @@ ui <- dashboardPage(
                     h5(style = "text-align: justify;","The application provides reasonable load times under normal operating conditions. The ECO-PTM page typically loads in less than 1 second; the PTM page in approximately 2-3 seconds; and the Event Horizon page in approximately 7-9 seconds because it loads Leaflet maps, geo-spatial files, and multiple plots. Standard weekly prediction tasks are generally completed almost immediately, while large prediction requests involving long time series and many input features, e.g., 190k records, may require substantially more processing and rendering time."),
                     h5(style = "text-align: justify;","Concurrent-user capacity depends on the deployment environment, including available CPU, memory, and the number of Shiny worker processes. The application is expected to support multiple users performing normal navigation, data exploration, and standard predictions, although several simultaneous computationally intensive prediction requests may increase response times. Final concurrent-user capacity should therefore be confirmed through load testing in the production environment."),
                     h4("Mobile Responsiveness:"),
-                    h5("This application is usable also on mobile devices."),
+                    h5("This application is usable also on mobile devices.")
 
                 ),
                 h3(id = "release-notes", "Release Notes:"),
@@ -672,9 +661,7 @@ ui <- dashboardPage(
         "Current 7d Average Flow - Event Horizon",
         "current-theme",
         "current7_event_map",
-        "current7_event_scatter25",
-        "current7_event_scatter50",
-        "current7_event_scatter75"
+        "current7_event_scatter"
       ),
       
       # -----------------------------
@@ -708,9 +695,7 @@ ui <- dashboardPage(
         "Current 30d Average Flow - Event Horizon",
         "current-theme",
         "current30_event_map",
-        "current30_event_scatter25",
-        "current30_event_scatter50",
-        "current30_event_scatter75"
+        "current30_event_scatter"
       ),
       
       # -----------------------------
@@ -741,12 +726,10 @@ ui <- dashboardPage(
       
       event_horizon_tab(
         "forecast7_event",
-        "Forecast 7d Average Flow - Event Horizon",
+        "forecast 7d Average Flow - Event Horizon",
         "forecast-theme",
         "forecast7_event_map",
-        "forecast7_event_scatter25",
-        "forecast7_event_scatter50",
-        "forecast7_event_scatter75"
+        "forecast7_event_scatter"
       ),
       
       # -----------------------------
