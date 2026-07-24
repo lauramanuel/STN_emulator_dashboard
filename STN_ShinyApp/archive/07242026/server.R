@@ -7,9 +7,6 @@ library(viridis)
 library(sf)
 library(leaflet)
 library(lwgeom)
-library(gstat)
-library(terra)
-library(sp)
 
 server <- function(input, output, session) {
   find_master_file <- function(run_folder) {
@@ -192,9 +189,9 @@ server <- function(input, output, session) {
   river_length_m <- as.numeric(st_length(river_centerline))
   river_length_miles <- river_length_m / 1609.344
   
-  delta_boundary <- st_transform(delta_boundary, 26910)
-  delta_channels <- st_transform(delta_channels, 26910)
-  river_centerline <- st_transform(river_centerline, 26910)
+  delta_boundary <- st_transform(delta_boundary, 4326)
+  delta_channels <- st_transform(delta_channels, 4326)
+  river_centerline <- st_transform(river_centerline, 4326)
   
   # =====================================================
   # Initialize Inputs
@@ -401,109 +398,87 @@ server <- function(input, output, session) {
   
   event_zones <- reactive({
     
-    nodes <- map_data_analysis()
+    geom <- eh_geom()
     
-    threshold <- as.numeric(
-      input$eh_risk
+    # Create Event Horizon transect
+    transect <- make_eh_transect(
+      geom$eh_point,
+      river_centerline
     )
     
-    req(nrow(nodes) > 3)
-    print(st_crs(nodes))
-    
-    print(st_crs(delta_boundary))
-    # --------------------------------
-    # Build interpolation grid
-    # --------------------------------
-    
-    bbox <- st_bbox(delta_boundary)
-    
-    grid <- expand.grid(
-      x = seq(
-        bbox["xmin"],
-        bbox["xmax"],
-        length.out = 150
-      ),
-      y = seq(
-        bbox["ymin"],
-        bbox["ymax"],
-        length.out = 150
-      )
-    )
-    
-    grid <- st_as_sf(
-      grid,
-      coords = c("x","y"),
-      crs = st_crs(nodes)
-    )
-    sp_grid <- as(grid, "Spatial")
-    sp_nodes <- as(nodes, "Spatial")
-    # --------------------------------
-    # IDW interpolation
-    # --------------------------------
-    
-    
-    names(sp_nodes)[
-      names(sp_nodes) == "entrainment"
-    ] <- "z"
-    
-    idw_surface <- gstat::idw(
-      z ~ 1,
-      sp_nodes,
-      newdata = sp_grid
-    )
-    
-    pred <- st_as_sf(idw_surface)
-    
-    pred <- pred %>%
-      rename(
-        entrainment = var1.pred
-      )
-    
-    # --------------------------------
-    # High-risk contour
-    # --------------------------------
-    
-    high_pts <- pred %>%
-      filter(
-        entrainment >= threshold
-      )
-    
-    req(
-      nrow(high_pts) > 10
-    )
-    high_pts <- pred %>%
-      filter(
-        entrainment >= threshold
-      )
-    high_pts <- high_pts %>%
-      st_intersection(delta_boundary)
-    high_zone <- high_pts %>%
-      st_union() %>%
-      sf::st_concave_hull(
-        ratio = 0.5
-      )
-    
-    # Clip to Delta
-    
-    high_zone <- st_intersection(
-      st_as_sf(high_zone),
-      delta_boundary
-    )
-    
-    low_zone <- st_difference(
+    # Split Delta polygon
+    split_result <- lwgeom::st_split(
       delta_boundary,
-      st_union(high_zone)
+      transect
     )
+    
+    # Extract resulting polygons
+    parts <- st_collection_extract(
+      split_result,
+      "POLYGON"
+    )
+    
+    parts <- st_as_sf(parts)
+    
+    # Calculate areas
+    parts$area <- as.numeric(st_area(parts))
+    
+    # Sort by area
+    parts <- parts %>%
+      arrange(desc(area))
+    cat("\n")
+    cat("EH distance:", event_horizon_distance(), "\n")
+    cat("Fraction:", geom$fraction, "\n")
+    cat("Number polygons:", nrow(parts), "\n")
+    print(st_bbox(transect))
+    print(st_coordinates(
+      eh_geom()$eh_point
+    ))
+    
+    # -----------------------------
+    # Keep largest polygons only
+    # -----------------------------
+    # Usually the first two are the
+    # north/south Delta pieces
+    
+    if (nrow(parts) >= 2) {
+      
+      major_parts <- parts[1:2, ]
+      
+    } else {
+      
+      major_parts <- parts
+      
+    }
+    
+    # -----------------------------
+    # Determine north vs south
+    # using centroid Y coordinate
+    # -----------------------------
+    
+    centroids <- st_centroid(
+      major_parts
+    )
+    
+    major_parts$cy <- st_coordinates(
+      centroids
+    )[,2]
+    
+    low_zone <- major_parts %>%
+      filter(
+        cy == max(cy)
+      )
+    
+    high_zone <- major_parts %>%
+      filter(
+        cy == min(cy)
+      )
     
     list(
-      high_zone = st_transform(
-        high_zone,
-        4326
-      ),
-      low_zone = st_transform(
-        low_zone,
-        4326
-      )
+      high_zone = high_zone,
+      low_zone = low_zone,
+      transect = transect,
+      polygons = parts
     )
     
   })
@@ -629,45 +604,20 @@ server <- function(input, output, session) {
     }
     
     active_results() %>%
-      filter(
-        Model == model,
-        !is.na(DSM2_Node)
-      ) %>%
-      group_by(
-        DSM2_Node
-      ) %>%
-      summarise(
-        entrainment = mean(
-          Prediction_Final,
-          na.rm = TRUE
-        ),
-        .groups = "drop"
-      ) %>%
-      left_join(
-        master_data()$node_meta,
-        by = "DSM2_Node"
-      )
+      filter(Model == model, !is.na(DSM2_Node)) %>%
+      left_join(master_data()$node_meta, by = "DSM2_Node") %>%
+      rename(entrainment = Prediction_Final)
   })
   
-  map_data_analysis <- reactive({
+  map_data <- reactive({
+    
     df <- map_entrainment_data()
-    st_as_sf(
-      df,
-      coords = c("X","Y"),
-      crs = 4326,
-      remove = FALSE
-    ) %>%
-      st_transform(26910)
     
-  })
-  
-  map_data_display <- reactive({
-    
-    st_transform(
-      map_data_analysis(),
-      4326
+    validate(
+      need(nrow(df) > 0, "No data available for the selected filters.")
     )
     
+    st_as_sf(df, coords = c("X", "Y"), crs = 4326, remove = FALSE)
   })
   
   # -----------------------------
@@ -806,7 +756,7 @@ server <- function(input, output, session) {
   
   make_event_map <- function() {
     
-    df <- map_data_display()
+    df <- map_data()
     
     pal <- colorNumeric(
       palette = "viridis",
@@ -835,8 +785,17 @@ server <- function(input, output, session) {
         group = "High Zone"
       ) %>%
       
+      addPolylines(
+        data = eh_geom()$high_line,
+        color = "red",
+        weight = 7
+      ) %>%
       
-      
+      addPolylines(
+        data = eh_geom()$low_line,
+        color = "grey40",
+        weight = 4
+      ) %>%
       
       addCircleMarkers(
         data = eh_geom()$eh_point,
@@ -853,6 +812,13 @@ server <- function(input, output, session) {
         group = "Channels"
       ) %>%
       
+      addPolylines(
+        data = event_zones()$transect,
+        color = "black",
+        weight = 4,
+        opacity = 0.8,
+        group = "Event Horizon"
+      ) %>%
       
       addCircleMarkers(
         data = df,
