@@ -7,9 +7,13 @@ library(viridis)
 library(sf)
 library(leaflet)
 library(lwgeom)
+<<<<<<< HEAD
 library(gstat)
 library(terra)
 library(sp)
+=======
+library(gt)
+>>>>>>> 5f2f0be (update About page)
 
 server <- function(input, output, session) {
   find_master_file <- function(run_folder) {
@@ -1050,4 +1054,39 @@ server <- function(input, output, session) {
   output$forecast7_event_scatter75 <- renderPlot({
     make_event_horizon_scatter(75, "Forecast 7d Average Flow - Event Horizon - 75% Risk")
   })
+  
+  output$about_info_table <- render_gt({
+    data <- data.frame(
+      Name = c("Adam Witt", "Puneet Khatavkar", "Jo Anna Beck", "Josh Israel"),
+      Role = c("Activity Lead","Quality review", "Contracting Officers Representative", "Reclamation Activity Oversight"),
+      Email = c("adam.witt@stantec.com", "", "jbeck@usbr.gov", "jaisrael@usbr.gov")
+    )
+    about_info_table <- gt(data)
+    about_info_table |>
+      tab_row_group(
+        label = html("<strong><em>Bureau of Reclamation,</strong><br>Bay-Delta Office</em>"), 
+        rows = 3:4
+      )|>
+      tab_row_group(
+        label = html("<strong><em>Stantec Inc.,</strong><br>Sacramento C St. Office</em>"), 
+        rows = 1:2
+      )|>
+      cols_align(
+        align = "center",
+        columns = 2:3
+      )|>
+      tab_style(
+        style = cell_text(align = "center", size = "medium"),
+        locations = cells_row_groups()
+      )|>
+      tab_style(
+        style = cell_text(align = "center", size = "medium"),
+        locations = cells_row_groups()
+      )|>
+      tab_style(
+        style = cell_text(weight = "bold", align = "center", size = "large"),
+        locations = cells_column_labels(columns = 1:3)
+      )
+  })
+  
 }

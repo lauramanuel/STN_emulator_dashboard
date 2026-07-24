@@ -1,6 +1,7 @@
 library(shiny)
 library(shinydashboard)
 library(leaflet)
+library(gt)
 
 # -----------------------------
 # Helper UI Functions
@@ -450,49 +451,196 @@ ui <- dashboardPage(
         
         fluidRow(
           box(
-            width = 12,
+            width = 6,
+            height = 300,
             solidHeader = FALSE,
-            
             div(
               style = "display: flex; align-items: center;",
-              
-              tags$img(src = "logo.png", height = "80px"),
+              tags$img(src = "logo.png", height = "160px"),
               
               div(
-                style = "margin-left: 20px;",
+                style = "margin-left: 30px;margin-right:50px;",
                 
-                h2("PTM Emulator Dashboard"),
-                h4("Version 1.1.0", style = "font-style: italic;"),
+                h1("PTM Emulator Dashboard",),
+                h4("Version:", weight = "bold",
+                   tags$code("  1.2.2  ", style = "margin-left:20px"),
+                   tags$a("[Release Notes]", style = "font-style: italic; margin-left:20px;", href = "#release-notes")
+                ),
+                h4("Date Last Updated:", weight = "bold", 
+                   tags$b("2026-07-22")
+                ),
+                
                 
                 tags$hr(),
                 
-                h5("Model Workflow: DSM2 → PTM → Emulator"),
                 
-                h5(
-                  "GitHub Repository:",
-                  tags$a(
-                    "PTM Emulator Workflow",
-                    href = "https://github.com/rojkv/PTM_Emulator_Workflow"
-                  )
+                h5(style = "text-align: justify;", "Data Refresh Schedule: Some available datasets will be uploaded weekly provided by our client (DWR? CCWD? USBR?). Other data will be retrieved through API from certain USGS gauges upon request from users within the App. For the specific data information, please go to Chapter XX (link to the chapter) on the Data Access page."),
+                h5("GitHub Application Repository:",
+                   tags$a("PTM Emulator Dashboard", style = "font-style: italic;",
+                          href = "https://github.com/lauramanuel/STN_emulator_dashboard")
                 ),
                 
-                h5("Data Sources:", "All_PTM_ECOPTM_Event_Horizon_Results.xlsx (DSM2, SACPAS, PTM outputs)")
+                h5("Data Sources:", 
+                   tags$a("Historical Results for All PTM, ECO-PTM, and Event Horizon models", style = "font-style: italic;",
+                          href = "https://github.com/lauramanuel/STN_emulator_dashboard/tree/main/STN_EMULATOR/Output")
+                )
               )
             )
           )
         ),
-        
         fluidRow(
           box(
-            width = 12,
-            title = "Overview",
-            p("This dashboard provides real-time and forecasted PTM emulator outputs."),
-            p("Includes survival, entrainment, routing, ECO PTM, and Event Horizon outputs."),
-            p("Supports planning-level decision making and model QA/QC.")
+            width = 8,
+            height = 2000,
+            div(style = "margin-left: 60px;margin-right:120px",
+                h2("Overview"),
+                h5(style = "text-align: justify;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)’s",
+                   tags$a("hydraulic footprint project",
+                          href = "https://github.com/cchang-ccwater/CCWD_Hydraulic_Footprints"),
+                   tags$b(".")
+                ),
+                
+                h3("Author & Contact Information"),
+                gt_output("about_info_table"),
+                h3("Technical Guidelines:"),
+                div(style = "margin-left: 60px;",
+                    h4("Visual Identity Compliance:"),
+                    h5(style = "text-align: justify;", "The application framework is built using the ", 
+                       tags$code("shiny"), 
+                                 "and ", 
+                       tags$code("shinydashboard"),
+                                 "packages. Figures are generated using the", 
+                       tags$code("ggplot"),
+                                 "and ", 
+                       tags$code("viridis"),
+                       "packages. Additional packages including",
+                       tags$code("leaflet"),
+                                 ", ", 
+                       tags$code("sf"),
+                                 ", ",                        
+                       tags$code("lwgeom"),  
+                                 ", and ", 
+                       tags$code("dplyr"),                                 
+                                 ", are used for interactive mapping, spatial data processing, and geometric calculations. Most interface text uses font sizes between 13px and 16px to ensure good readability under normal viewing conditions. The application primarily uses the Segoe UI font family, with,",
+                       tags$b("Regular", style = "font-family: Segoe UI"),
+                       tags$b(","),
+                       tags$b("Semibold", style = "font-family: Segoe UI Semibold"),
+                       tags$b(","),
+                       tags$b("Italic", style = "font-style: italic"),
+                       "styles applied where appropriate. Additional accessibility features have been implemented or are planned for future releases to further improve accessibility:"
+                    ),
+                    h5(style = "margin-left: 60px; text-align: justify;","	- Adjustable text size: A text size adjustment option is available, allowing users to change the font size from small to large to improve readability. The default text size is Medium."),
+                    p(style = "text-align: center;",
+                      tags$span(style = "font-size: 0.83em;margin-right:20px;","Small"),
+                      tags$span(style = "font-size: 1.17em;margin-right:20px;","Medium"),
+                      tags$span(style = "font-size: 2.00em;","Large")
+                      ),
+                    h5(style = "margin-left: 60px; text-align: justify;","  - Colorblind-friendly color palette: A color palette option is available, allowing users to switch between different plot color schemes. By default, the application uses the Viridis color palette, which is designed to be perceptually uniform and accessible for users with color vision deficiency. Users may also switch to a high-contrast color palette to enhance visibility."),
+                    h4("Browser Compatibility:"),
+                    h5("This app can work on Edge, Chrome, Safari, and Firefox, as tested till the version v1.2."),
+                    h4("Performance Standards: "),
+                    h5(style = "text-align: justify;","The application provides reasonable load times under normal operating conditions. The ECO-PTM page typically loads in less than 1 second; the PTM page in approximately 2-3 seconds; and the Event Horizon page in approximately 7-9 seconds because it loads Leaflet maps, geo-spatial files, and multiple plots. Standard weekly prediction tasks are generally completed almost immediately, while large prediction requests involving long time series and many input features, e.g., 190k records, may require substantially more processing and rendering time."),
+                    h5(style = "text-align: justify;","Concurrent-user capacity depends on the deployment environment, including available CPU, memory, and the number of Shiny worker processes. The application is expected to support multiple users performing normal navigation, data exploration, and standard predictions, although several simultaneous computationally intensive prediction requests may increase response times. Final concurrent-user capacity should therefore be confirmed through load testing in the production environment."),
+                    h4("Mobile Responsiveness:"),
+                    h5("This application is usable also on mobile devices."),
+
+                ),
+                h3(id = "release-notes", "Release Notes:"),
+                div(style = "margin-left: 60px;",
+                    tags$div(
+                      style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
+                      h4(style = "margin-bottom: 8px;font-weight: 600;",
+                         "Version ",
+                        tags$code("1.2.0", style = "font-weight: 400;margin-left: 10px;"),
+                        tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
+                         "July 18, 2026"
+                        )
+                        ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                        tags$b("-Added: "),
+                        "A new ",
+                        tags$code("Event Horizon"),
+                        " page with interactive ",
+                        tags$code("leaflet"),
+                        " maps and additional visualization tools."
+                        ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                        tags$b("-Improved: "),
+                        "Prediction performance for standard weekly analysis periods."
+                        ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                        tags$b("-Fixed: "),
+                        "Minor layout and data-loading issues in the ",
+                        tags$code("PTM"),
+                        " module."
+                    )
+                    )
+                    ),
+                div(style = "margin-left: 60px;",
+                    tags$div(
+                      style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
+                      h4(style = "margin-bottom: 8px;font-weight: 600;",
+                         "Version ",
+                         tags$code("1.2.1", style = "font-weight: 400;margin-left: 10px;"),
+                         tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
+                                    "July 22, 2026"
+                         )
+                      ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                         tags$b("-Added: "),
+                         "A new ",
+                         tags$code("Event Horizon"),
+                         " page with interactive ",
+                         tags$code("leaflet"),
+                         " maps and additional visualization tools."
+                      ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                         tags$b("-Improved: "),
+                         "Prediction performance for standard weekly analysis periods."
+                      ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                         tags$b("-Fixed: "),
+                         "Minor layout and data-loading issues in the ",
+                         tags$code("PTM"),
+                         " module."
+                      )
+                      )
+                      ),
+                div(style = "margin-left: 60px;",
+                    tags$div(
+                      style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
+                      h4(style = "margin-bottom: 8px;font-weight: 600;",
+                         "Version ",
+                         tags$code("1.2.2", style = "font-weight: 400;margin-left: 10px;"),
+                         tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
+                                    "July 24, 2026"
+                         )
+                      ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                         tags$b("-Added: "),
+                         "A new ",
+                         tags$code("Event Horizon"),
+                         " page with interactive ",
+                         tags$code("leaflet"),
+                         " maps and additional visualization tools."
+                      ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                         tags$b("-Improved: "),
+                         "Prediction performance for standard weekly analysis periods."
+                      ),
+                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                         tags$b("-Fixed: "),
+                         "Minor layout and data-loading issues in the ",
+                         tags$code("PTM"),
+                         " module."
+                      )
+                      )
+                      )
+              )
+            )
           )
-        )
       ),
-      
+
       # -----------------------------
       # Current 7d Average Flow
       # -----------------------------
