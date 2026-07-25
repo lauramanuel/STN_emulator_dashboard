@@ -437,10 +437,11 @@ ui <- dashboardPage(
       # -----------------------------
       tabItem(
         tabName = "about",
-        
+        div(style = "width: 100%;height: calc(100vh - 100px);overflow-x: auto;overflow-y: auto;box-sizing: border-box;",
+        div(style = "width: 1100px;min-width: 1100px;margin: 0 auto;box-sizing: border-box;",
         fluidRow(
           box(
-            width = 6,
+            width = 12,
             height = 300,
             solidHeader = FALSE,
             div(
@@ -479,7 +480,7 @@ ui <- dashboardPage(
         ),
         fluidRow(
           box(
-            width = 8,
+            width = 12,
             height = 2000,
             div(style = "margin-left: 60px;margin-right:120px",
                 h2("Overview"),
@@ -628,6 +629,8 @@ ui <- dashboardPage(
               )
             )
           )
+        )
+      )
       ),
 
       # -----------------------------
@@ -737,16 +740,32 @@ ui <- dashboardPage(
       # -----------------------------
       tabItem(
         tabName = "data",
-        
+        div(style = "width: 100%;height: calc(100vh - 100px);overflow-x: auto;overflow-y: auto;box-sizing: border-box;",
+        div(style = "width: 1800px;min-width: 1800px;margin: 0 auto;box-sizing: border-box;",        
         fluidRow(
           box(
-            width = 12,
-            title = "Data Access",
+            style = "margin-left: 20px;",
+            width = 6,
+            h1("Data Access", style = "margin-left: 10px;"),
             solidHeader = FALSE,
+            h3("Quick Overview", style = "margin-left: 10px;"),
+            style = "text-align: Justify;margin-left: 10px;margin-right:60px;",
+            p(style = "margin-left: 10px;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)’s hydraulic footprint project."),
+            h5("Here are three types of models:", style = "margin-left: 10px;"),
+            div(style = "margin-left:60px",
+              h5("- DSM2 ECO-PTM emulator models",
+                 tags$a(" (part 1)", href = "#intro-eco-ptm")
+              ),
+              h5("- DSM2 PTM emulator models",
+                 tags$a(" (part 2)", href = "#intro-ptm")
+              ),
+              h5("- Model for the Entrainment Event Horizon",
+                 tags$a(" (part 3)", href = "#intro-event-horizon")
+              )
+            ),
+            h3("Data Availability", style = "margin-left: 10px;"),
             
-            h3("Data Availability"),
-            
-            p(
+            p(style = "margin-left: 10px;",
               "Data and tools supporting the PTM Emulator dashboard are provided below."
             ),
             
@@ -803,6 +822,48 @@ ui <- dashboardPage(
                 icon("external-link-alt"),
                 " Open SacPAS Assessment"
               )
+            )
+          ),
+          box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
+              h3(id = "intro-eco-ptm","P1 DSM2 ECO-PTM emulator models",style = "margin-left:10px;"),
+              gt::gt_output("ecoptm_inputs_table"),
+              tags$hr(),
+              fluidRow(
+                column(width = 7,
+                       box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                           tags$iframe(src = "ECOPTM_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                       )
+                ),
+                column(width = 5,
+                       box(title = "Model Parameters",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                           div(style = "height:650px;overflow-y:auto;",gt::gt_output("ecoptm_parameters_table"))
+                       )
+                )
+              )
+          ),
+          box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
+              h3(id = "intro-ptm","P2 DSM2 PTM emulator models",style = "margin-left:10px;"),
+              gt::gt_output("ptm_inputs_table"),
+              tags$hr(),
+              fluidRow(
+                column(width = 7,
+                       box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                           tags$iframe(src = "PTM_Entrainment_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                       )
+                ),
+                column(width = 5,
+                       box(title = "Model Parameters",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                           div(style = "height:650px;overflow-y:auto;",gt::gt_output("ptm_parameters_table"))
+                       )
+                )
+              )
+          ),         
+          box(
+            style = "margin-left: 20px;",
+            width = 12,
+            h3(id = "intro-event-horizon","P3 Model for the Entrainment Event Horizon", style = "margin-left: 10px;"),
+            solidHeader = FALSE
+            ),         
             )
           )
         )

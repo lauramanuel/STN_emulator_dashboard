@@ -1122,4 +1122,913 @@ server <- function(input, output, session) {
       )
   })
   
+  output$ecoptm_inputs_table <- gt::render_gt({
+    
+    badge <- function(text) {
+      sprintf(
+        paste0(
+          "<span style='",
+          "display:inline-block;",
+          "background:#f9e9ee;",
+          "color:#c7254e;",
+          "border:1px solid #efcbd5;",
+          "border-radius:4px;",
+          "padding:3px 8px;",
+          "font-family:monospace;",
+          "white-space:nowrap;",
+          "'>%s</span>"
+        ),
+        text
+      )
+    }
+    
+    link <- function(text, url) {
+      sprintf(
+        "<a href='%s' target='_blank' rel='noopener noreferrer'>%s</a>",
+        url,
+        text
+      )
+    }
+    
+    split_cell <- function(left, right) {
+      sprintf(
+        paste0(
+          "<div style='",
+          "display:grid;",
+          "grid-template-columns:1fr 1fr;",
+          "width:100%%;",
+          "'>",
+          "<div style='",
+          "display:flex;",
+          "align-items:center;",
+          "justify-content:center;",
+          "border-right:1px solid #c7d7da;",
+          "'>%s</div>",
+          "<div style='",
+          "display:flex;",
+          "align-items:center;",
+          "justify-content:center;",
+          "padding:6px 10px;",
+          "'>%s</div>",
+          "</div>"
+        ),
+        left,
+        right
+      )
+    }
+    
+    group_label <- function(number, content = "") {
+      sprintf(
+        paste0(
+          "<div style='",
+          "display:flex;",
+          "align-items:center;",
+          "gap:12px;",
+          "width:100%%;",
+          "min-height:46px;",
+          "'>",
+          "<strong>Input Number %s</strong>",
+          "%s",
+          "</div>"
+        ),
+        number,
+        content
+      )
+    }
+    
+    arrow <- paste0(
+      "<span style='",
+      "display:inline-flex;",
+      "align-items:center;",
+      "margin-left:6px;",
+      "color:#0a7e8c;",
+      "font-size:30px;",
+      "line-height:1;",
+      "transform:translateY(12px);",
+      "'>",
+      "<i class='fa fa-level-down' aria-hidden='true'></i>",
+      "</span>"
+    )
+    
+    yol_equation <- sprintf(
+      paste0(
+        "<div style='",
+        "display:flex;",
+        "align-items:center;",
+        "gap:8px;",
+        "white-space:nowrap;",
+        "'>",
+        "%s",
+        "<strong>=</strong>",
+        "%s",
+        "<strong>+</strong>",
+        "%s",
+        "%s",
+        "</div>"
+      ),
+      badge("YOL"),
+      badge("SACWEIR"),
+      badge("FREWEIR"),
+      arrow
+    )
+    
+    input_data <- data.frame(
+      Group_ID = c(
+        "input_1",
+        "input_2",
+        "input_2",
+        "input_3",
+        "input_4"
+      ),
+      
+      Acronym = c(
+        "FPT",
+        "SACWEIR",
+        "FREWEIR",
+        "MOK",
+        "DCC"
+      ),
+      
+      Full_Name = c(
+        "Freeport",
+        "Sacramento Weir",
+        "Fremont Weir",
+        "Mokelumne River",
+        "Delta Cross Channel"
+      ),
+      
+      Description = c(
+        "Sacramento River flow at Freeport",
+        "Sacramento Weir flow spill to Yolo Bypass",
+        "Fremont Weir flow spill to Yolo Bypass",
+        "Mokelumne River before its confluence with Cosumnes River",
+        "Delta Cross Channel gate opening status recorded as a Boolean value"
+      ),
+      
+      Data_Sources = c(
+        link(
+          "CDEC - FPT",
+          "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=FPT"
+        ),
+        
+        link(
+          "USGS - 11426000",
+          "https://waterdata.usgs.gov/monitoring-location/11426000/"
+        ),
+        
+        link(
+          "CDEC - FRE",
+          "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=FRE"
+        ),
+        
+        split_cell(
+          link(
+            "USGS - 11325500",
+            "https://waterdata.usgs.gov/monitoring-location/USGS-11325500/"
+          ),
+          link(
+            "USACE - CA00173",
+            "https://water.sec.usace.army.mil/overview/spk/locations/camanche"
+          )
+        ),
+        
+        "0 = closed; 1 = open"
+      ),
+      
+      stringsAsFactors = FALSE
+    )
+    
+    input_data$Data_Sources <- lapply(
+      input_data$Data_Sources,
+      gt::html
+    )
+    
+    input_data |>
+      gt::gt() |>
+      gt::cols_hide(columns = Group_ID) |>
+      gt::cols_label(
+        Acronym = "Model Input Acronym",
+        Full_Name = "Full Name",
+        Description = "Description",
+        Data_Sources = "Data Sources / Station"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(1)),
+        rows = Group_ID == "input_1",
+        id = "input_1"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(2, yol_equation)),
+        rows = Group_ID == "input_2",
+        id = "input_2"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(3)),
+        rows = Group_ID == "input_3",
+        id = "input_3"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(4)),
+        rows = Group_ID == "input_4",
+        id = "input_4"
+      ) |>
+      
+      gt::row_group_order(
+        groups = c(
+          "input_1",
+          "input_2",
+          "input_3",
+          "input_4"
+        )
+      ) |>
+      
+      gt::text_transform(
+        locations = gt::cells_body(columns = Acronym),
+        fn = function(x) {
+          vapply(x, badge, character(1))
+        }
+      ) |>
+      
+      gt::text_transform(
+        locations = gt::cells_body(columns = Data_Sources),
+        fn = identity
+      ) |>
+      
+      gt::cols_width(
+        Acronym ~ gt::px(170),
+        Full_Name ~ gt::px(220),
+        Description ~ gt::px(470),
+        Data_Sources ~ gt::px(360)
+      ) |>
+      
+      gt::cols_align(
+        align = "center",
+        columns = everything()
+      ) |>
+      
+      gt::tab_style(
+        style = list(
+          gt::cell_text(
+            align = "center",
+            v_align = "middle"
+          ),
+          gt::cell_borders(
+            sides = c("left", "right", "bottom"),
+            color = "#c7d7da",
+            weight = gt::px(1)
+          )
+        ),
+        locations = gt::cells_body(
+          columns = everything()
+        )
+      ) |>
+      
+      gt::tab_style(
+        style = list(
+          gt::cell_fill(color = "#eef7f9"),
+          gt::cell_text(
+            align = "left",
+            v_align = "middle",
+            size = "medium"
+          ),
+          gt::cell_borders(
+            sides = c("top", "bottom"),
+            color = "#0a7e8c",
+            weight = gt::px(1)
+          )
+        ),
+        locations = gt::cells_row_groups()
+      ) |>
+      
+      gt::tab_style(
+        style = list(
+          gt::cell_fill(color = "#0a7e8c"),
+          gt::cell_text(
+            color = "white",
+            weight = "bold",
+            align = "center",
+            v_align = "middle"
+          ),
+          gt::cell_borders(
+            sides = c("left", "right", "top", "bottom"),
+            color = "#c7d7da",
+            weight = gt::px(1)
+          )
+        ),
+        locations = gt::cells_column_labels(
+          columns = everything()
+        )
+      ) |>
+      
+      gt::tab_options(
+        table.width = gt::pct(100),
+        table.font.names = "Segoe UI",
+        table.font.size = gt::px(14),
+        data_row.padding = gt::px(10),
+        row_group.padding = gt::px(10)
+      )
+  })
+  
+  output$ptm_inputs_table <- gt::render_gt({
+    badge <- function(text) {
+      sprintf(
+        paste0(
+          "<span style='",
+          "display:inline-block;",
+          "background:#f9e9ee;",
+          "color:#c7254e;",
+          "border:1px solid #efcbd5;",
+          "border-radius:4px;",
+          "padding:3px 8px;",
+          "font-family:monospace;",
+          "white-space:nowrap;",
+          "'>%s</span>"
+        ),
+        text
+      )
+    }
+    
+    link <- function(text, url) {
+      sprintf(
+        "<a href='%s' target='_blank' rel='noopener noreferrer'>%s</a>",
+        url,
+        text
+      )
+    }
+    
+    split_cell <- function(left, right) {
+      sprintf(
+        paste0(
+          "<div style='",
+          "display:grid;",
+          "grid-template-columns:1fr 1fr;",
+          "width:100%%;",
+          "'>",
+          "<div style='",
+          "display:flex;",
+          "align-items:center;",
+          "justify-content:center;",
+          "padding:0 10px;",
+          "border-right:1px solid #c7d7da;",
+          "box-sizing:border-box;",
+          "line-height:1.2;",
+          "'>%s</div>",
+          "<div style='",
+          "display:flex;",
+          "align-items:center;",
+          "justify-content:center;",
+          "padding:0 10px;",
+          "box-sizing:border-box;",
+          "line-height:1.2;",
+          "'>%s</div>",
+          "</div>"
+        ),
+        left,
+        right
+      )
+    }
+    
+    group_label <- function(number, content = "") {
+      sprintf(
+        paste0(
+          "<div style='",
+          "display:flex;",
+          "align-items:center;",
+          "gap:12px;",
+          "width:100%%;",
+          "min-height:46px;",
+          "'>",
+          "<strong>Input Number %s</strong>",
+          "%s",
+          "</div>"
+        ),
+        number,
+        content
+      )
+    }
+    
+    arrow <- paste0(
+      "<span style='",
+      "display:inline-flex;",
+      "align-items:center;",
+      "margin-left:6px;",
+      "color:#0a7e8c;",
+      "font-size:30px;",
+      "line-height:1;",
+      "transform:translateY(12px);",
+      "'>",
+      "<i class='fa fa-level-down' aria-hidden='true'></i>",
+      "</span>"
+    )
+    
+    equation <- function(result, terms, operators) {
+      rhs <- badge(terms[1])
+      
+      if (length(terms) > 1) {
+        for (i in seq_len(length(terms) - 1)) {
+          rhs <- paste0(
+            rhs,
+            sprintf(
+              "<strong style='color:#333333;'>%s</strong>",
+              operators[i]
+            ),
+            badge(terms[i + 1])
+          )
+        }
+      }
+      
+      paste0(
+        "<div style='",
+        "display:flex;",
+        "align-items:center;",
+        "gap:8px;",
+        "white-space:nowrap;",
+        "'>",
+        badge(result),
+        "<strong style='color:#333333;'>=</strong>",
+        rhs,
+        arrow,
+        "</div>"
+      )
+    }
+    
+    exp_equation <- equation(
+      "EXP",
+      c("CCF", "TPP"),
+      "+"
+    )
+    
+    east_equation <- equation(
+      "EAST",
+      c("MOK", "CAL", "COS"),
+      c("+", "+")
+    )
+    
+    xgeo_equation <- equation(
+      "XGEO",
+      c("XGEO_A", "XGEO_C"),
+      "-"
+    )
+    
+    input_data <- data.frame(
+      Group_ID = c(
+        "input_1",
+        "input_2",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_5",
+        "input_5",
+        "input_6",
+        "input_6"
+      ),
+      
+      Acronym = c(
+        "Location",
+        "CCF",
+        "TPP",
+        "VNS",
+        "SAC",
+        "MOK",
+        "CAL",
+        "COS",
+        "XGEO_A",
+        "XGEO_C"
+      ),
+      
+      Full_Name = c(
+        "Location nodes",
+        "Clifton Court Forebay",
+        "Tracy Pumping Plant",
+        "Vernalis",
+        "= FPT",
+        "Mokelumne River",
+        "Calaveras River",
+        "Cosumnes River",
+        "Georgiana Slough",
+        "Georgiana Slough"
+      ),
+      
+      Description = c(
+        "One or a list of location node numbers from DSM2 model",
+        "Reservoir inflow of the export facility Clifton Court Forebay",
+        "Reservoir inflow of the export facility Tracy Pumping Plant",
+        "San Joaquin River flow at Vernalis",
+        "Sacramento River flow at Freeport",
+        "Mokelumne River before its confluence with Cosumnes River",
+        "Calaveras River flow from New Hogan Lake Reservoir outflow",
+        "Cosumnes River at Michigan Bar",
+        "Sacramento River above Delta Cross Channel",
+        "Sacramento River below Georgiana Slough"
+      ),
+      
+      Data_Sources = c(
+        "Sheet",
+        
+        link(
+          "CDEC - CLC",
+          "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=CLC"
+        ),
+        
+        link(
+          "CDEC - TRP",
+          "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=TRP"
+        ),
+        
+        link(
+          "CDEC - VNS",
+          "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=VNS"
+        ),
+        
+        link(
+          "CDEC - FPT",
+          "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=FPT"
+        ),
+        
+        split_cell(
+          link(
+            "USGS - 11325500",
+            "https://waterdata.usgs.gov/monitoring-location/11325500/"
+          ),
+          link(
+            "USACE - CA00173",
+            "https://water.sec.usace.army.mil/overview/spk/locations/camanche"
+          )
+        ),
+        
+        link(
+          "CDEC - NHG",
+          "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=NHG"
+        ),
+        
+        link(
+          "USGS - 11335000",
+          "https://waterdata.usgs.gov/monitoring-location/11335000/"
+        ),
+        
+        link(
+          "USGS - 11447890",
+          "https://waterdata.usgs.gov/monitoring-location/11447890/"
+        ),
+        
+        link(
+          "USGS - 11447905",
+          "https://waterdata.usgs.gov/monitoring-location/11447905/"
+        )
+      ),
+      
+      stringsAsFactors = FALSE
+    )
+    
+    input_data$Data_Sources <- lapply(
+      input_data$Data_Sources,
+      gt::html
+    )
+    
+    input_data |>
+      gt::gt() |>
+      
+      gt::cols_hide(
+        columns = Group_ID
+      ) |>
+      
+      gt::cols_label(
+        Acronym = "Model Input Acronyms",
+        Full_Name = "Full Name",
+        Description = "Description",
+        Data_Sources = "Data Sources - #Station"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(1)),
+        rows = Group_ID == "input_1",
+        id = "input_1"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(2, exp_equation)),
+        rows = Group_ID == "input_2",
+        id = "input_2"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(3)),
+        rows = Group_ID == "input_3",
+        id = "input_3"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(4)),
+        rows = Group_ID == "input_4",
+        id = "input_4"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(5, east_equation)),
+        rows = Group_ID == "input_5",
+        id = "input_5"
+      ) |>
+      
+      gt::tab_row_group(
+        label = gt::html(group_label(6, xgeo_equation)),
+        rows = Group_ID == "input_6",
+        id = "input_6"
+      ) |>
+      
+      gt::row_group_order(
+        groups = c(
+          "input_1",
+          "input_2",
+          "input_3",
+          "input_4",
+          "input_5",
+          "input_6"
+        )
+      ) |>
+      
+      gt::text_transform(
+        locations = gt::cells_body(
+          columns = Acronym
+        ),
+        fn = function(x) {
+          vapply(x, badge, character(1))
+        }
+      ) |>
+      
+      gt::text_transform(
+        locations = gt::cells_body(
+          columns = Data_Sources
+        ),
+        fn = identity
+      ) |>
+      
+      gt::cols_width(
+        Acronym ~ gt::px(180),
+        Full_Name ~ gt::px(240),
+        Description ~ gt::px(520),
+        Data_Sources ~ gt::px(380)
+      ) |>
+      
+      gt::cols_align(
+        align = "center",
+        columns = everything()
+      ) |>
+      
+      gt::tab_style(
+        style = list(
+          gt::cell_text(
+            align = "center",
+            v_align = "middle"
+          ),
+          gt::cell_borders(
+            sides = c("left", "right", "bottom"),
+            color = "#c7d7da",
+            weight = gt::px(1)
+          )
+        ),
+        locations = gt::cells_body(
+          columns = everything()
+        )
+      ) |>
+      
+      gt::tab_style(
+        style = list(
+          gt::cell_fill(
+            color = "#eef7f9"
+          ),
+          gt::cell_text(
+            align = "left",
+            v_align = "middle",
+            size = "medium"
+          ),
+          gt::cell_borders(
+            sides = c("top", "bottom"),
+            color = "#0a7e8c",
+            weight = gt::px(1)
+          )
+        ),
+        locations = gt::cells_row_groups()
+      ) |>
+      
+      gt::tab_style(
+        style = list(
+          gt::cell_fill(
+            color = "#0a7e8c"
+          ),
+          gt::cell_text(
+            color = "white",
+            weight = "bold",
+            align = "center",
+            v_align = "middle"
+          ),
+          gt::cell_borders(
+            sides = c("left", "right", "top", "bottom"),
+            color = "#c7d7da",
+            weight = gt::px(1)
+          )
+        ),
+        locations = gt::cells_column_labels(
+          columns = everything()
+        )
+      ) |>
+      
+      gt::tab_options(
+        table.width = gt::pct(100),
+        table.font.names = "Segoe UI",
+        table.font.size = gt::px(14),
+        data_row.padding = gt::px(10),
+        row_group.padding = gt::px(10)
+      )
+  })
+  
+  output$ptm_parameters_table <- render_gt({
+    
+    data <- data.frame(
+      Names = c(
+        "Number of Trees",
+        "Number of Leaves per Tree",
+        "Total Number of Leaf Nodes",
+        "Number of Split Nodes per Tree",
+        "Total Number of Split Nodes",
+        "Maximum Observed Tree Depth",
+        "`DSM2_Node`",
+        "`EXP`",
+        "`VER`",
+        "`SAC`",
+        "`EAST`",
+        "`XGEO`"
+      ),
+      `7-day` = c(
+        "1000",
+        "128",
+        "12800",
+        "127",
+        "12700",
+        "35",
+        "15 available nodes",
+        "321.580 - 14763.154",
+        "639.961 - 62032.795",
+        "6155.703 - 86690.764",
+        "13438 - 24552.754",
+        "1808.487 - 14164.103"
+      ),
+      `30-day` = c(
+        "1000",
+        "128",
+        "12800",
+        "127",
+        "12700",
+        "36",
+        "39 available nodes",
+        "321.580 - 14763.154",
+        "639.961 - 62032.795",
+        "6155.703 - 86690.764",
+        "13438 - 24552.754",
+        "1808.487 - 14164.103"
+      ),
+      check.names = FALSE
+    )
+    
+    gt(data) |>
+      tab_row_group(
+        label = html("<strong><em>Parameters</em></strong>"),
+        rows = 1:6
+      ) |>
+      tab_row_group(
+        label = html("<strong><em>Data Range</em></strong>"),
+        rows = 7:12
+      ) |>
+      fmt_markdown(
+        columns = Names,
+        rows = 7:12
+      ) |>
+      cols_align(
+        align = "center",
+        columns = everything()
+      ) |>
+      tab_style(
+        style = cell_text(
+          weight = "bold",
+          align = "center"
+        ),
+        locations = cells_column_labels()
+      ) |>
+      tab_style(
+        style = cell_text(
+          align = "center",
+          size = "medium"
+        ),
+        locations = cells_row_groups()
+      ) |>
+      tab_style(
+        style = cell_borders(
+          sides = c("left", "right", "top", "bottom"),
+          color = "#c7d7da",
+          weight = px(1)
+        ),
+        locations = list(
+          cells_column_labels(),
+          cells_body()
+        )
+      )
+  })
+  
+  output$ecoptm_parameters_table <- render_gt({
+    
+    data <- data.frame(
+      Names = c(
+        "Number of Trees",
+        "Number of Leaves per Tree",
+        "Total Number of Leaf Nodes",
+        "Number of Split Nodes per Tree",
+        "Total Number of Split Nodes",
+        "Maximum Observed Tree Depth",
+        "`FPT`",
+        "`YOL`",
+        "`MOK`",
+        "`DCC`"
+      ),
+      Interior = c(
+        "500",
+        "126 - 128",
+        "63994",
+        "125 - 127",
+        "63494",
+        "31",
+        "6311.930 - 86690.764",
+        "54.870 - 192337.793",
+        "66.176 - 8652.699",
+        "0, 1"
+      ),
+      Survival = c(
+        "500",
+        "124 - 128",
+        "63988",
+        "123 - 127",
+        "63488",
+        "30",
+        "6311.930 - 86690.764",
+        "54.870 - 192337.793",
+        "66.176 - 8652.699",
+        "0, 1"
+      ),
+      check.names = FALSE
+    )
+    
+    gt(data) |>
+      tab_row_group(
+        label = html("<strong><em>Parameters</em></strong>"),
+        rows = 1:6,
+        id = "parameters"
+      ) |>
+      tab_row_group(
+        label = html("<strong><em>Range</em></strong>"),
+        rows = 7:10,
+        id = "range"
+      ) |>
+      row_group_order(
+        groups = c("parameters", "range")
+      ) |>
+      fmt_markdown(
+        columns = Names,
+        rows = 7:10
+      ) |>
+      cols_align(
+        align = "center",
+        columns = everything()
+      ) |>
+      tab_style(
+        style = cell_text(
+          weight = "bold",
+          align = "center"
+        ),
+        locations = cells_column_labels()
+      ) |>
+      tab_style(
+        style = cell_text(
+          weight = "bold",
+          style = "italic",
+          align = "center",
+          size = "medium"
+        ),
+        locations = cells_row_groups()
+      ) |>
+      tab_style(
+        style = cell_borders(
+          sides = c("left", "right", "top", "bottom"),
+          color = "#c7d7da",
+          weight = px(1)
+        ),
+        locations = list(
+          cells_column_labels(),
+          cells_body()
+        )
+      )
+  })
+  
 }
