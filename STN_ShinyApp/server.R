@@ -31,13 +31,13 @@ server <- function(input, output, session) {
   # Available Model Run Dates
   # =====================================================
   # Each model run lands in its own dated subfolder, e.g.
-  #   ../STN_EMULATOR/Output/20260623/All_PTM_ECOPTM_Event_Horizon_Results.xlsx
-  #   ../STN_EMULATOR/Output/20260224/All_PTM_ECOPTM_Event_Horizon_Results.xlsx
+  #   /STN_EMULATOR/Output/20260623/All_PTM_ECOPTM_Event_Horizon_Results.xlsx
+  #   /STN_EMULATOR/Output/20260224/All_PTM_ECOPTM_Event_Horizon_Results.xlsx
   # The folder name (YYYYMMDD) becomes a selectable "Model Run Date" in
   # the sidebar; whichever one is selected determines which xlsx file
   # drives the entire app.
   # -----------------------------------------------------
-  RUN_BASE_DIR   <- "../STN_EMULATOR/Output"
+  RUN_BASE_DIR   <- "STN_EMULATOR/Output"
   RUN_FILENAME   <- "All_PTM_ECOPTM_Event_Horizon_Results.xlsx"
   
   list_available_runs <- function(base_dir = RUN_BASE_DIR) {
@@ -170,7 +170,7 @@ server <- function(input, output, session) {
   # distribution file to give the scatter plots visual context.
   # -----------------------------
   eh_baseline <- read_csv(
-    "../STN_EMULATOR/EH_baseline.csv",
+    "STN_EMULATOR/EH_baseline.csv",
     show_col_types = FALSE
   )
   
@@ -188,9 +188,9 @@ server <- function(input, output, session) {
   # Load Spatial Data (boundary / channel polygons still come
   # from shapefiles -- the xlsx has no polygon geometry)
   # -----------------------------
-  delta_boundary <- st_read("../STN_EMULATOR/shapefiles/Bay_Delta_Poly_New.shp", quiet = TRUE)
-  delta_channels <- st_read("../STN_EMULATOR/shapefiles/hydro_delta_marsh.shp", quiet = TRUE)
-  river_centerline <- st_read("../STN_EMULATOR/shapefiles/CCF_OldRiver_CL.shp", quiet = TRUE)
+  delta_boundary <- st_read("STN_EMULATOR/shapefiles/Bay_Delta_Poly_New.shp", quiet = TRUE)
+  delta_channels <- st_read("STN_EMULATOR/shapefiles/hydro_delta_marsh.shp", quiet = TRUE)
+  river_centerline <- st_read("STN_EMULATOR/shapefiles/CCF_OldRiver_CL.shp", quiet = TRUE)
   river_length_m <- as.numeric(st_length(river_centerline))
   river_length_miles <- river_length_m / 1609.344
   
