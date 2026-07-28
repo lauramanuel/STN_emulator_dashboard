@@ -8,12 +8,25 @@ library( plotly)
 # Helper UI Functions
 # -----------------------------
 
-timeseries_tab <- function(tab_name, title, theme_class, output_id, summary_id) {
+timeseries_tab <- function(tab_name, title, theme_class, output_id, summary_id, map_id = NULL) {
+  
   tabItem(
     tabName = tab_name,
     
     div(
       class = theme_class,
+      
+      if (!is.null(map_id)) {
+        fluidRow(
+          box(
+            width = 12,
+            title = paste(title, "- Entrainment Risk Map"),
+            status = NULL,
+            solidHeader = FALSE,
+            leafletOutput(map_id, height = 550)
+          )
+        )
+      },
       
       fluidRow(
         box(
@@ -63,9 +76,7 @@ event_horizon_tab <- function(
     title,
     theme_class,
     map_id,
-    scatter25_id,
-    scatter50_id,
-    scatter75_id
+    scatter_id
 ) {
   
   tabItem(
@@ -91,7 +102,7 @@ event_horizon_tab <- function(
         box(
           width = 12,
           title = paste(title, "- Event Horizon Scatter"),
-          plotlyOutput(scatter25_id, height = 600)
+          plotlyOutput(scatter_id, height = 600)
         )
         
       )
@@ -142,8 +153,6 @@ ui <- dashboardPage(
         icon = icon("water"),
         startExpanded = TRUE,
         menuSubItem("PTM 7d Entrain", tabName = "current7_ptm7", icon = icon("chart-line")),
-        menuSubItem("PTM 30d Entrain", tabName = "current7_ptm30", icon = icon("chart-line")),
-        menuSubItem("ECO PTM", tabName = "current7_ecoptm", icon = icon("table")),
         menuSubItem("Event Horizon", tabName = "current7_event", icon = icon("map"))
       ),
       
@@ -151,10 +160,8 @@ ui <- dashboardPage(
         "Current 30d Average Flow",
         icon = icon("droplet"),
         startExpanded = FALSE,
-        menuSubItem("PTM 7d Entrain", tabName = "current30_ptm7", icon = icon("chart-line")),
         menuSubItem("PTM 30d Entrain", tabName = "current30_ptm30", icon = icon("chart-line")),
-        menuSubItem("ECO PTM", tabName = "current30_ecoptm", icon = icon("table")),
-        menuSubItem("Event Horizon", tabName = "current30_event", icon = icon("map"))
+        menuSubItem("ECO PTM", tabName = "current30_ecoptm", icon = icon("table"))
       ),
       
       menuItem(
@@ -162,8 +169,6 @@ ui <- dashboardPage(
         icon = icon("cloud-sun"),
         startExpanded = FALSE,
         menuSubItem("PTM 7d Entrain", tabName = "forecast7_ptm7", icon = icon("chart-line")),
-        menuSubItem("PTM 30d Entrain", tabName = "forecast7_ptm30", icon = icon("chart-line")),
-        menuSubItem("ECO PTM", tabName = "forecast7_ecoptm", icon = icon("table")),
         menuSubItem("Event Horizon", tabName = "forecast7_event", icon = icon("map"))
       ),
       
@@ -189,41 +194,36 @@ ui <- dashboardPage(
       
       conditionalPanel(
         condition = "
-          input.tabs == 'current7_ptm7' ||
-          input.tabs == 'current7_ptm30' ||
-          input.tabs == 'current7_ecoptm' ||
-          input.tabs == 'current30_ptm7' ||
-          input.tabs == 'current30_ptm30' ||
-          input.tabs == 'current30_ecoptm' ||
-          input.tabs == 'forecast7_ptm7' ||
-          input.tabs == 'forecast7_ptm30' ||
-          input.tabs == 'forecast7_ecoptm'
-        ",
+    input.tabs == 'current7_ptm7' ||
+    input.tabs == 'current30_ptm30' ||
+    input.tabs == 'forecast7_ptm7'
+  ",
         selectInput("node", "Node:", choices = NULL)
+      ),
+      conditionalPanel(
+        condition = "
+    input.tabs == 'current7_ptm7' ||
+    input.tabs == 'current30_ptm30' ||
+    input.tabs == 'forecast7_ptm7'
+  ",
+        selectInput(
+          "entrainment_risk_threshold",
+          "Entrainment Risk Threshold:",
+          choices = c(25, 50, 75),
+          selected = 25
+        )
       ),
       
       conditionalPanel(
         condition = "
-          input.tabs == 'current7_event' ||
-          input.tabs == 'current30_event' ||
-          input.tabs == 'forecast7_event'
-        ",
+    input.tabs == 'current7_event' ||
+    input.tabs == 'forecast7_event'
+  ",
         selectInput(
           "eh_risk",
           "Event Horizon Risk:",
-          choices = c(25,50,75),
+          choices = c(25, 50, 75),
           selected = 25
-        ),
-        
-        radioButtons(
-          "event_ptm_model",
-          "Risk Layer:",
-          choices = c(
-            "7-Day PTM" = "PTM 7-Day Entrainment",
-            "30-Day PTM" = "PTM 30-Day Entrainment"
-          ),
-          selected = "PTM 7-Day Entrainment",
-          inline = TRUE
         )
       )
     )
@@ -641,23 +641,10 @@ ui <- dashboardPage(
         "Current 7d Average Flow - PTM 7d Entrainment",
         "current-theme",
         "current7_ptm7_plot",
-        "current7_ptm7_summary"
+        "current7_ptm7_summary",
+        "current7_ptm7_map"
       ),
       
-      timeseries_tab(
-        "current7_ptm30",
-        "Current 7d Average Flow - PTM 30d Entrainment",
-        "current-theme",
-        "current7_ptm30_plot",
-        "current7_ptm30_summary"
-      ),
-      
-      ecoptm_tab(
-        "current7_ecoptm",
-        "Current 7d Average Flow - ECO PTM",
-        "current-theme",
-        "current7_ecoptm_table"
-      ),
       
       event_horizon_tab(
         "current7_event",
@@ -670,20 +657,14 @@ ui <- dashboardPage(
       # -----------------------------
       # Current 30d Average Flow
       # -----------------------------
-      timeseries_tab(
-        "current30_ptm7",
-        "Current 30d Average Flow - PTM 7d Entrainment",
-        "current-theme",
-        "current30_ptm7_plot",
-        "current30_ptm7_summary"
-      ),
-      
+
       timeseries_tab(
         "current30_ptm30",
         "Current 30d Average Flow - PTM 30d Entrainment",
         "current-theme",
         "current30_ptm30_plot",
-        "current30_ptm30_summary"
+        "current30_ptm30_summary",
+        "current30_ptm30_map"
       ),
       
       ecoptm_tab(
@@ -691,14 +672,6 @@ ui <- dashboardPage(
         "Current 30d Average Flow - ECO PTM",
         "current-theme",
         "current30_ecoptm_table"
-      ),
-      
-      event_horizon_tab(
-        "current30_event",
-        "Current 30d Average Flow - Event Horizon",
-        "current-theme",
-        "current30_event_map",
-        "current30_event_scatter"
       ),
       
       # -----------------------------
@@ -709,27 +682,13 @@ ui <- dashboardPage(
         "Forecast 7d Average Flow - PTM 7d Entrainment",
         "forecast-theme",
         "forecast7_ptm7_plot",
-        "forecast7_ptm7_summary"
-      ),
-      
-      timeseries_tab(
-        "forecast7_ptm30",
-        "Forecast 7d Average Flow - PTM 30d Entrainment",
-        "forecast-theme",
-        "forecast7_ptm30_plot",
-        "forecast7_ptm30_summary"
-      ),
-      
-      ecoptm_tab(
-        "forecast7_ecoptm",
-        "Forecast 7d Average Flow - ECO PTM",
-        "forecast-theme",
-        "forecast7_ecoptm_table"
+        "forecast7_ptm7_summary",
+        "forecast7_ptm7_map"
       ),
       
       event_horizon_tab(
         "forecast7_event",
-        "forecast 7d Average Flow - Event Horizon",
+        "Forecast 7d Average Flow - Event Horizon",
         "forecast-theme",
         "forecast7_event_map",
         "forecast7_event_scatter"

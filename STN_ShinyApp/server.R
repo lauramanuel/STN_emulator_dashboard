@@ -400,23 +400,13 @@ server <- function(input, output, session) {
   # -----------------------------
   # Helper: zone helper
   # -----------------------------
-  
-  event_zones <- reactive({
-    
-    nodes <- map_data_analysis()
-    
-    threshold <- as.numeric(
-      input$eh_risk
-    )
+  make_entrainment_zones <- function(nodes, threshold) {
     
     req(nrow(nodes) > 3)
-    print(st_crs(nodes))
     
-    print(st_crs(delta_boundary))
     # --------------------------------
     # Build interpolation grid
     # --------------------------------
-    
     bbox <- st_bbox(delta_boundary)
     
     grid <- expand.grid(
@@ -434,16 +424,16 @@ server <- function(input, output, session) {
     
     grid <- st_as_sf(
       grid,
-      coords = c("x","y"),
+      coords = c("x", "y"),
       crs = st_crs(nodes)
     )
+    
     sp_grid <- as(grid, "Spatial")
     sp_nodes <- as(nodes, "Spatial")
+    
     # --------------------------------
     # IDW interpolation
     # --------------------------------
-    
-    
     names(sp_nodes)[
       names(sp_nodes) == "entrainment"
     ] <- "z"
@@ -454,9 +444,7 @@ server <- function(input, output, session) {
       newdata = sp_grid
     )
     
-    pred <- st_as_sf(idw_surface)
-    
-    pred <- pred %>%
+    pred <- st_as_sf(idw_surface) %>%
       rename(
         entrainment = var1.pred
       )
@@ -464,28 +452,30 @@ server <- function(input, output, session) {
     # --------------------------------
     # High-risk contour
     # --------------------------------
-    
     high_pts <- pred %>%
       filter(
         entrainment >= threshold
       )
     
-    req(
-      nrow(high_pts) > 10
+    validate(
+      need(
+        nrow(high_pts) > 10,
+        paste0(
+          "Not enough interpolated points exceed the ",
+          threshold,
+          "% threshold to draw a high-risk polygon."
+        )
+      )
     )
-    high_pts <- pred %>%
-      filter(
-        entrainment >= threshold
-      )
+    
     high_pts <- high_pts %>%
       st_intersection(delta_boundary)
+    
     high_zone <- high_pts %>%
       st_union() %>%
       sf::st_concave_hull(
         ratio = 0.5
       )
-    
-    # Clip to Delta
     
     high_zone <- st_intersection(
       st_as_sf(high_zone),
@@ -507,8 +497,8 @@ server <- function(input, output, session) {
         4326
       )
     )
-    
-  })
+  }
+ 
   
   # -----------------------------
   # Helper: Event Horizon point for the scatter plots
@@ -652,17 +642,11 @@ server <- function(input, output, session) {
   # (7-day model on 7-day tabs / forecast tabs, 30-day
   # model on the 30d Average Flow event horizon tab)
   # -----------------------------
-  map_entrainment_data <- reactive({
-    
-    req(input$tabs)
-    
-    req(input$event_ptm_model)
-    
-    model <- input$event_ptm_model
+  make_map_entrainment_data <- function(model_name) {
     
     active_results() %>%
       filter(
-        Model == model,
+        Model == model_name,
         !is.na(DSM2_Node)
       ) %>%
       group_by(
@@ -679,28 +663,32 @@ server <- function(input, output, session) {
         master_data()$node_meta,
         by = "DSM2_Node"
       )
-  })
+  }
   
-  map_data_analysis <- reactive({
-    df <- map_entrainment_data()
+  make_map_data_analysis <- function(model_name) {
+    
+    df <- make_map_entrainment_data(model_name)
+    
+    validate(
+      need(nrow(df) > 0, "No entrainment map data available for the selected filters.")
+    )
+    
     st_as_sf(
       df,
-      coords = c("X","Y"),
+      coords = c("X", "Y"),
       crs = 4326,
       remove = FALSE
     ) %>%
       st_transform(26910)
-    
-  })
+  }
   
-  map_data_display <- reactive({
+  make_map_data_display <- function(model_name) {
     
     st_transform(
-      map_data_analysis(),
+      make_map_data_analysis(model_name),
       4326
     )
-    
-  })
+  }
   
   # -----------------------------
   # Plot Helpers
@@ -836,16 +824,11 @@ server <- function(input, output, session) {
       )
   }
   
-  make_event_map <- function() {
+  make_event_horizon_map <- function() {
     
-    df <- map_data_display()
     eh_display <- list(
       high_line = st_transform(
         eh_geom()$high_line,
-        4326
-      ),
-      low_line = st_transform(
-        eh_geom()$low_line,
         4326
       ),
       eh_point = st_transform(
@@ -853,47 +836,37 @@ server <- function(input, output, session) {
         4326
       )
     )
-    pal <- colorNumeric(
-      palette = "viridis",
-      domain = range(df$entrainment, na.rm = TRUE),
-      na.color = "grey"
-    )
+    
+    delta_boundary_display <- st_transform(delta_boundary, 4326)
+    delta_channels_display <- st_transform(delta_channels, 4326)
     
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       
       addPolygons(
-        data = event_zones()$low_zone,
-        fillColor = "#a9d4e6",
-        fillOpacity = 0.5,
-        color = "#427799",
+        data = delta_boundary_display,
+        fillColor = "#eef7f9",
+        fillOpacity = 0.25,
+        color = "#0a7e8c",
         weight = 1,
-        group = "Low Zone"
+        group = "Delta Boundary"
       ) %>%
       
-      addPolygons(
-        data = event_zones()$high_zone,
-        fillColor = "#e8b5b5",
-        fillOpacity = 0.6,
-        color = "#a74a4a",
+      addPolylines(
+        data = delta_channels_display,
+        color = "#2b8cbe",
         weight = 1,
-        group = "High Zone"
+        opacity = 0.6,
+        group = "Channels"
       ) %>%
       
       addPolylines(
         data = eh_display$high_line,
         color = "red",
         weight = 6,
-        opacity = 1
+        opacity = 1,
+        group = "Event Horizon Distance"
       ) %>%
-      
-      addPolylines(
-        data = eh_display$low_line,
-        color = "grey40",
-        weight = 3,
-        opacity = 0.8
-      ) %>%
-      
       
       addCircleMarkers(
         data = eh_display$eh_point,
@@ -909,21 +882,105 @@ server <- function(input, output, session) {
             1
           ),
           " miles"
-        )
-      )%>%
+        ),
+        group = "Event Horizon Point"
+      ) %>%
+      
+      addLegend(
+        position = "topright",
+        colors = c("red"),
+        labels = c("Event Horizon Distance"),
+        title = "Event Horizon",
+        opacity = 1
+      ) %>%
+      
+      addLayersControl(
+        overlayGroups = c(
+          "Delta Boundary",
+          "Channels",
+          "Event Horizon Distance",
+          "Event Horizon Point"
+        ),
+        options = layersControlOptions(collapsed = FALSE)
+      ) %>%
+      
+      fitBounds(
+        lng1 = -122.15,
+        lat1 = 37.75,
+        lng2 = -121.15,
+        lat2 = 38.85
+      )
+  }
+  make_entrainment_map <- function(model_name) {
+    
+    threshold <- as.numeric(input$entrainment_risk_threshold)
+    
+    if (is.na(threshold)) {
+      threshold <- 25
+    }
+    
+    df_analysis <- make_map_data_analysis(model_name)
+    df_display <- st_transform(df_analysis, 4326)
+    
+    zones <- make_entrainment_zones(
+      nodes = df_analysis,
+      threshold = threshold
+    )
+    
+    delta_boundary_display <- st_transform(delta_boundary, 4326)
+    delta_channels_display <- st_transform(delta_channels, 4326)
+    
+    pal <- colorNumeric(
+      palette = "viridis",
+      domain = range(df_display$entrainment, na.rm = TRUE),
+      na.color = "grey"
+    )
+    
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      
+      addPolygons(
+        data = delta_boundary_display,
+        fillColor = "#eef7f9",
+        fillOpacity = 0.2,
+        color = "#0a7e8c",
+        weight = 1,
+        group = "Delta Boundary"
+      ) %>%
       
       addPolylines(
-        data = delta_channels,
+        data = delta_channels_display,
         color = "#2b8cbe",
         weight = 1,
         opacity = 0.6,
         group = "Channels"
       ) %>%
       
+      addPolygons(
+        data = zones$low_zone,
+        fillColor = "#a9d4e6",
+        fillOpacity = 0.45,
+        color = "#427799",
+        weight = 1,
+        group = "Low Risk Zone"
+      ) %>%
+      
+      addPolygons(
+        data = zones$high_zone,
+        fillColor = "#e8b5b5",
+        fillOpacity = 0.6,
+        color = "#a74a4a",
+        weight = 1,
+        group = "High Risk Zone"
+      ) %>%
       
       addCircleMarkers(
-        data = df,
-        radius = ~ifelse(is.na(entrainment), 3, 4 + entrainment / 100 * 10),
+        data = df_display,
+        radius = ~ifelse(
+          is.na(entrainment),
+          3,
+          4 + entrainment / 100 * 10
+        ),
         color = ~pal(entrainment),
         fillOpacity = 0.9,
         stroke = FALSE,
@@ -939,25 +996,32 @@ server <- function(input, output, session) {
       addLegend(
         "bottomright",
         pal = pal,
-        values = df$entrainment,
+        values = df_display$entrainment,
         title = "Entrainment (%)",
         opacity = 1
       ) %>%
+      
       addLegend(
         position = "topright",
         colors = c("#e8b5b5", "#a9d4e6"),
         labels = c(
-          "High Entrainment Zone",
-          "Low Entrainment Zone"
+          paste0("High Risk Zone: ≥ ", threshold, "%"),
+          paste0("Low Risk Zone: < ", threshold, "%")
         ),
         title = "Risk Zones",
         opacity = 0.7
-      )%>%
-      addLayersControl(
-        overlayGroups = c("Boundary", "Channels", "Nodes"),
-        options = layersControlOptions(collapsed = FALSE)
-      )%>%
+      ) %>%
       
+      addLayersControl(
+        overlayGroups = c(
+          "Delta Boundary",
+          "Channels",
+          "Low Risk Zone",
+          "High Risk Zone",
+          "Nodes"
+        ),
+        options = layersControlOptions(collapsed = FALSE)
+      ) %>%
       
       fitBounds(
         lng1 = -122.15,
@@ -965,12 +1029,15 @@ server <- function(input, output, session) {
         lng2 = -121.15,
         lat2 = 38.85
       )
-    
   }
   
   # -----------------------------
   # Current 7d Average Flow Outputs
   # -----------------------------
+  output$current7_ptm7_map <- renderLeaflet({
+    make_entrainment_map("PTM 7-Day Entrainment")
+  })
+  
   output$current7_ptm7_plot <- renderPlot({
     make_entrainment_bar_plot("PTM 7-Day Entrainment", "Current 7d Average Flow - PTM 7d Entrainment")
   })
@@ -979,20 +1046,10 @@ server <- function(input, output, session) {
     make_summary_table("PTM 7-Day Entrainment")
   })
   
-  output$current7_ptm30_plot <- renderPlot({
-    make_entrainment_bar_plot("PTM 30-Day Entrainment", "Current 7d Average Flow - PTM 30d Entrainment")
-  })
-  
-  output$current7_ptm30_summary <- renderTable({
-    make_summary_table("PTM 30-Day Entrainment")
-  })
-  
-  output$current7_ecoptm_table <- renderTable({
-    make_ecoptm_table()
-  })
+
   
   output$current7_event_map <- renderLeaflet({
-    make_event_map()
+    make_event_horizon_map()
   })
   
   output$current7_event_scatter <- renderPlotly({
@@ -1011,12 +1068,8 @@ server <- function(input, output, session) {
   # -----------------------------
   # Current 30d Average Flow Outputs
   # -----------------------------
-  output$current30_ptm7_plot <- renderPlot({
-    make_entrainment_bar_plot("PTM 7-Day Entrainment", "Current 30d Average Flow - PTM 7d Entrainment")
-  })
-  
-  output$current30_ptm7_summary <- renderTable({
-    make_summary_table("PTM 7-Day Entrainment")
+  output$current30_ptm30_map <- renderLeaflet({
+    make_entrainment_map("PTM 30-Day Entrainment")
   })
   
   output$current30_ptm30_plot <- renderPlot({
@@ -1031,26 +1084,14 @@ server <- function(input, output, session) {
     make_ecoptm_table()
   })
   
-  output$current30_event_map <- renderLeaflet({
-    make_event_map()
-  })
-  
-  output$current30_event_scatter <- renderPlotly({
-    
-    make_event_horizon_scatter(
-      as.numeric(input$eh_risk),
-      paste0(
-        "Current 30d Average Flow - Event Horizon - ",
-        input$eh_risk,
-        "% Risk"
-      )
-    )
-    
-  })
-  
+
   # -----------------------------
   # Forecast 7d Average Flow Outputs
   # -----------------------------
+  output$forecast7_ptm7_map <- renderLeaflet({
+    make_entrainment_map("PTM 7-Day Entrainment")
+  })
+  
   output$forecast7_ptm7_plot <- renderPlot({
     make_entrainment_bar_plot("PTM 7-Day Entrainment", "Forecast 7d Average Flow - PTM 7d Entrainment")
   })
@@ -1059,20 +1100,8 @@ server <- function(input, output, session) {
     make_summary_table("PTM 7-Day Entrainment")
   })
   
-  output$forecast7_ptm30_plot <- renderPlot({
-    make_entrainment_bar_plot("PTM 30-Day Entrainment", "Forecast 7d Average Flow - PTM 30d Entrainment")
-  })
-  
-  output$forecast7_ptm30_summary <- renderTable({
-    make_summary_table("PTM 30-Day Entrainment")
-  })
-  
-  output$forecast7_ecoptm_table <- renderTable({
-    make_ecoptm_table()
-  })
-  
   output$forecast7_event_map <- renderLeaflet({
-    make_event_map()
+    make_event_horizon_map()
   })
   
   output$forecast7_event_scatter <- renderPlotly({
