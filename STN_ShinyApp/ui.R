@@ -132,7 +132,7 @@ ui <- dashboardPage(
       ),
       
       tags$span(
-        "PTM Emulator",
+        "Entrainment Dashboard",
         style = "font-family: Segoe UI Semibold; font-size: 16px;"
       )
     )
