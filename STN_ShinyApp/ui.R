@@ -113,6 +113,7 @@ event_horizon_tab <- function(
 # -----------------------------
 # UI
 # -----------------------------
+app_version <- "1.2.2"
 
 ui <- dashboardPage(
   
@@ -452,9 +453,14 @@ ui <- dashboardPage(
                 style = "margin-left: 30px;margin-right:50px;",
                 
                 h1("PTM Emulator Dashboard"),
-                h4("Version:", weight = "bold",
-                   tags$code("  1.2.2  ", style = "margin-left:20px"),
-                   tags$a("[Release Notes]", style = "font-style: italic; margin-left:20px;", href = "#release-notes")
+                h4("Version:",
+                  tags$code(style = "margin-left:20px",
+                    paste0("  ", app_version, "  ")
+                  ),
+                  tags$a(style = "font-style:italic;margin-left:20px;",
+                    "[Release Notes]",
+                    href = "#release-notes"
+                  )
                 ),
                 h4("Date Last Updated:", weight = "bold", 
                    tags$b("2026-07-22")
@@ -487,7 +493,26 @@ ui <- dashboardPage(
                 h5(style = "text-align: justify;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)’s",
                    tags$a("hydraulic footprint project",
                           href = "https://github.com/cchang-ccwater/CCWD_Hydraulic_Footprints"),
-                   tags$b(".")
+                   tags$b("."),
+                   "Further details on the model development, the original training datasets, and the comparative evaluation of model results are available in the CCWD report ",
+                   tags$sup(
+                     tags$a(
+                       "(1)",
+                       href = "#reference",
+                       rel = "noopener noreferrer"
+                     ),
+                     style = "font-size:0.75em;"
+                   ),
+                   " and other related studies that are currently underway or have been published ",
+                   tags$sup(
+                     tags$a(
+                       "(2, 3)",
+                       href = "#reference",
+                       rel = "noopener noreferrer"
+                     ),
+                     style = "font-size:0.75em;"
+                   ),
+                   "."
                 ),
                 
                 h3("Author & Contact Information"),
@@ -527,13 +552,35 @@ ui <- dashboardPage(
                       ),
                     h5(style = "margin-left: 60px; text-align: justify;","  - Colorblind-friendly color palette: A color palette option is available, allowing users to switch between different plot color schemes. By default, the application uses the Viridis color palette, which is designed to be perceptually uniform and accessible for users with color vision deficiency. Users may also switch to a high-contrast color palette to enhance visibility."),
                     h4("Browser Compatibility:"),
-                    h5("This app can work on Edge, Chrome, Safari, and Firefox, as tested till the version v1.2."),
+                    h5(
+                      "This app can work on Edge, Chrome, Safari, and Firefox, as tested through version ",
+                      tags$code(paste0("v", app_version)),
+                      "."
+                    ),
                     h4("Performance Standards: "),
                     h5(style = "text-align: justify;","The application provides reasonable load times under normal operating conditions. The ECO-PTM page typically loads in less than 1 second; the PTM page in approximately 2-3 seconds; and the Event Horizon page in approximately 7-9 seconds because it loads Leaflet maps, geo-spatial files, and multiple plots. Standard weekly prediction tasks are generally completed almost immediately, while large prediction requests involving long time series and many input features, e.g., 190k records, may require substantially more processing and rendering time."),
                     h5(style = "text-align: justify;","Concurrent-user capacity depends on the deployment environment, including available CPU, memory, and the number of Shiny worker processes. The application is expected to support multiple users performing normal navigation, data exploration, and standard predictions, although several simultaneous computationally intensive prediction requests may increase response times. Final concurrent-user capacity should therefore be confirmed through load testing in the production environment."),
                     h4("Mobile Responsiveness:"),
                     h5("This application is usable also on mobile devices.")
 
+                ),
+                h3(id = "reference",  "References"),                
+                div(style = "margin-left: 60px;",
+                    h5(style = "text-align: justify;", "Contra Costa Water District.(2026) Intuitive Quantitative Metrics for Rapid Assessment of Entrainment Risks and Salmonid Responses in The Delta.",
+                       tags$a(
+                         "[Link]",
+                         href = "https://stantec.sharepoint.com/:w:/r/teams/LTOTechnicalSupport2025-2030/Shared%20Documents/CCWD%20Entrainment%20TM/20260419_CCWD_Entrainment_memo.docx?d=wa6ce67b163e341bd9a8e2767a75736e9&csf=1&web=1&e=b9mjqJ"
+                       )),
+                    h5(style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
+                       tags$a(
+                         "[Link]",
+                         href = ""
+                       )),
+                    h5(style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
+                       tags$a(
+                         "[Link]",
+                         href = ""
+                       )),
                 ),
                 h3(id = "release-notes", "Release Notes:"),
                 div(style = "margin-left: 60px;",
@@ -817,11 +864,22 @@ ui <- dashboardPage(
                 )
               )
           ),         
-          box(
-            style = "margin-left: 20px;",
-            width = 12,
-            h3(id = "intro-event-horizon","P3 Model for the Entrainment Event Horizon", style = "margin-left: 10px;"),
-            solidHeader = FALSE
+          box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
+              h3(id = "intro-event-horizon","P3 Model for the Entrainment Event Horizon",style = "margin-left:10px;"),
+              gt::gt_output("horizon_inputs_table"),
+              tags$hr(),
+              fluidRow(
+                column(width = 6,
+                       box(title = "Inputs Data Range",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
+                           div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_datarange_table"))
+                       )
+                ),
+                column(width = 6,
+                       box(title = "Model Parameters",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
+                           div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_parameter_table"))
+                       )
+                )
+              )
             ),         
             )
           )
