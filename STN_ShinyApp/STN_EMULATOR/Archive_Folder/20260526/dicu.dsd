@@ -1,0 +1,783 @@
+
+     HECDSS Condensed Catalog of Record Pathnames in File ..\DataExternal\20260526\dicu.dss
+
+     Catalog Created on May 28, 2026 at 11:33    File Created on May 5, 2026
+     Number of Records:   8514                   DSS Version 6-WE,  File 6-WA
+     Sort Order: ABCFED
+
+ Tag    A Part          B Part  C Part      F Part   E Part  D Part
+
+ T7359  DICU-HIST+NODE  1       DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   10      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   100     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   104     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   105     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   106     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   107     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   108     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   109     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   11      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   110     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   111     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   112     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   113     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   114     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   115     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   116     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   117     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   118     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   119     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   12      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   121     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   122     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   124     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   125     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   126     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   127     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   128     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   13      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   130     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   133     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   135     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   136     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   137     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   138     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   139     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   14      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   140     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   141     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   142     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   143     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   144     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   145     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   146     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   147     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   148     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   149     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   15      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   150     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   151     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   152     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   153     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   155     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   156     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   158     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   159     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   16      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   162     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   163     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   164     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   165     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   167     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   168     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   169     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   170     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   171     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   172     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   173     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   174     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   175     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   176     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   177     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   178     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   179     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   18      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   182     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   183     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   187     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   188     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   189     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   19      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   190     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   191     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   192     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   194     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   195     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   196     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   197     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   198     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   199     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   20      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   200     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   201     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   202     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   203     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   204     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   205     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   206     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   209     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   21      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   210     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   211     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   212     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   213     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   215     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   216     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   219     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   22      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   222     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   223     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   224     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   226     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   23      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   232     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   24      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   240     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   241     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   242     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   243     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   245     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   246     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   247     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   25      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   250     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   251     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   253     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   255     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   256     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   257     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   26      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   260     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   262     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   264     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   266     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   268     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   269     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   271     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   274     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   276     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   278     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   280     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   282     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   284     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   286     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   288     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   29      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   290     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   292     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   294     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   296     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   297     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   298     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   299     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   3       DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   30      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   301     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   302     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   303     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   304     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   305     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   306     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   307     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   308     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   310     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   311     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   312     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   314     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   315     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   316     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   317     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   318     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   319     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   32      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   320     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   321     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   326     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   330     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   331     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   332     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   333     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   334     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   335     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   336     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   337     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   338     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   339     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   340     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   341     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   342     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   343     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   344     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   346     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   347     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   348     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   35      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   350     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   351     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   352     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   353     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   354     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   355     DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   38      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   39      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   40      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   41      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   42      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   43      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   44      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   45      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   46      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   47      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   48      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   49      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   5       DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   50      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   51      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   52      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   53      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   54      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   55      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   56      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   58      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   59      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   6       DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   60      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   61      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   62      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   63      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   64      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   65      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   66      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   67      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   68      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   69      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   7       DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   70      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   71      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   72      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   73      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   74      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   75      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   77      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   78      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   79      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   8       DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   80      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   81      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   82      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   84      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   85      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   86      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   89      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   9       DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   91      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   92      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   93      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   98      DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  DICU-HIST+RSVR  BBID    DIV-FLOW    DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   DRAIN-FLOW  DWR-BDO  1MON    01JAN1920 - 01JAN2020
+ T7359  - - - - - - -   - - -   SEEP-FLOW   DWR-BDO  1MON    01JAN1920 - 01JAN2020

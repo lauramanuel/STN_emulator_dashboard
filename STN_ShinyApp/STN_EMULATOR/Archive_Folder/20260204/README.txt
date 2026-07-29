@@ -1,0 +1,1 @@
+This is a test case where all OMR input scenarios are identical, based on the -6250 scenario.

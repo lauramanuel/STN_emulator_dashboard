@@ -1,0 +1,12 @@
+The attached model run results cover the period January 6 through January 26 and are based on the following assumptions:
+
+Common Assumptions
+
+1. CCFB Gates are operating to Priority 2.
+2. The Delta Cross Channel gates are closed.
+3. Suisun Marsh Salinity Control flashboards are in. All three gates are in tidal operation.
+4. San Joaquin River flow at Vernalis is at 5083 cfs at the beginning of the forecast period and is estimated to decrease to 1500 cfs by the end of the forecast period.
+5. San Joaquin River EC at Vernalis is at 405 umhos/cm at the beginning of the forecast period and is estimated to increase to 880 umhos/cm at the end of the forecast period.
+6. Sacramento River flow at Freeport is at 75675 cfs at the beginning of the forecast period and is expected to decrease to 39500 cfs by the end of the forecast period.
+7. CCFB inflow is at 3299 cfs at the beginning of the forecast period and is expected to decrease to 2400 cfs by the end of the forecast period. 
+8. Export at Jones Pumping Plant is at 3514 cfs at the beginning of the forecast period and is expected to decrease to 3500 cfs to the end the forecast period. 
