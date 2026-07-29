@@ -1,6 +1,10 @@
 library(shiny)
+library(shinydashboard)
+library(ggplot2)
+library(dplyr)
+library(readr)
 
-source("ui.R", local = TRUE)
-source("server.R", local = TRUE)
-
-shinyApp(ui = ui, server = server)
+# -----------------------------
+# Run App
+# -----------------------------
+shinyApp(ui= ui, server= server)
