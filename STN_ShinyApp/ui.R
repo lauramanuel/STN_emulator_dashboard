@@ -1,110 +1,226 @@
+
 library(shiny)
 library(shinydashboard)
 library(leaflet)
+library(plotly)
 library(gt)
-library( plotly)
 
-# -----------------------------
-# Helper UI Functions
-# -----------------------------
+app_version <- "1.2.2"
 
-timeseries_tab <- function(tab_name, title, theme_class, output_id, summary_id, map_id = NULL) {
-  
+run_page <- function(prefix, title, theme_class) {
   tabItem(
-    tabName = tab_name,
-    
+    tabName = paste0("run_", prefix),
     div(
       class = theme_class,
-      
-      if (!is.null(map_id)) {
-        fluidRow(
-          box(
-            width = 12,
-            title = paste(title, "- Entrainment Risk Map"),
-            status = NULL,
-            solidHeader = FALSE,
-            leafletOutput(map_id, height = 550)
+
+      fluidRow(
+        box(
+          width = 12,
+          title = paste(title, "— Input Method"),
+          status = if (prefix == "current") "warning" else "info",
+          solidHeader = TRUE,
+
+          radioButtons(
+            paste0(prefix, "_input_method"),
+            "Input Method:",
+            choices = c(
+              "Enter a Single Set of Values" = "single",
+              "Upload CSV or Excel File (coming soon)" = "upload",
+              "Read from Archive Folder (coming soon)" = "folder"
+            ),
+            selected = "single",
+            inline = TRUE
+          ),
+
+          conditionalPanel(
+            condition = sprintf("input.%s_input_method != 'single'", prefix),
+            tags$div(
+              class = "alert alert-info",
+              "This input method is reserved for the next phase. Select “Enter a Single Set of Values” for now."
+            )
           )
         )
-      },
-      
-      fluidRow(
-        box(
-          width = 12,
-          title = title,
-          status = NULL,
-          solidHeader = FALSE,
-          plotOutput(output_id, height = "900px")
-        )
       ),
-      
-      fluidRow(
-        box(
-          width = 12,
-          title = "Selected Node Detail",
-          status = NULL,
-          solidHeader = FALSE,
-          tableOutput(summary_id)
-        )
-      )
-    )
-  )
-}
 
-ecoptm_tab <- function(tab_name, title, theme_class, table_id) {
-  tabItem(
-    tabName = tab_name,
-    
-    div(
-      class = theme_class,
-      
-      fluidRow(
-        box(
-          width = 12,
-          title = title,
-          status = NULL,
-          solidHeader = FALSE,
-          tableOutput(table_id)
-        )
-      )
-    )
-  )
-}
+      conditionalPanel(
+        condition = sprintf("input.%s_input_method == 'single'", prefix),
 
-event_horizon_tab <- function(
-    tab_name,
-    title,
-    theme_class,
-    map_id,
-    scatter_id
-) {
-  
-  tabItem(
-    
-    tabName = tab_name,
-    
-    div(
-      
-      class = theme_class,
-      
-      fluidRow(
-        
-        box(
-          width = 12,
-          title = paste(title, "- Map"),
-          leafletOutput(map_id, height = 500)
+        tabsetPanel(
+          id = paste0(prefix, "_model_tabs"),
+
+          tabPanel(
+            "PTM Emulator",
+            fluidRow(
+              box(
+                width = 4,
+                title = "PTM Inputs",
+                status = if (prefix == "current") "warning" else "info",
+                solidHeader = TRUE,
+
+                textInput(
+                  paste0(prefix, "_ptm_name"),
+                  "Scenario Name:",
+                  paste(title, "PTM Run")
+                ),
+                numericInput(paste0(prefix, "_ptm_exp"), "EXP — Combined Export (cfs):", 6000),
+                numericInput(paste0(prefix, "_ptm_ver"), "VER — Vernalis Flow (cfs):", 3000),
+                numericInput(paste0(prefix, "_ptm_sac"), "SAC — Freeport Flow (cfs):", 18000),
+                numericInput(paste0(prefix, "_ptm_east"), "EAST — East-Side Flow (cfs):", 1500),
+                numericInput(paste0(prefix, "_ptm_xgeo"), "XGEO — Interior Delta Flow (cfs):", 3000),
+                selectInput(
+                  paste0(prefix, "_ptm_threshold"),
+                  "Entrainment Risk Threshold (%):",
+                  choices = c(25, 50, 75),
+                  selected = 25
+                ),
+                actionButton(
+                  paste0("run_", prefix, "_ptm"),
+                  "Run Both PTM Models",
+                  icon = icon("play"),
+                  class = "btn-success",
+                  width = "100%"
+                ),
+                br(), br(),
+                downloadButton(
+                  paste0("download_", prefix, "_ptm"),
+                  "Download PTM Results (CSV)",
+                  class = "btn-primary",
+                  style = "width:100%;"
+                )
+              ),
+
+              box(
+                width = 8,
+                title = "PTM Results — All Supported Nodes",
+                status = if (prefix == "current") "warning" else "info",
+                solidHeader = TRUE,
+
+                tabsetPanel(
+                  tabPanel(
+                    "7-Day — 15 Nodes",
+                    leafletOutput(paste0(prefix, "_ptm7_map"), height = 500),
+                    br(),
+                    plotOutput(paste0(prefix, "_ptm7_plot"), height = 700),
+                    br(),
+                    tableOutput(paste0(prefix, "_ptm7_table"))
+                  ),
+                  tabPanel(
+                    "30-Day — 39 Nodes",
+                    leafletOutput(paste0(prefix, "_ptm30_map"), height = 500),
+                    br(),
+                    plotOutput(paste0(prefix, "_ptm30_plot"), height = 900),
+                    br(),
+                    tableOutput(paste0(prefix, "_ptm30_table"))
+                  )
+                )
+              )
+            )
+          ),
+
+          tabPanel(
+            "ECO-PTM",
+            fluidRow(
+              box(
+                width = 4,
+                title = "ECO-PTM Inputs",
+                status = if (prefix == "current") "warning" else "info",
+                solidHeader = TRUE,
+
+                textInput(
+                  paste0(prefix, "_eco_name"),
+                  "Scenario Name:",
+                  paste(title, "ECO-PTM Run")
+                ),
+                numericInput(paste0(prefix, "_eco_sac"), "SAC — Freeport Flow (cfs):", 18000),
+                numericInput(paste0(prefix, "_eco_yol"), "YOL — Yolo Bypass Flow (cfs):", 1000),
+                numericInput(paste0(prefix, "_eco_moke"), "MOKE — Mokelumne Flow (cfs):", 800),
+                radioButtons(
+                  paste0(prefix, "_eco_dcc"),
+                  "Delta Cross Channel Status:",
+                  choices = c("Closed" = 0, "Open" = 1),
+                  selected = 0,
+                  inline = TRUE
+                ),
+                actionButton(
+                  paste0("run_", prefix, "_eco"),
+                  "Run ECO-PTM Models",
+                  icon = icon("play"),
+                  class = "btn-success",
+                  width = "100%"
+                ),
+                br(), br(),
+                downloadButton(
+                  paste0("download_", prefix, "_eco"),
+                  "Download ECO-PTM Results (CSV)",
+                  class = "btn-primary",
+                  style = "width:100%;"
+                )
+              ),
+
+              box(
+                width = 8,
+                title = "ECO-PTM Results",
+                status = if (prefix == "current") "warning" else "info",
+                solidHeader = TRUE,
+                tableOutput(paste0(prefix, "_eco_table"))
+              )
+            )
+          ),
+
+          tabPanel(
+            "Event Horizon",
+            fluidRow(
+              box(
+                width = 4,
+                title = "Event Horizon Inputs",
+                status = if (prefix == "current") "warning" else "info",
+                solidHeader = TRUE,
+
+                textInput(
+                  paste0(prefix, "_eh_name"),
+                  "Scenario Name:",
+                  paste(title, "Event Horizon Run")
+                ),
+                numericInput(paste0(prefix, "_eh_exp"), "EXP — Combined Export (cfs):", 6000),
+                numericInput(paste0(prefix, "_eh_ver"), "VER — Vernalis Flow (cfs):", 3000),
+                numericInput(paste0(prefix, "_eh_east"), "EAST — East-Side Flow (cfs):", 1500),
+                numericInput(paste0(prefix, "_eh_xgeo"), "XGEO — Interior Delta Flow (cfs):", 3000),
+                selectInput(
+                  paste0(prefix, "_eh_risk"),
+                  "Risk Level (%):",
+                  choices = seq(15, 80, by = 5),
+                  selected = 25
+                ),
+                actionButton(
+                  paste0("run_", prefix, "_eh"),
+                  "Run Event Horizon",
+                  icon = icon("play"),
+                  class = "btn-success",
+                  width = "100%"
+                ),
+                br(), br(),
+                downloadButton(
+                  paste0("download_", prefix, "_eh"),
+                  "Download Event Horizon Result (CSV)",
+                  class = "btn-primary",
+                  style = "width:100%;"
+                )
+              ),
+
+              box(
+                width = 8,
+                title = "Event Horizon Results",
+                status = if (prefix == "current") "warning" else "info",
+                solidHeader = TRUE,
+                tableOutput(paste0(prefix, "_eh_table")),
+                br(),
+                leafletOutput(paste0(prefix, "_eh_map"), height = 500),
+                br(),
+                plotlyOutput(paste0(prefix, "_eh_scatter"), height = 600)
+              )
+            )
+          )
         )
-        
-      ),
-      
-      fluidRow(
-        
-        box(
-          width = 12,
-          title = paste(title, "- Event Horizon Scatter"),
-          plotlyOutput(scatter_id, height = 600)
-        )
-        
       )
     )
   )
@@ -116,323 +232,45 @@ event_horizon_tab <- function(
 app_version <- "1.2.2"
 
 ui <- dashboardPage(
-  
-  # -----------------------------
-  # Header
-  # -----------------------------
   dashboardHeader(
     titleWidth = 300,
-    
     title = tags$div(
-      style = "display:flex; align-items:center;",
-      
-      tags$img(
-        src = "logo.png",
-        height = "30px",
-        style = "margin-right:10px;"
-      ),
-      
-      tags$span(
-        "Entrainment Dashboard",
-        style = "font-family: Segoe UI Semibold; font-size: 16px;"
-      )
+      style = "display:flex;align-items:center;",
+      tags$img(src = "logo.png", height = "30px", style = "margin-right:10px;"),
+      tags$span("Entrainment Dashboard", style = "font-family:Segoe UI Semibold;font-size:16px;")
     )
   ),
-  
-  # -----------------------------
-  # Sidebar
-  # -----------------------------
+
   dashboardSidebar(
-    
     sidebarMenu(
       id = "tabs",
-      
       menuItem("About", tabName = "about", icon = icon("info-circle")),
-      
-      menuItem(
-        "Current 7d Average Flow",
-        icon = icon("water"),
-        startExpanded = TRUE,
-        menuSubItem("PTM 7d Entrain", tabName = "current7_ptm7", icon = icon("chart-line")),
-        menuSubItem("Event Horizon", tabName = "current7_event", icon = icon("map"))
-      ),
-      
-      menuItem(
-        "Current 30d Average Flow",
-        icon = icon("droplet"),
-        startExpanded = FALSE,
-        menuSubItem("PTM 30d Entrain", tabName = "current30_ptm30", icon = icon("chart-line")),
-        menuSubItem("ECO PTM", tabName = "current30_ecoptm", icon = icon("table"))
-      ),
-      
-      menuItem(
-        "Forecast 7d Average Flow",
-        icon = icon("cloud-sun"),
-        startExpanded = FALSE,
-        menuSubItem("PTM 7d Entrain", tabName = "forecast7_ptm7", icon = icon("chart-line")),
-        menuSubItem("Event Horizon", tabName = "forecast7_event", icon = icon("map"))
-      ),
-      
+      menuItem("Run Current Conditions", tabName = "run_current", icon = icon("water")),
+      menuItem("Run Forecast Conditions", tabName = "run_forecast", icon = icon("cloud-sun")),
+      menuItem("Scenario Comparison", tabName = "comparison", icon = icon("balance-scale")),
       menuItem("Data Access", tabName = "data", icon = icon("database"))
-    ),
-    
-    br(),
-    
-    div(
-      class = "sidebar-controls",
-      
-      # Selects which dated run folder's master xlsx drives the app,
-      # e.g. "20260623" -> Jun 23, 2026. Choices are populated from
-      # the folder names found under STN_EMULATOR/Output/.
-      selectInput("run_date", "Model Run Date:", choices = NULL),
-      
-      # Informational display of the active scenario's date window
-      # (e.g. "Jun 15 - Jun 21, 2026 (7-day average)"). Not a filter --
-      # each averaging window is a fixed snapshot in the master file.
-      uiOutput("date_window"),
-      
-      uiOutput("scenario_control"),
-      
-      conditionalPanel(
-        condition = "
-    input.tabs == 'current7_ptm7' ||
-    input.tabs == 'current30_ptm30' ||
-    input.tabs == 'forecast7_ptm7'
-  ",
-        selectInput("node", "Node:", choices = NULL)
-      ),
-      conditionalPanel(
-        condition = "
-    input.tabs == 'current7_ptm7' ||
-    input.tabs == 'current30_ptm30' ||
-    input.tabs == 'forecast7_ptm7'
-  ",
-        selectInput(
-          "entrainment_risk_threshold",
-          "Entrainment Risk Threshold:",
-          choices = c(25, 50, 75),
-          selected = 25
-        )
-      ),
-      
-      conditionalPanel(
-        condition = "
-    input.tabs == 'current7_event' ||
-    input.tabs == 'forecast7_event'
-  ",
-        selectInput(
-          "eh_risk",
-          "Event Horizon Risk:",
-          choices = c(25, 50, 75),
-          selected = 25
-        )
-      )
     )
   ),
-  
-  # -----------------------------
-  # Body
-  # -----------------------------
+
   dashboardBody(
-    
     tags$head(
       tags$style(HTML("
-        
-        /* =========================
-           HEADER / SIDEBAR WIDTH
-        ========================= */
-        .main-header .logo {
-          width: 300px !important;
-          overflow: visible !important;
-          height: 60px !important;
-          line-height: 60px !important;
-          padding: 5px 10px;
-          background-color: white;
-          color: #0a7e8c;
-          font-family: Segoe UI Semibold;
-          border-bottom: 3px solid #0a7e8c;
-        }
-        
-        .main-header .logo img {
-          max-height: 45px;
-          height: auto;
-          width: auto;
-          vertical-align: middle;
-        }
-        
-        .main-header .navbar {
-          min-height: 60px;
-          background-color: white;
-          border-bottom: 3px solid #0a7e8c;
-        }
-        
-        .main-sidebar {
-          width: 300px !important;
-          background-color: #ffffff;
-          border-right: 1px solid #e0e0e0;
-        }
-        
-        .content-wrapper, .right-side {
-          margin-left: 300px !important;
-          background-color: #f9fbfc;
-          padding: 18px;
-        }
-        
-        /* =========================
-           SIDEBAR - BRIGHT RECLAMATION STYLE
-        ========================= */
-        
-        /* Sidebar background */
-        .main-sidebar {
-          width: 300px !important;
-          background-color: #fbfeff;
-          border-right: 1px solid #d8edf1;
-        }
-        
-        /* Main sidebar menu items */
-        .sidebar-menu > li > a {
-          color: #0a6270;
-          font-size: 14px;
-          font-weight: 600;
-          letter-spacing: 0.1px;
-        }
-        
-        /* Main sidebar icons */
-        .sidebar-menu > li > a > .fa,
-        .sidebar-menu > li > a > .glyphicon,
-        .sidebar-menu > li > a > .ion {
-          color: #16889a;
-        }
-        
-        /* Nested submenu background */
-        .sidebar-menu .treeview-menu {
-          background-color: #f4fbfc !important;
-          padding-top: 4px;
-          padding-bottom: 4px;
-        }
-        
-        /* Nested submenu items before hover */
-        .sidebar-menu .treeview-menu > li > a {
-          color: #2f7f8d;
-          font-size: 13px;
-          font-weight: 500;
-        }
-        
-        /* Active nested submenu item */
-        .sidebar-menu .treeview-menu > li.active > a {
-          background-color: #d9f1f5 !important;
-          color: #075f6d !important;
-          border-left: 4px solid #0a7e8c;
-        }
-        
-        /* Hover behavior */
-        .sidebar-menu li:hover > a {
-          background-color: #eef9fb !important;
-          color: #075f6d !important;
-        }
-        
-        /* Sidebar controls section */
-        .sidebar-controls {
-          padding: 8px 16px 24px 16px;
-          border-top: 1px solid #d8edf1;
-          margin-top: 10px;
-        }
-        
-        /* Spacing between controls */
-        .sidebar .form-group {
-          margin-bottom: 18px;
-        }
-        
-        /* Date Range / Scenario / Node labels */
-        .sidebar .control-label {
-          color: #0a7e8c;
-          font-weight: 700;
-          font-size: 13px;
-          letter-spacing: 0.2px;
-        }
-        
-        /* Input boxes */
-        .sidebar .form-control,
-        .sidebar .selectize-input {
-          border: 1px solid #b8dce2;
-          border-radius: 5px;
-          color: #334;
-          background-color: #ffffff;
-        }
-        
-        /* Input focus */
-        .sidebar .form-control:focus,
-        .sidebar .selectize-input.focus {
-          border-color: #0a7e8c;
-          box-shadow: 0 0 4px rgba(10, 126, 140, 0.25);
-        }
-        
-        /* =========================
-           CARD STYLE
-        ========================= */
-        .box {
-          border-radius: 8px;
-          box-shadow: 0px 2px 8px rgba(0,0,0,0.06);
-          border-top: 4px solid #0a7e8c;
-        }
-        
-        .box-header {
-          font-weight: 600;
-          font-size: 16px;
-        }
-        
-        .box-title {
-          font-weight: 600;
-        }
-        
-        /* =========================
-           SECTION THEMES
-        ========================= */
-        .current-theme .box {
-          border-top-color: #e69f00;
-        }
-        
-        .current-theme {
-          background-color: #fffaf2;
-          padding: 6px;
-          border-radius: 8px;
-        }
-        
-        .forecast-theme .box {
-          border-top-color: #56b4e9;
-        }
-        
-        .forecast-theme {
-          background-color: #f4fbff;
-          padding: 6px;
-          border-radius: 8px;
-        }
-        
-        /* =========================
-           TYPOGRAPHY
-        ========================= */
-        h1, h2, h3, h4 {
-          font-family: Segoe UI Semibold;
-          color: #333;
-        }
-        
-        body {
-          font-family: Segoe UI;
-          color: #333;
-        }
-        
-        hr {
-          border-top: 1px solid #0a7e8c;
-          opacity: 0.4;
-          margin-top: 10px;
-          margin-bottom: 10px;
-        }
-        
+        .main-header .logo{width:300px!important;height:60px!important;line-height:60px!important;background:white;color:#0a7e8c;border-bottom:3px solid #0a7e8c}
+        .main-header .navbar{min-height:60px;background:white;border-bottom:3px solid #0a7e8c}
+        .main-sidebar{width:300px!important;background:#fbfeff;border-right:1px solid #d8edf1}
+        .content-wrapper,.right-side{margin-left:300px!important;background:#f9fbfc;padding:18px}
+        .sidebar-menu>li>a{color:#0a6270;font-size:14px;font-weight:600}
+        .sidebar-menu li:hover>a,.sidebar-menu>li.active>a{background:#eef9fb!important;color:#075f6d!important;border-left:4px solid #0a7e8c}
+        .box{border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-top:4px solid #0a7e8c}
+        .current-theme{background:#fffaf2;padding:6px;border-radius:8px}
+        .current-theme .box{border-top-color:#e69f00}
+        .forecast-theme{background:#f4fbff;padding:6px;border-radius:8px}
+        .forecast-theme .box{border-top-color:#56b4e9}
+        body{font-family:Segoe UI;color:#333}
       "))
     ),
-    
+
     tabItems(
-      
       # -----------------------------
       # About
       # -----------------------------
@@ -680,67 +518,48 @@ ui <- dashboardPage(
       )
       ),
 
-      # -----------------------------
-      # Current 7d Average Flow
-      # -----------------------------
-      timeseries_tab(
-        "current7_ptm7",
-        "Current 7d Average Flow - PTM 7d Entrainment",
-        "current-theme",
-        "current7_ptm7_plot",
-        "current7_ptm7_summary",
-        "current7_ptm7_map"
-      ),
-      
-      
-      event_horizon_tab(
-        "current7_event",
-        "Current 7d Average Flow - Event Horizon",
-        "current-theme",
-        "current7_event_map",
-        "current7_event_scatter"
-      ),
-      
-      # -----------------------------
-      # Current 30d Average Flow
-      # -----------------------------
+      run_page("current", "Current Conditions", "current-theme"),
+      run_page("forecast", "Forecast Conditions", "forecast-theme"),
 
-      timeseries_tab(
-        "current30_ptm30",
-        "Current 30d Average Flow - PTM 30d Entrainment",
-        "current-theme",
-        "current30_ptm30_plot",
-        "current30_ptm30_summary",
-        "current30_ptm30_map"
+      tabItem(
+        tabName = "comparison",
+        fluidRow(
+          box(
+            width = 4,
+            title = "Comparison Controls",
+            status = "primary",
+            solidHeader = TRUE,
+            selectInput(
+              "comparison_model",
+              "Model:",
+              choices = c(
+                "PTM 7-Day Entrainment",
+                "PTM 30-Day Entrainment",
+                "ECO-PTM Survival",
+                "ECO-PTM Interior Routing",
+                "Event Horizon"
+              )
+            ),
+            uiOutput("comparison_run_selector"),
+            downloadButton(
+              "download_comparison",
+              "Download Comparison (CSV)",
+              class = "btn-primary",
+              style = "width:100%;"
+            )
+          ),
+          box(
+            width = 8,
+            title = "Scenario Comparison",
+            status = "primary",
+            solidHeader = TRUE,
+            plotOutput("comparison_plot", height = 650),
+            br(),
+            tableOutput("comparison_table")
+          )
+        )
       ),
-      
-      ecoptm_tab(
-        "current30_ecoptm",
-        "Current 30d Average Flow - ECO PTM",
-        "current-theme",
-        "current30_ecoptm_table"
-      ),
-      
-      # -----------------------------
-      # Forecast 7d Average Flow
-      # -----------------------------
-      timeseries_tab(
-        "forecast7_ptm7",
-        "Forecast 7d Average Flow - PTM 7d Entrainment",
-        "forecast-theme",
-        "forecast7_ptm7_plot",
-        "forecast7_ptm7_summary",
-        "forecast7_ptm7_map"
-      ),
-      
-      event_horizon_tab(
-        "forecast7_event",
-        "Forecast 7d Average Flow - Event Horizon",
-        "forecast-theme",
-        "forecast7_event_map",
-        "forecast7_event_scatter"
-      ),
-      
+
       # -----------------------------
       # Data Access
       # -----------------------------
