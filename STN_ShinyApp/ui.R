@@ -59,8 +59,8 @@ run_page <- function(prefix, title, theme_class) {
 
                 textInput(
                   paste0(prefix, "_ptm_name"),
-                  "Scenario Name:",
-                  paste(title, "PTM Run")
+                  "Scenario Name (Input Method: Enter Single Values):",
+                  paste(title, "PTM Run — Single Values")
                 ),
                 numericInput(paste0(prefix, "_ptm_exp"), "EXP — Combined Export (cfs):", 6000),
                 numericInput(paste0(prefix, "_ptm_ver"), "VER — Vernalis Flow (cfs):", 3000),
@@ -75,7 +75,7 @@ run_page <- function(prefix, title, theme_class) {
                 ),
                 actionButton(
                   paste0("run_", prefix, "_ptm"),
-                  "Run Both PTM Models",
+                  "Run 7-day and 30-day PTM Models",
                   icon = icon("play"),
                   class = "btn-success",
                   width = "100%"
@@ -98,19 +98,31 @@ run_page <- function(prefix, title, theme_class) {
                 tabsetPanel(
                   tabPanel(
                     "7-Day — 15 Nodes",
+                    tags$h4("Figure 1. PTM 7-Day Entrainment Risk Map"),
+                    tags$p(class = "figure-note", "Map shows predicted node-level entrainment and interpolated high/low risk zones. Click a node for details."),
                     leafletOutput(paste0(prefix, "_ptm7_map"), height = 500),
+                    downloadButton(paste0("download_", prefix, "_ptm7_map"), "Download Map (PNG)", class = "btn-primary map-download"),
+                    br(), br(),
+                    tags$h4("Figure 2. PTM 7-Day Entrainment by DSM2 Node"),
+                    tags$p(class = "figure-note", "Bars follow a fixed numeric DSM2-node order. Hover for node details; use the Plotly camera icon to save the chart as PNG."),
+                    plotlyOutput(paste0(prefix, "_ptm7_plot"), height = 700),
                     br(),
-                    plotOutput(paste0(prefix, "_ptm7_plot"), height = 700),
-                    br(),
-                    tableOutput(paste0(prefix, "_ptm7_table"))
+                    tags$h4("Table 1. PTM 7-Day Node Results"),
+                    div(class = "wide-table-scroll", tableOutput(paste0(prefix, "_ptm7_table")))
                   ),
                   tabPanel(
                     "30-Day — 39 Nodes",
+                    tags$h4("Figure 3. PTM 30-Day Entrainment Risk Map"),
+                    tags$p(class = "figure-note", "Map shows predicted node-level entrainment and interpolated high/low risk zones. Click a node for details."),
                     leafletOutput(paste0(prefix, "_ptm30_map"), height = 500),
+                    downloadButton(paste0("download_", prefix, "_ptm30_map"), "Download Map (PNG)", class = "btn-primary map-download"),
+                    br(), br(),
+                    tags$h4("Figure 4. PTM 30-Day Entrainment by DSM2 Node"),
+                    tags$p(class = "figure-note", "Bars follow a fixed numeric DSM2-node order. Hover for node details; use the Plotly camera icon to save the chart as PNG."),
+                    plotlyOutput(paste0(prefix, "_ptm30_plot"), height = 900),
                     br(),
-                    plotOutput(paste0(prefix, "_ptm30_plot"), height = 900),
-                    br(),
-                    tableOutput(paste0(prefix, "_ptm30_table"))
+                    tags$h4("Table 2. PTM 30-Day Node Results"),
+                    div(class = "wide-table-scroll", tableOutput(paste0(prefix, "_ptm30_table")))
                   )
                 )
               )
@@ -128,8 +140,8 @@ run_page <- function(prefix, title, theme_class) {
 
                 textInput(
                   paste0(prefix, "_eco_name"),
-                  "Scenario Name:",
-                  paste(title, "ECO-PTM Run")
+                  "Scenario Name (Input Method: Enter Single Values):",
+                  paste(title, "ECO-PTM Run — Single Values")
                 ),
                 numericInput(paste0(prefix, "_eco_sac"), "SAC — Freeport Flow (cfs):", 18000),
                 numericInput(paste0(prefix, "_eco_yol"), "YOL — Yolo Bypass Flow (cfs):", 1000),
@@ -178,8 +190,8 @@ run_page <- function(prefix, title, theme_class) {
 
                 textInput(
                   paste0(prefix, "_eh_name"),
-                  "Scenario Name:",
-                  paste(title, "Event Horizon Run")
+                  "Scenario Name (Input Method: Enter Single Values):",
+                  paste(title, "Event Horizon Run — Single Values")
                 ),
                 numericInput(paste0(prefix, "_eh_exp"), "EXP — Combined Export (cfs):", 6000),
                 numericInput(paste0(prefix, "_eh_ver"), "VER — Vernalis Flow (cfs):", 3000),
@@ -212,10 +224,16 @@ run_page <- function(prefix, title, theme_class) {
                 title = "Event Horizon Results",
                 status = if (prefix == "current") "warning" else "info",
                 solidHeader = TRUE,
-                tableOutput(paste0(prefix, "_eh_table")),
+                tags$h4("Table 1. Event Horizon Prediction"),
+                div(class = "wide-table-scroll", tableOutput(paste0(prefix, "_eh_table"))),
                 br(),
+                tags$h4("Figure 1. Predicted Event Horizon Map"),
+                tags$p(class = "figure-note", "The red reach represents the predicted upstream Event Horizon distance for the selected risk level."),
                 leafletOutput(paste0(prefix, "_eh_map"), height = 500),
-                br(),
+                downloadButton(paste0("download_", prefix, "_eh_map"), "Download Map (PNG)", class = "btn-primary map-download"),
+                br(), br(),
+                tags$h4("Figure 2. Historical Event Horizon Conditions"),
+                tags$p(class = "figure-note", "Historical conditions are shown in the background; the selected scenario is highlighted in red. Use the Plotly camera icon to save as PNG."),
                 plotlyOutput(paste0(prefix, "_eh_scatter"), height = 600)
               )
             )
@@ -267,6 +285,35 @@ ui <- dashboardPage(
         .forecast-theme{background:#f4fbff;padding:6px;border-radius:8px}
         .forecast-theme .box{border-top-color:#56b4e9}
         body{font-family:Segoe UI;color:#333}
+
+        .figure-note {
+          font-size: 14px;
+          color: #4d5b61;
+          margin-bottom: 10px;
+        }
+        .map-download {
+          margin-top: 10px;
+          margin-bottom: 5px;
+        }
+        .wide-table-scroll {
+          width: 100%;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+        .wide-table-scroll table {
+          width: max-content !important;
+          min-width: 100%;
+          font-size: 14px;
+        }
+        .leaflet-tooltip.node-permanent-label {
+          background: rgba(255,255,255,0.88);
+          border: 1px solid #0a7e8c;
+          color: #075f6d;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 2px 5px;
+          box-shadow: none;
+        }
       "))
     ),
 
@@ -523,39 +570,76 @@ ui <- dashboardPage(
 
       tabItem(
         tabName = "comparison",
-        fluidRow(
-          box(
-            width = 4,
-            title = "Comparison Controls",
-            status = "primary",
-            solidHeader = TRUE,
-            selectInput(
-              "comparison_model",
-              "Model:",
-              choices = c(
-                "PTM 7-Day Entrainment",
-                "PTM 30-Day Entrainment",
-                "ECO-PTM Survival",
-                "ECO-PTM Interior Routing",
-                "Event Horizon"
+        tabsetPanel(
+          id = "comparison_sections",
+
+          tabPanel(
+            "General Scenario Comparison",
+            fluidRow(
+              box(
+                width = 4,
+                title = "Comparison Controls",
+                status = "primary",
+                solidHeader = TRUE,
+                selectInput(
+                  "comparison_model",
+                  "Model:",
+                  choices = c(
+                    "PTM 7-Day Entrainment",
+                    "PTM 30-Day Entrainment",
+                    "ECO-PTM Survival",
+                    "ECO-PTM Interior Routing",
+                    "Event Horizon"
+                  )
+                ),
+                uiOutput("comparison_run_selector"),
+                downloadButton(
+                  "download_comparison",
+                  "Download Comparison (CSV)",
+                  class = "btn-primary",
+                  style = "width:100%;"
+                )
+              ),
+              box(
+                width = 8,
+                title = "Scenario Comparison",
+                status = "primary",
+                solidHeader = TRUE,
+                tags$p(class = "figure-note", "Compare any compatible model runs saved during the current Shiny session."),
+                plotlyOutput("comparison_plot", height = 700),
+                br(),
+                div(class = "wide-table-scroll", tableOutput("comparison_table"))
               )
-            ),
-            uiOutput("comparison_run_selector"),
-            downloadButton(
-              "download_comparison",
-              "Download Comparison (CSV)",
-              class = "btn-primary",
-              style = "width:100%;"
             )
           ),
-          box(
-            width = 8,
-            title = "Scenario Comparison",
-            status = "primary",
-            solidHeader = TRUE,
-            plotOutput("comparison_plot", height = 650),
-            br(),
-            tableOutput("comparison_table")
+
+          tabPanel(
+            "OMRI Archive Comparison",
+            fluidRow(
+              box(
+                width = 12,
+                title = "OMRI Scenario Comparison",
+                status = "primary",
+                solidHeader = TRUE,
+                uiOutput("omri_comparison_status"),
+                conditionalPanel(
+                  condition = "output.omri_archive_available",
+                  selectInput("omri_comparison_model", "Model:", choices = c(
+                    "PTM 7-Day Entrainment",
+                    "PTM 30-Day Entrainment",
+                    "ECO-PTM Survival",
+                    "ECO-PTM Interior Routing",
+                    "Event Horizon"
+                  )),
+                  uiOutput("omri_run_selector"),
+                  downloadButton("download_omri_comparison", "Download OMRI Comparison (CSV)", class = "btn-primary"),
+                  br(), br(),
+                  plotlyOutput("omri_comparison_plot", height = 700),
+                  br(),
+                  div(class = "wide-table-scroll", tableOutput("omri_comparison_table"))
+                )
+              )
+            )
           )
         )
       ),

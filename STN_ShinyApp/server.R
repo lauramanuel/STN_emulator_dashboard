@@ -127,12 +127,28 @@ server <- function(input, output, session) {
       "%H:%M:%S"
     )
     
+    input_method_label <- if (
+      "Input_Method" %in% names(data) &&
+      any(data$Input_Method == "folder", na.rm = TRUE)
+    ) {
+      "Archive Folder"
+    } else if (
+      "Input_Method" %in% names(data) &&
+      any(data$Input_Method == "upload", na.rm = TRUE)
+    ) {
+      "Uploaded File"
+    } else {
+      "Single Values"
+    }
+
     key <- paste0(
       run_number,
       ". ",
       condition,
       " | ",
       name,
+      " | Input: ",
+      input_method_label,
       " | ",
       family,
       " | ",
@@ -170,6 +186,7 @@ server <- function(input, output, session) {
 
       data.frame(
         Condition = condition,
+        Input_Method = "single",
         Scenario_Name = scenario_name,
         Model = model_name,
         DSM2_Node = as.character(nodes),
@@ -229,6 +246,7 @@ server <- function(input, output, session) {
 
     data.frame(
       Condition = condition,
+      Input_Method = "single",
       Scenario_Name = scenario_name,
       Model = c("ECO-PTM Survival", "ECO-PTM Interior Routing"),
       Prediction_Raw = c(survival_raw, interior_raw),
@@ -255,6 +273,7 @@ server <- function(input, output, session) {
 
     data.frame(
       Condition = condition,
+      Input_Method = "single",
       Scenario_Name = scenario_name,
       Model = "Event Horizon",
       Risk_Level_Percent = risk,
@@ -274,32 +293,116 @@ server <- function(input, output, session) {
 
     plot_df <- df %>%
       mutate(
+        DSM2_Node_Num = suppressWarnings(as.numeric(DSM2_Node)),
         node_label = ifelse(
-          is.na(Location),
+          is.na(Location) | Location == "",
           DSM2_Node,
-          paste0(DSM2_Node, " - ", Location)
+          paste0(DSM2_Node, " — ", Location)
+        ),
+        value_label = sprintf("%.2f%%", Prediction_Final),
+        hover_text = paste0(
+          "<b>DSM2 Node:</b> ", DSM2_Node,
+          "<br><b>Location:</b> ", Location,
+          "<br><b>Region:</b> ", Region,
+          "<br><b>Predicted entrainment:</b> ",
+          sprintf("%.2f%%", Prediction_Final)
         )
       ) %>%
-      arrange(Prediction_Final)
+      arrange(DSM2_Node_Num, DSM2_Node)
 
+    # Reverse only for display so the smallest node remains at the top.
     plot_df$node_label <- factor(
       plot_df$node_label,
-      levels = plot_df$node_label
+      levels = rev(plot_df$node_label)
     )
 
-    ggplot(plot_df, aes(node_label, Prediction_Final)) +
-      geom_col() +
-      coord_flip() +
-      labs(
-        title = title,
-        x = "DSM2 Node",
-        y = "Predicted Entrainment (%)"
-      ) +
-      theme_minimal() +
-      theme(
-        plot.title = element_text(size = 16, face = "bold"),
-        axis.text.y = element_text(size = 11),
-        plot.margin = margin(10, 10, 10, 100)
+    x_max <- max(
+      105,
+      ceiling(max(plot_df$Prediction_Final, na.rm = TRUE) + 12)
+    )
+
+    plot_ly(
+      data = plot_df,
+      x = ~Prediction_Final,
+      y = ~node_label,
+      type = "bar",
+      orientation = "h",
+      text = ~value_label,
+      textposition = "outside",
+      textfont = list(size = 14, color = "#1F1F1F"),
+      hovertext = ~hover_text,
+      hoverinfo = "text",
+      marker = list(
+        color = "#0072B2",
+        line = list(color = "#003B5C", width = 0.8)
+      ),
+      cliponaxis = FALSE
+    ) %>%
+      layout(
+        title = list(
+          text = paste0(
+            "<b>", title, "</b>",
+            "<br><span style='font-size:13px;'>",
+            "Fixed numeric DSM2-node order; values are percent entrainment.",
+            "</span>"
+          ),
+          x = 0.02,
+          xanchor = "left",
+          font = list(size = 20, color = "#1F1F1F")
+        ),
+        xaxis = list(
+          title = list(
+            text = "<b>Predicted Entrainment (%)</b>",
+            font = list(size = 16, color = "#1F1F1F")
+          ),
+          range = c(0, x_max),
+          tickfont = list(size = 14, color = "#1F1F1F"),
+          gridcolor = "#D9D9D9",
+          zerolinecolor = "#666666",
+          showline = TRUE,
+          linecolor = "#666666"
+        ),
+        yaxis = list(
+          title = "",
+          tickfont = list(size = 13, color = "#1F1F1F"),
+          automargin = TRUE,
+          showgrid = FALSE
+        ),
+        plot_bgcolor = "#FFFFFF",
+        paper_bgcolor = "#FFFFFF",
+        font = list(
+          family = "Arial, Segoe UI, sans-serif",
+          size = 14,
+          color = "#1F1F1F"
+        ),
+        margin = list(l = 300, r = 95, t = 100, b = 75),
+        showlegend = FALSE,
+        annotations = list(
+          list(
+            text = "Note: Predictions are emulator outputs rounded to two decimal places.",
+            x = 0,
+            y = -0.12,
+            xref = "paper",
+            yref = "paper",
+            showarrow = FALSE,
+            xanchor = "left",
+            font = list(size = 12, color = "#404040")
+          )
+        )
+      ) %>%
+      config(
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = c(
+          "lasso2d", "select2d", "autoScale2d",
+          "toggleSpikelines"
+        ),
+        toImageButtonOptions = list(
+          format = "png",
+          filename = gsub("[^A-Za-z0-9_-]+", "_", title),
+          height = 1000,
+          width = 1600,
+          scale = 2
+        )
       )
   }
 
@@ -369,61 +472,64 @@ server <- function(input, output, session) {
       domain = range(display_nodes$entrainment, na.rm = TRUE)
     )
 
+    popup_html <- ~paste0(
+      "<div style='font-size:16px;line-height:1.55;min-width:300px;'>",
+      "<div style='font-size:20px;font-weight:700;color:#075f6d;margin-bottom:8px;'>DSM2 Node ", DSM2_Node, "</div>",
+      "<div><b>Node:</b> ", DSM2_Node, "</div>",
+      "<div><b>Location:</b> ", Location, "</div>",
+      "<div><b>Region:</b> ", Region, "</div>",
+      "<div style='font-size:18px;font-weight:800;margin-top:8px;color:#8b1e1e;'>Entrainment: ",
+      sprintf("%.2f", entrainment), "%</div>",
+      "</div>"
+    )
+
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addPolygons(
-        data = st_transform(
-          delta_boundary,
-          4326
-        ),
-        fillColor = "#eef7f9",
-        fillOpacity = 0.2,
-        color = "#0a7e8c",
-        weight = 1,
+        data = st_transform(delta_boundary, 4326),
+        fillColor = "#eef7f9", fillOpacity = 0.2,
+        color = "#0a7e8c", weight = 1,
         group = "Delta Boundary"
       ) %>%
-      
       addPolylines(
-        data = st_transform(
-          delta_channels,
-          4326
-        ),
-        color = "#2b8cbe",
-        weight = 1,
-        opacity = 0.6,
+        data = st_transform(delta_channels, 4326),
+        color = "#2b8cbe", weight = 1, opacity = 0.6,
         group = "Channels"
       ) %>%
-      
       addPolygons(
         data = zones$low,
-        fillColor = "#a9d4e6",
-        fillOpacity = 0.45,
-        color = "#427799",
-        weight = 1,
+        fillColor = "#a9d4e6", fillOpacity = 0.45,
+        color = "#427799", weight = 1,
         group = "Low Risk Zone"
       ) %>%
-      
       addPolygons(
         data = zones$high,
-        fillColor = "#e8b5b5",
-        fillOpacity = 0.6,
-        color = "#a74a4a",
-        weight = 1,
+        fillColor = "#e8b5b5", fillOpacity = 0.6,
+        color = "#a74a4a", weight = 1,
         group = "High Risk Zone"
       ) %>%
-      
       addCircleMarkers(
         data = display_nodes,
         radius = ~4 + entrainment / 100 * 10,
         color = ~pal(entrainment),
+        fillColor = ~pal(entrainment),
         fillOpacity = 0.9,
-        stroke = FALSE,
-        label = ~paste0(
-          "Node: ", DSM2_Node,
-          "<br>Location: ", Location,
-          "<br>Region: ", Region,
-          "<br>Entrainment: ", round(entrainment, 1), "%"
-        )
+        stroke = TRUE,
+        weight = 1,
+        popup = popup_html,
+        group = "Nodes"
+      ) %>%
+      addLabelOnlyMarkers(
+        data = display_nodes,
+        label = ~DSM2_Node,
+        labelOptions = labelOptions(
+          noHide = TRUE,
+          direction = "top",
+          textOnly = FALSE,
+          offset = c(0, -10),
+          className = "node-permanent-label"
+        ),
+        group = "Node Labels"
       ) %>%
       addLegend(
         position = "bottomright",
@@ -432,44 +538,24 @@ server <- function(input, output, session) {
         title = "Entrainment (%)",
         opacity = 1
       ) %>%
-      
       addLegend(
         position = "topright",
-        colors = c(
-          "#e8b5b5",
-          "#a9d4e6"
-        ),
+        colors = c("#e8b5b5", "#a9d4e6"),
         labels = c(
-          paste0(
-            "High Risk Zone: ≥ ",
-            threshold,
-            "%"
-          ),
-          paste0(
-            "Low Risk Zone: < ",
-            threshold,
-            "%"
-          )
+          paste0("High Risk Zone: ≥ ", threshold, "%"),
+          paste0("Low Risk Zone: < ", threshold, "%")
         ),
         title = "Entrainment Risk Zones",
         opacity = 0.8
       ) %>%
-      
       addLayersControl(
         overlayGroups = c(
-          "Delta Boundary",
-          "Channels",
-          "Low Risk Zone",
-          "High Risk Zone",
-          "Nodes"
+          "Delta Boundary", "Channels", "Low Risk Zone",
+          "High Risk Zone", "Nodes", "Node Labels"
         ),
-        options = layersControlOptions(
-          collapsed = FALSE
-        )
+        options = layersControlOptions(collapsed = FALSE)
       ) %>%
-      
-      fitBounds(
-        -122.15, 37.75, -121.15, 38.85)
+      fitBounds(-122.15, 37.75, -121.15, 38.85)
   }
 
   make_event_geometry <- function(distance_miles) {
@@ -713,6 +799,252 @@ server <- function(input, output, session) {
       )
   }
 
+  make_ptm_png_plot <- function(df, threshold, title) {
+
+    if (is.null(df) || nrow(df) == 0) {
+      stop("No PTM results are available. Run the PTM models before downloading.")
+    }
+
+    threshold <- as.numeric(threshold)
+
+    if (is.na(threshold)) {
+      threshold <- 25
+    }
+
+    nodes_utm <- df %>%
+      filter(
+        !is.na(X),
+        !is.na(Y),
+        !is.na(Prediction_Final)
+      ) %>%
+      transmute(
+        DSM2_Node = as.character(DSM2_Node),
+        Location,
+        Region,
+        entrainment = as.numeric(Prediction_Final),
+        X = as.numeric(X),
+        Y = as.numeric(Y)
+      ) %>%
+      st_as_sf(
+        coords = c("X", "Y"),
+        crs = 4326,
+        remove = FALSE
+      ) %>%
+      st_transform(26910)
+
+    if (nrow(nodes_utm) == 0) {
+      stop("PTM node coordinates are missing, so the PNG map cannot be created.")
+    }
+
+    # Create plain coordinate columns for reliable node labels.
+    node_xy <- st_coordinates(nodes_utm)
+
+    node_labels <- nodes_utm %>%
+      st_drop_geometry() %>%
+      mutate(
+        map_x = node_xy[, 1],
+        map_y = node_xy[, 2]
+      )
+
+    # Risk polygons are added when interpolation succeeds. The PNG still
+    # downloads with nodes and boundaries if a particular threshold cannot
+    # produce a valid interpolated polygon.
+    zones <- tryCatch(
+      make_entrainment_zones(nodes_utm, threshold),
+      error = function(e) NULL,
+      shiny.silent.error = function(e) NULL
+    )
+
+    p <- ggplot() +
+      geom_sf(
+        data = st_make_valid(delta_boundary),
+        fill = "#F7FBFC",
+        color = "#2B6573",
+        linewidth = 0.55
+      ) +
+      geom_sf(
+        data = st_make_valid(delta_channels),
+        color = "#6BAED6",
+        linewidth = 0.28,
+        alpha = 0.65
+      )
+
+    if (!is.null(zones)) {
+
+      low_zone <- st_transform(st_make_valid(zones$low), 26910) %>%
+        mutate(Risk_Zone = paste0("Low risk: < ", threshold, "%"))
+
+      high_zone <- st_transform(st_make_valid(zones$high), 26910) %>%
+        mutate(Risk_Zone = paste0("High risk: ≥ ", threshold, "%"))
+
+      zone_values <- stats::setNames(
+        c("#A9D4E6", "#E8B5B5"),
+        c(
+          paste0("Low risk: < ", threshold, "%"),
+          paste0("High risk: ≥ ", threshold, "%")
+        )
+      )
+
+      p <- p +
+        geom_sf(
+          data = low_zone,
+          aes(fill = Risk_Zone),
+          color = "#427799",
+          alpha = 0.48,
+          linewidth = 0.4
+        ) +
+        geom_sf(
+          data = high_zone,
+          aes(fill = Risk_Zone),
+          color = "#9B2C2C",
+          alpha = 0.62,
+          linewidth = 0.4
+        ) +
+        scale_fill_manual(
+          name = "Entrainment risk zones",
+          values = zone_values,
+          drop = FALSE
+        )
+    }
+
+    p +
+      geom_sf(
+        data = nodes_utm,
+        aes(color = entrainment),
+        size = 3.4
+      ) +
+      geom_text(
+        data = node_labels,
+        aes(
+          x = map_x,
+          y = map_y,
+          label = DSM2_Node
+        ),
+        nudge_y = 2800,
+        size = 3.7,
+        fontface = "bold",
+        color = "#1F1F1F",
+        check_overlap = TRUE
+      ) +
+      scale_color_viridis_c(
+        option = "D",
+        name = "Predicted\nentrainment (%)",
+        limits = c(0, 100),
+        breaks = c(0, 25, 50, 75, 100)
+      ) +
+      coord_sf(datum = NA) +
+      labs(
+        title = title,
+        subtitle = paste0(
+          "PTM predictions for all supported DSM2 nodes; risk threshold = ",
+          threshold,
+          "%"
+        ),
+        caption = if (is.null(zones)) {
+          paste0(
+            "Node values are shown. Interpolated risk zones could not be ",
+            "generated for this result and threshold."
+          )
+        } else {
+          paste0(
+            "Red shading indicates entrainment ≥ ",
+            threshold,
+            "%; blue shading indicates entrainment < ",
+            threshold,
+            "%."
+          )
+        }
+      ) +
+      theme_minimal(base_size = 14) +
+      theme(
+        plot.title = element_text(
+          size = 19,
+          face = "bold",
+          color = "#1F1F1F"
+        ),
+        plot.subtitle = element_text(
+          size = 13,
+          color = "#333333"
+        ),
+        plot.caption = element_text(
+          size = 11,
+          hjust = 0,
+          color = "#404040"
+        ),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "right",
+        legend.title = element_text(face = "bold"),
+        plot.background = element_rect(
+          fill = "white",
+          color = NA
+        ),
+        panel.background = element_rect(
+          fill = "white",
+          color = NA
+        )
+      )
+  }
+
+  make_eh_png_plot <- function(df, title) {
+    validate(need(nrow(df) > 0, "Run the model before downloading the map."))
+
+    geom <- make_event_geometry(df$Prediction_Final[1])
+    eh_line <- st_transform(geom$high_line, 26910)
+    eh_point <- st_transform(geom$point, 26910)
+
+    ggplot() +
+      geom_sf(
+        data = delta_boundary,
+        fill = "#F7FBFC",
+        color = "#2B6573",
+        linewidth = 0.5
+      ) +
+      geom_sf(
+        data = delta_channels,
+        color = "#6BAED6",
+        linewidth = 0.3,
+        alpha = 0.70
+      ) +
+      geom_sf(
+        data = eh_line,
+        color = "#B2182B",
+        linewidth = 2.2
+      ) +
+      geom_sf(
+        data = eh_point,
+        color = "#B2182B",
+        fill = "#B2182B",
+        shape = 21,
+        size = 4.5
+      ) +
+      coord_sf(datum = NA) +
+      labs(
+        title = title,
+        subtitle = paste0(
+          "Predicted Event Horizon: ",
+          sprintf("%.2f", df$Prediction_Final[1]),
+          " river miles at ",
+          df$Risk_Level_Percent[1],
+          "% risk"
+        ),
+        caption = "The red reach represents the predicted upstream Event Horizon distance."
+      ) +
+      theme_minimal(base_size = 14) +
+      theme(
+        plot.title = element_text(size = 19, face = "bold", color = "#1F1F1F"),
+        plot.subtitle = element_text(size = 13, color = "#333333"),
+        plot.caption = element_text(size = 11, hjust = 0, color = "#404040"),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        panel.grid = element_blank(),
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA)
+      )
+  }
+
+
   register_condition <- function(prefix, condition_label) {
 
     ptm_result <- eventReactive(
@@ -792,12 +1124,12 @@ server <- function(input, output, session) {
       }
     )
 
-    output[[paste0(prefix, "_ptm7_plot")]] <- renderPlot({
+    output[[paste0(prefix, "_ptm7_plot")]] <- renderPlotly({
       df <- ptm_result() %>% filter(Model == "PTM 7-Day Entrainment")
       make_ptm_bar(df, paste(condition_label, "— PTM 7-Day Entrainment"))
     })
 
-    output[[paste0(prefix, "_ptm30_plot")]] <- renderPlot({
+    output[[paste0(prefix, "_ptm30_plot")]] <- renderPlotly({
       df <- ptm_result() %>% filter(Model == "PTM 30-Day Entrainment")
       make_ptm_bar(df, paste(condition_label, "— PTM 30-Day Entrainment"))
     })
@@ -818,6 +1150,92 @@ server <- function(input, output, session) {
       )
     })
 
+    output[[paste0("download_", prefix, "_ptm7_map")]] <- downloadHandler(
+      filename = function() {
+        paste0(
+          prefix,
+          "_PTM_7day_map_",
+          format(Sys.Date(), "%Y-%m-%d"),
+          ".png"
+        )
+      },
+      contentType = "image/png",
+      content = function(file) {
+
+        df <- ptm_result() %>%
+          filter(Model == "PTM 7-Day Entrainment")
+
+        p <- make_ptm_png_plot(
+          df = df,
+          threshold = input[[paste0(prefix, "_ptm_threshold")]],
+          title = paste(
+            condition_label,
+            "— PTM 7-Day Entrainment Risk Map"
+          )
+        )
+
+        grDevices::png(
+          filename = file,
+          width = 3900,
+          height = 2700,
+          units = "px",
+          res = 300,
+          bg = "white",
+          type = "cairo"
+        )
+
+        on.exit(
+          grDevices::dev.off(),
+          add = TRUE
+        )
+
+        print(p)
+      }
+    )
+
+    output[[paste0("download_", prefix, "_ptm30_map")]] <- downloadHandler(
+      filename = function() {
+        paste0(
+          prefix,
+          "_PTM_30day_map_",
+          format(Sys.Date(), "%Y-%m-%d"),
+          ".png"
+        )
+      },
+      contentType = "image/png",
+      content = function(file) {
+
+        df <- ptm_result() %>%
+          filter(Model == "PTM 30-Day Entrainment")
+
+        p <- make_ptm_png_plot(
+          df = df,
+          threshold = input[[paste0(prefix, "_ptm_threshold")]],
+          title = paste(
+            condition_label,
+            "— PTM 30-Day Entrainment Risk Map"
+          )
+        )
+
+        grDevices::png(
+          filename = file,
+          width = 3900,
+          height = 2700,
+          units = "px",
+          res = 300,
+          bg = "white",
+          type = "cairo"
+        )
+
+        on.exit(
+          grDevices::dev.off(),
+          add = TRUE
+        )
+
+        print(p)
+      }
+    )
+
     output[[paste0(prefix, "_ptm7_table")]] <- renderTable({
       ptm_result() %>%
         filter(Model == "PTM 7-Day Entrainment") %>%
@@ -827,7 +1245,7 @@ server <- function(input, output, session) {
           Region,
           Prediction_Percent = round(Prediction_Final, 2)
         ) %>%
-        arrange(desc(Prediction_Percent))
+        arrange(suppressWarnings(as.numeric(DSM2_Node)), DSM2_Node)
     })
 
     output[[paste0(prefix, "_ptm30_table")]] <- renderTable({
@@ -839,7 +1257,7 @@ server <- function(input, output, session) {
           Region,
           Prediction_Percent = round(Prediction_Final, 2)
         ) %>%
-        arrange(desc(Prediction_Percent))
+        arrange(suppressWarnings(as.numeric(DSM2_Node)), DSM2_Node)
     })
 
     output[[paste0(prefix, "_eco_table")]] <- renderTable({
@@ -871,6 +1289,27 @@ server <- function(input, output, session) {
       make_eh_map(eh_result())
     })
 
+    output[[paste0("download_", prefix, "_eh_map")]] <- downloadHandler(
+      filename = function() paste0(prefix, "_Event_Horizon_map_", Sys.Date(), ".png"),
+      contentType = "image/png",
+      content = function(file) {
+        p <- make_eh_png_plot(
+          eh_result(),
+          paste(condition_label, "— Event Horizon Map")
+        )
+        ggsave(
+          filename = file,
+          plot = p,
+          device = "png",
+          width = 13,
+          height = 9,
+          units = "in",
+          dpi = 300,
+          bg = "white"
+        )
+      }
+    )
+
     output[[paste0(prefix, "_eh_scatter")]] <- renderPlotly({
       make_eh_scatter(eh_result())
     })
@@ -880,7 +1319,7 @@ server <- function(input, output, session) {
         paste0(prefix, "_PTM_results_", Sys.Date(), ".csv")
       },
       content = function(file) {
-        write_csv(ptm_result(), file)
+        write_csv(ptm_result() %>% mutate(across(where(is.numeric), ~round(.x, 2))), file)
       }
     )
 
@@ -889,7 +1328,7 @@ server <- function(input, output, session) {
         paste0(prefix, "_ECO_PTM_results_", Sys.Date(), ".csv")
       },
       content = function(file) {
-        write_csv(eco_result(), file)
+        write_csv(eco_result() %>% mutate(across(where(is.numeric), ~round(.x, 2))), file)
       }
     )
 
@@ -898,7 +1337,7 @@ server <- function(input, output, session) {
         paste0(prefix, "_Event_Horizon_result_", Sys.Date(), ".csv")
       },
       content = function(file) {
-        write_csv(eh_result(), file)
+        write_csv(eh_result() %>% mutate(across(where(is.numeric), ~round(.x, 2))), file)
       }
     )
   }
@@ -943,125 +1382,133 @@ server <- function(input, output, session) {
     comparison_data()
   })
 
-  output$comparison_plot <- renderPlot({
+  output$comparison_plot <- renderPlotly({
     df <- comparison_data()
     validate(need(nrow(df) > 0, "Select compatible runs to compare."))
 
+    plot_df <- df %>%
+      mutate(
+        Run_Label = ifelse(
+          is.na(Saved_Run_ID),
+          paste(Condition, Scenario_Name, sep = " — "),
+          Saved_Run_ID
+        ),
+        hover_text = paste0(
+          "<b>Run:</b> ", Run_Label,
+          "<br><b>Model:</b> ", Model,
+          ifelse(
+            !is.na(DSM2_Node),
+            paste0("<br><b>DSM2 Node:</b> ", DSM2_Node),
+            ""
+          ),
+          "<br><b>Prediction:</b> ",
+          sprintf("%.2f", Prediction_Final),
+          " ", Output_Unit
+        )
+      )
+
     if (
       input$comparison_model %in%
-      c(
-        "PTM 7-Day Entrainment",
-        "PTM 30-Day Entrainment"
-      )
+      c("PTM 7-Day Entrainment", "PTM 30-Day Entrainment")
     ) {
-      
-      plot_df <- df %>%
+      plot_df <- plot_df %>%
         mutate(
-          
-          Run_Label = ifelse(
-            is.na(Saved_Run_ID),
-            paste(
-              Condition,
-              Scenario_Name,
-              sep = " — "
-            ),
-            Saved_Run_ID
-          ),
-          
+          DSM2_Node_Num = suppressWarnings(as.numeric(DSM2_Node)),
           DSM2_Node = factor(
             DSM2_Node,
-            levels = unique(
-              DSM2_Node[
-                order(
-                  as.numeric(
-                    DSM2_Node
-                  )
-                )
-              ]
+            levels = rev(
+              unique(
+                DSM2_Node[
+                  order(DSM2_Node_Num, DSM2_Node)
+                ]
+              )
             )
           )
         )
-      
-      ggplot(
+
+      p <- plot_ly(
         plot_df,
-        aes(
-          x = DSM2_Node,
-          y = Prediction_Final,
-          fill = Run_Label
-        )
-      ) +
-        
-        geom_col(
-          position = position_dodge(
-            preserve = "single"
-          )
-        ) +
-        
-        coord_flip() +
-        
-        labs(
-          title = input$comparison_model,
-          x = "DSM2 Node",
-          y = "Predicted Entrainment (%)",
-          fill = "Scenario Run"
-        ) +
-        
-        theme_minimal()
-      
-    }
-    else {
-      
-      plot_df <- df %>%
-        mutate(
-          
-          Run_Label = ifelse(
-            is.na(Saved_Run_ID),
-            paste(
-              Condition,
-              Scenario_Name,
-              sep = " — "
-            ),
-            Saved_Run_ID
-          )
-        )
-      
-      ggplot(
-        plot_df,
-        aes(
-          x = Run_Label,
-          y = Prediction_Final,
-          fill = Run_Label
-        )
-      ) +
-        
-        geom_col(
-          width = 0.7
-        ) +
-        
-        labs(
-          title = input$comparison_model,
-          x = "Scenario Run",
-          
-          y = ifelse(
-            input$comparison_model ==
-              "Event Horizon",
-            "Event Horizon Distance (River Miles)",
-            "Prediction (%)"
+        x = ~Prediction_Final,
+        y = ~DSM2_Node,
+        color = ~Run_Label,
+        type = "bar",
+        orientation = "h",
+        text = ~sprintf("%.2f", Prediction_Final),
+        textposition = "auto",
+        hovertext = ~hover_text,
+        hoverinfo = "text"
+      ) %>%
+        layout(
+          barmode = "group",
+          xaxis = list(
+            title = "<b>Predicted Entrainment (%)</b>",
+            tickfont = list(size = 13)
           ),
-          
-          fill = "Scenario Run"
-        ) +
-        
-        theme_minimal() +
-        
-        theme(
-          axis.text.x = element_text(
-            angle = 30,
-            hjust = 1
+          yaxis = list(
+            title = "<b>DSM2 Node</b>",
+            tickfont = list(size = 13),
+            automargin = TRUE
           )
         )
-      
+    } else {
+      p <- plot_ly(
+        plot_df,
+        x = ~Run_Label,
+        y = ~Prediction_Final,
+        color = ~Run_Label,
+        type = "bar",
+        text = ~sprintf("%.2f", Prediction_Final),
+        textposition = "outside",
+        hovertext = ~hover_text,
+        hoverinfo = "text"
+      ) %>%
+        layout(
+          xaxis = list(
+            title = "<b>Scenario Run</b>",
+            tickangle = -25,
+            automargin = TRUE,
+            tickfont = list(size = 12)
+          ),
+          yaxis = list(
+            title = if (
+              input$comparison_model == "Event Horizon"
+            ) {
+              "<b>Event Horizon Distance (River Miles)</b>"
+            } else {
+              "<b>Prediction (%)</b>"
+            },
+            tickfont = list(size = 13)
+          ),
+          showlegend = FALSE
+        )
     }
+
+    p %>%
+      layout(
+        title = list(
+          text = paste0("<b>", input$comparison_model, " Comparison</b>"),
+          x = 0.02,
+          xanchor = "left"
+        ),
+        plot_bgcolor = "#FFFFFF",
+        paper_bgcolor = "#FFFFFF",
+        font = list(
+          family = "Arial, Segoe UI, sans-serif",
+          size = 14,
+          color = "#1F1F1F"
+        ),
+        margin = list(l = 100, r = 60, t = 80, b = 120)
+      ) %>%
+      config(
+        displaylogo = FALSE,
+        toImageButtonOptions = list(
+          format = "png",
+          filename = "scenario_comparison",
+          width = 1600,
+          height = 1000,
+          scale = 2
+        )
+      )
   })
 
   output$download_comparison <- downloadHandler(
@@ -1069,7 +1516,126 @@ server <- function(input, output, session) {
       paste0("scenario_comparison_", Sys.Date(), ".csv")
     },
     content = function(file) {
-      write_csv(comparison_data(), file)
+      write_csv(comparison_data() %>% mutate(across(where(is.numeric), ~round(.x, 2))), file)
+    }
+  )
+
+
+  archive_runs <- reactive({
+    runs <- saved_runs()
+    if (length(runs) == 0) return(list())
+    runs[vapply(runs, function(x) {
+      "Input_Method" %in% names(x) && any(x$Input_Method == "folder", na.rm = TRUE)
+    }, logical(1))]
+  })
+
+  output$omri_archive_available <- reactive({
+    length(archive_runs()) > 0
+  })
+  outputOptions(output, "omri_archive_available", suspendWhenHidden = FALSE)
+
+  output$omri_comparison_status <- renderUI({
+    if (length(archive_runs()) == 0) {
+      tags$div(
+        class = "alert alert-info",
+        tags$b("OMRI comparison is not active yet."),
+        tags$br(),
+        "This section becomes available only after one or more runs are created using the Read from Archive Folder input method."
+      )
+    } else {
+      tags$div(class = "alert alert-success", "Archive-folder runs are available for OMRI comparison.")
+    }
+  })
+
+  output$omri_run_selector <- renderUI({
+    available <- names(archive_runs())
+    checkboxGroupInput("omri_comparison_runs", "Select OMRI Runs:", choices = available, selected = available)
+  })
+
+  omri_comparison_data <- reactive({
+    req(input$omri_comparison_runs)
+    selected <- lapply(input$omri_comparison_runs, function(name) archive_runs()[[name]])
+    bind_rows(selected) %>% filter(Model == input$omri_comparison_model)
+  })
+
+  output$omri_comparison_table <- renderTable({
+    omri_comparison_data()
+  })
+
+  output$omri_comparison_plot <- renderPlotly({
+    df <- omri_comparison_data()
+    validate(need(nrow(df) > 0, "Select compatible OMRI archive runs to compare."))
+
+    plot_df <- df %>%
+      mutate(
+        Run_Label = ifelse(
+          is.na(Saved_Run_ID),
+          paste(Condition, Scenario_Name, sep = " — "),
+          Saved_Run_ID
+        ),
+        hover_text = paste0(
+          "<b>OMRI Run:</b> ", Run_Label,
+          "<br><b>Model:</b> ", Model,
+          ifelse(
+            !is.na(DSM2_Node),
+            paste0("<br><b>DSM2 Node:</b> ", DSM2_Node),
+            ""
+          ),
+          "<br><b>Prediction:</b> ",
+          sprintf("%.2f", Prediction_Final),
+          " ", Output_Unit
+        )
+      )
+
+    plot_ly(
+      plot_df,
+      x = ~Run_Label,
+      y = ~Prediction_Final,
+      color = ~Run_Label,
+      type = "bar",
+      text = ~sprintf("%.2f", Prediction_Final),
+      textposition = "outside",
+      hovertext = ~hover_text,
+      hoverinfo = "text"
+    ) %>%
+      layout(
+        title = list(
+          text = "<b>OMRI Archive Scenario Comparison</b>",
+          x = 0.02,
+          xanchor = "left"
+        ),
+        xaxis = list(
+          title = "<b>OMRI Scenario</b>",
+          tickangle = -25,
+          automargin = TRUE
+        ),
+        yaxis = list(title = "<b>Prediction</b>"),
+        plot_bgcolor = "#FFFFFF",
+        paper_bgcolor = "#FFFFFF",
+        font = list(
+          family = "Arial, Segoe UI, sans-serif",
+          size = 14,
+          color = "#1F1F1F"
+        ),
+        showlegend = FALSE,
+        margin = list(l = 90, r = 50, t = 80, b = 130)
+      ) %>%
+      config(
+        displaylogo = FALSE,
+        toImageButtonOptions = list(
+          format = "png",
+          filename = "OMRI_scenario_comparison",
+          width = 1600,
+          height = 1000,
+          scale = 2
+        )
+      )
+  })
+
+  output$download_omri_comparison <- downloadHandler(
+    filename = function() paste0("OMRI_scenario_comparison_", Sys.Date(), ".csv"),
+    content = function(file) {
+      write_csv(omri_comparison_data() %>% mutate(across(where(is.numeric), ~round(.x, 2))), file)
     }
   )
 
