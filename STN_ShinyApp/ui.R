@@ -226,6 +226,11 @@ run_page <- function(prefix, title, theme_class) {
   )
 }
 
+# -----------------------------
+# UI
+# -----------------------------
+app_version <- "1.2.2"
+
 ui <- dashboardPage(
   dashboardHeader(
     titleWidth = 300,
