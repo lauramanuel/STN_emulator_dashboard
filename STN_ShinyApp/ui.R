@@ -8,8 +8,13 @@ library(gt)
 app_version <- "1.2.2"
 
 run_page <- function(prefix, title, theme_class) {
+
+  is_current <- identical(prefix, "current")
+  status_name <- if (is_current) "warning" else "info"
+
   tabItem(
     tabName = paste0("run_", prefix),
+
     div(
       class = theme_class,
 
@@ -17,7 +22,7 @@ run_page <- function(prefix, title, theme_class) {
         box(
           width = 12,
           title = paste(title, "— Input Method"),
-          status = if (prefix == "current") "warning" else "info",
+          status = status_name,
           solidHeader = TRUE,
 
           radioButtons(
@@ -26,61 +31,146 @@ run_page <- function(prefix, title, theme_class) {
             choices = c(
               "Enter a Single Set of Values" = "single",
               "Upload CSV or Excel File (coming soon)" = "upload",
-              "Read from Archive Folder (coming soon)" = "folder"
+              "Read from Archive Folder" = "folder"
             ),
             selected = "single",
             inline = TRUE
           ),
 
           conditionalPanel(
-            condition = sprintf("input.%s_input_method != 'single'", prefix),
+            condition = sprintf("input.%s_input_method == 'upload'", prefix),
             tags$div(
               class = "alert alert-info",
-              "This input method is reserved for the next phase. Select “Enter a Single Set of Values” for now."
+              "The upload-file workflow will be implemented in a later phase."
+            )
+          ),
+
+          conditionalPanel(
+            condition = sprintf("input.%s_input_method == 'folder'", prefix),
+            tags$div(
+              class = "archive-control-panel",
+              tags$h4("Archive Selection"),
+              uiOutput(paste0(prefix, "_archive_date_ui")),
+
+              if (!is_current) {
+                uiOutput(paste0(prefix, "_archive_scenario_ui"))
+              },
+
+              tags$p(
+                class = "figure-note",
+                if (is_current) {
+                  paste(
+                    "Current-condition calculations use measured rows.",
+                    "The PTM 7-day and Event Horizon models use seven rolling",
+                    "7-day windows ending on the last seven measured dates.",
+                    "The PTM 30-day and ECO-PTM models use the most recent",
+                    "30-day measured average."
+                  )
+                } else {
+                  paste(
+                    "Forecast calculations use the first seven forecast days",
+                    "for the selected OMRI scenario. Forecast XGEO is held",
+                    "constant at the value from the latest measured date."
+                  )
+                }
+              )
             )
           )
         )
       ),
 
       conditionalPanel(
-        condition = sprintf("input.%s_input_method == 'single'", prefix),
+        condition = sprintf(
+          "input.%s_input_method == 'single' || input.%s_input_method == 'folder'",
+          prefix,
+          prefix
+        ),
 
         tabsetPanel(
           id = paste0(prefix, "_model_tabs"),
 
+          # ==========================================================
+          # PTM
+          # ==========================================================
           tabPanel(
             "PTM Emulator",
+
             fluidRow(
               box(
                 width = 4,
                 title = "PTM Inputs",
-                status = if (prefix == "current") "warning" else "info",
+                status = status_name,
                 solidHeader = TRUE,
 
-                textInput(
-                  paste0(prefix, "_ptm_name"),
-                  "Scenario Name (Input Method: Enter Single Values):",
-                  paste(title, "PTM Run — Single Values")
+                conditionalPanel(
+                  condition = sprintf("input.%s_input_method == 'single'", prefix),
+
+                  textInput(
+                    paste0(prefix, "_ptm_name"),
+                    "Scenario Name (Input Method: Enter Single Values):",
+                    paste(title, "PTM Run — Single Values")
+                  ),
+
+                  numericInput(
+                    paste0(prefix, "_ptm_exp"),
+                    "EXP — Combined Export (cfs):",
+                    6000
+                  ),
+                  numericInput(
+                    paste0(prefix, "_ptm_ver"),
+                    "VER — Vernalis Flow (cfs):",
+                    3000
+                  ),
+                  numericInput(
+                    paste0(prefix, "_ptm_sac"),
+                    "SAC — Freeport Flow (cfs):",
+                    18000
+                  ),
+                  numericInput(
+                    paste0(prefix, "_ptm_east"),
+                    "EAST — East-Side Flow (cfs):",
+                    1500
+                  ),
+                  numericInput(
+                    paste0(prefix, "_ptm_xgeo"),
+                    "XGEO — Interior Delta Flow (cfs):",
+                    3000
+                  )
                 ),
-                numericInput(paste0(prefix, "_ptm_exp"), "EXP — Combined Export (cfs):", 6000),
-                numericInput(paste0(prefix, "_ptm_ver"), "VER — Vernalis Flow (cfs):", 3000),
-                numericInput(paste0(prefix, "_ptm_sac"), "SAC — Freeport Flow (cfs):", 18000),
-                numericInput(paste0(prefix, "_ptm_east"), "EAST — East-Side Flow (cfs):", 1500),
-                numericInput(paste0(prefix, "_ptm_xgeo"), "XGEO — Interior Delta Flow (cfs):", 3000),
+
+                conditionalPanel(
+                  condition = sprintf("input.%s_input_method == 'folder'", prefix),
+
+                  textInput(
+                    paste0(prefix, "_ptm_archive_name"),
+                    "Scenario Name (Input Method: Archive Folder):",
+                    paste(title, "PTM Run — Archive Folder")
+                  ),
+
+                  uiOutput(paste0(prefix, "_ptm_archive_summary"))
+                ),
+
                 selectInput(
                   paste0(prefix, "_ptm_threshold"),
                   "Entrainment Risk Threshold (%):",
                   choices = c(25, 50, 75),
                   selected = 25
                 ),
+
                 actionButton(
                   paste0("run_", prefix, "_ptm"),
-                  "Run 7-day and 30-day PTM Models",
+                  if (is_current) {
+                    "Run Current PTM Models"
+                  } else {
+                    "Run Forecast PTM 7-Day Model"
+                  },
                   icon = icon("play"),
                   class = "btn-success",
                   width = "100%"
                 ),
+
                 br(), br(),
+
                 downloadButton(
                   paste0("download_", prefix, "_ptm"),
                   "Download PTM Results (CSV)",
@@ -92,117 +182,386 @@ run_page <- function(prefix, title, theme_class) {
               box(
                 width = 8,
                 title = "PTM Results — All Supported Nodes",
-                status = if (prefix == "current") "warning" else "info",
+                status = status_name,
                 solidHeader = TRUE,
 
                 tabsetPanel(
                   tabPanel(
                     "7-Day — 15 Nodes",
+
                     tags$h4("Figure 1. PTM 7-Day Entrainment Risk Map"),
-                    tags$p(class = "figure-note", "Map shows predicted node-level entrainment and interpolated high/low risk zones. Click a node for details."),
-                    leafletOutput(paste0(prefix, "_ptm7_map"), height = 500),
-                    downloadButton(paste0("download_", prefix, "_ptm7_map"), "Download Map (PNG)", class = "btn-primary map-download"),
+
+                    conditionalPanel(
+                      condition = sprintf(
+                        "input.%s_input_method == 'folder' && '%s' == 'current'",
+                        prefix,
+                        prefix
+                      ),
+                      uiOutput(paste0(prefix, "_ptm7_map_date_ui"))
+                    ),
+
+                    tags$p(
+                      class = "figure-note",
+                      paste(
+                        "The archive-current map can be stepped through the",
+                        "seven rolling windows. Click a node for details."
+                      )
+                    ),
+
+                    leafletOutput(
+                      paste0(prefix, "_ptm7_map"),
+                      height = 500
+                    ),
+
+                    downloadButton(
+                      paste0("download_", prefix, "_ptm7_map"),
+                      "Download Map (PNG)",
+                      class = "btn-primary map-download"
+                    ),
+
                     br(), br(),
-                    tags$h4("Figure 2. PTM 7-Day Entrainment by DSM2 Node"),
-                    tags$p(class = "figure-note", "Bars follow a fixed numeric DSM2-node order. Hover for node details; use the Plotly camera icon to save the chart as PNG."),
-                    plotlyOutput(paste0(prefix, "_ptm7_plot"), height = 700),
+
+                    conditionalPanel(
+                      condition = sprintf(
+                        "input.%s_input_method == 'folder' && '%s' == 'current'",
+                        prefix,
+                        prefix
+                      ),
+
+                      tags$h4(
+                        "Figure 2. PTM 7-Day Rolling Prediction Time Series"
+                      ),
+
+                      uiOutput(paste0(prefix, "_ptm7_timeseries_nodes_ui")),
+
+                      tags$p(
+                        class = "figure-note",
+                        paste(
+                          "Predictions are shown for seven rolling 7-day",
+                          "windows ending on the last seven measured dates."
+                        )
+                      ),
+
+                      plotlyOutput(
+                        paste0(prefix, "_ptm7_timeseries"),
+                        height = 600
+                      ),
+
+                      br()
+                    ),
+
+                    tags$h4(
+                      if (is_current) {
+                        "Figure 3. Latest PTM 7-Day Entrainment by DSM2 Node"
+                      } else {
+                        "Figure 2. Forecast PTM 7-Day Entrainment by DSM2 Node"
+                      }
+                    ),
+
+                    tags$p(
+                      class = "figure-note",
+                      paste(
+                        "The bar chart and Table 1 show the latest rolling",
+                        "window for archive-current runs, or the selected",
+                        "forecast-scenario average."
+                      )
+                    ),
+
+                    plotlyOutput(
+                      paste0(prefix, "_ptm7_plot"),
+                      height = 700
+                    ),
+
                     br(),
+
                     tags$h4("Table 1. PTM 7-Day Node Results"),
-                    div(class = "wide-table-scroll", tableOutput(paste0(prefix, "_ptm7_table")))
+
+                    div(
+                      class = "wide-table-scroll",
+                      tableOutput(paste0(prefix, "_ptm7_table"))
+                    )
                   ),
+
                   tabPanel(
                     "30-Day — 39 Nodes",
-                    tags$h4("Figure 3. PTM 30-Day Entrainment Risk Map"),
-                    tags$p(class = "figure-note", "Map shows predicted node-level entrainment and interpolated high/low risk zones. Click a node for details."),
-                    leafletOutput(paste0(prefix, "_ptm30_map"), height = 500),
-                    downloadButton(paste0("download_", prefix, "_ptm30_map"), "Download Map (PNG)", class = "btn-primary map-download"),
-                    br(), br(),
-                    tags$h4("Figure 4. PTM 30-Day Entrainment by DSM2 Node"),
-                    tags$p(class = "figure-note", "Bars follow a fixed numeric DSM2-node order. Hover for node details; use the Plotly camera icon to save the chart as PNG."),
-                    plotlyOutput(paste0(prefix, "_ptm30_plot"), height = 900),
-                    br(),
-                    tags$h4("Table 2. PTM 30-Day Node Results"),
-                    div(class = "wide-table-scroll", tableOutput(paste0(prefix, "_ptm30_table")))
+
+                    conditionalPanel(
+                      condition = sprintf(
+                        "input.%s_input_method == 'folder' && '%s' == 'forecast'",
+                        prefix,
+                        prefix
+                      ),
+                      tags$div(
+                        class = "alert alert-info",
+                        paste(
+                          "The archive-folder forecast workflow runs only the",
+                          "PTM 7-day model, based on the seven-day forecast average."
+                        )
+                      )
+                    ),
+
+                    conditionalPanel(
+                      condition = sprintf(
+                        "!(input.%s_input_method == 'folder' && '%s' == 'forecast')",
+                        prefix,
+                        prefix
+                      ),
+
+                      tags$h4("Figure 4. PTM 30-Day Entrainment Risk Map"),
+
+                      tags$p(
+                        class = "figure-note",
+                        paste(
+                          "Archive-current results use the most recent",
+                          "30 measured days."
+                        )
+                      ),
+
+                      leafletOutput(
+                        paste0(prefix, "_ptm30_map"),
+                        height = 500
+                      ),
+
+                      downloadButton(
+                        paste0("download_", prefix, "_ptm30_map"),
+                        "Download Map (PNG)",
+                        class = "btn-primary map-download"
+                      ),
+
+                      br(), br(),
+
+                      tags$h4(
+                        "Figure 5. PTM 30-Day Entrainment by DSM2 Node"
+                      ),
+
+                      plotlyOutput(
+                        paste0(prefix, "_ptm30_plot"),
+                        height = 900
+                      ),
+
+                      br(),
+
+                      tags$h4("Table 2. PTM 30-Day Node Results"),
+
+                      div(
+                        class = "wide-table-scroll",
+                        tableOutput(paste0(prefix, "_ptm30_table"))
+                      )
+                    )
                   )
                 )
               )
             )
           ),
 
+          # ==========================================================
+          # ECO-PTM
+          # ==========================================================
           tabPanel(
             "ECO-PTM",
-            fluidRow(
-              box(
-                width = 4,
-                title = "ECO-PTM Inputs",
-                status = if (prefix == "current") "warning" else "info",
-                solidHeader = TRUE,
 
-                textInput(
-                  paste0(prefix, "_eco_name"),
-                  "Scenario Name (Input Method: Enter Single Values):",
-                  paste(title, "ECO-PTM Run — Single Values")
-                ),
-                numericInput(paste0(prefix, "_eco_sac"), "SAC — Freeport Flow (cfs):", 18000),
-                numericInput(paste0(prefix, "_eco_yol"), "YOL — Yolo Bypass Flow (cfs):", 1000),
-                numericInput(paste0(prefix, "_eco_moke"), "MOKE — Mokelumne Flow (cfs):", 800),
-                radioButtons(
-                  paste0(prefix, "_eco_dcc"),
-                  "Delta Cross Channel Status:",
-                  choices = c("Closed" = 0, "Open" = 1),
-                  selected = 0,
-                  inline = TRUE
-                ),
-                actionButton(
-                  paste0("run_", prefix, "_eco"),
-                  "Run ECO-PTM Models",
-                  icon = icon("play"),
-                  class = "btn-success",
-                  width = "100%"
-                ),
-                br(), br(),
-                downloadButton(
-                  paste0("download_", prefix, "_eco"),
-                  "Download ECO-PTM Results (CSV)",
-                  class = "btn-primary",
-                  style = "width:100%;"
+            conditionalPanel(
+              condition = sprintf(
+                "input.%s_input_method == 'folder' && '%s' == 'forecast'",
+                prefix,
+                prefix
+              ),
+              tags$div(
+                class = "alert alert-info",
+                paste(
+                  "ECO-PTM is not run for archive-folder forecast conditions.",
+                  "Use Current Conditions with Read from Archive Folder."
                 )
+              )
+            ),
+
+            conditionalPanel(
+              condition = sprintf(
+                "!(input.%s_input_method == 'folder' && '%s' == 'forecast')",
+                prefix,
+                prefix
               ),
 
-              box(
-                width = 8,
-                title = "ECO-PTM Results",
-                status = if (prefix == "current") "warning" else "info",
-                solidHeader = TRUE,
-                tableOutput(paste0(prefix, "_eco_table"))
+              fluidRow(
+                box(
+                  width = 4,
+                  title = "ECO-PTM Inputs",
+                  status = status_name,
+                  solidHeader = TRUE,
+
+                  conditionalPanel(
+                    condition = sprintf(
+                      "input.%s_input_method == 'single'",
+                      prefix
+                    ),
+
+                    textInput(
+                      paste0(prefix, "_eco_name"),
+                      "Scenario Name (Input Method: Enter Single Values):",
+                      paste(title, "ECO-PTM Run — Single Values")
+                    ),
+
+                    numericInput(
+                      paste0(prefix, "_eco_sac"),
+                      "SAC — Freeport Flow (cfs):",
+                      18000
+                    ),
+                    numericInput(
+                      paste0(prefix, "_eco_yol"),
+                      "YOL — Yolo Bypass Flow (cfs):",
+                      1000
+                    ),
+                    numericInput(
+                      paste0(prefix, "_eco_moke"),
+                      "MOKE — Mokelumne Flow (cfs):",
+                      800
+                    ),
+                    radioButtons(
+                      paste0(prefix, "_eco_dcc"),
+                      "Delta Cross Channel Status:",
+                      choices = c("Closed" = 0, "Open" = 1),
+                      selected = 0,
+                      inline = TRUE
+                    )
+                  ),
+
+                  conditionalPanel(
+                    condition = sprintf(
+                      "input.%s_input_method == 'folder'",
+                      prefix
+                    ),
+
+                    textInput(
+                      paste0(prefix, "_eco_archive_name"),
+                      "Scenario Name (Input Method: Archive Folder):",
+                      paste(title, "ECO-PTM Run — Archive Folder")
+                    ),
+
+                    tags$p(
+                      class = "figure-note",
+                      paste(
+                        "The model inputs are calculated from the latest",
+                        "30 measured days. DCC is read from the archive file",
+                        "when available; otherwise it defaults to closed (0)."
+                      )
+                    )
+                  ),
+
+                  actionButton(
+                    paste0("run_", prefix, "_eco"),
+                    "Run ECO-PTM Models",
+                    icon = icon("play"),
+                    class = "btn-success",
+                    width = "100%"
+                  ),
+
+                  br(), br(),
+
+                  downloadButton(
+                    paste0("download_", prefix, "_eco"),
+                    "Download ECO-PTM Results (CSV)",
+                    class = "btn-primary",
+                    style = "width:100%;"
+                  )
+                ),
+
+                box(
+                  width = 8,
+                  title = "ECO-PTM Results",
+                  status = status_name,
+                  solidHeader = TRUE,
+
+                  div(
+                    class = "wide-table-scroll",
+                    tableOutput(paste0(prefix, "_eco_table"))
+                  )
+                )
               )
             )
           ),
 
+          # ==========================================================
+          # Event Horizon
+          # ==========================================================
           tabPanel(
             "Event Horizon",
+
             fluidRow(
               box(
                 width = 4,
                 title = "Event Horizon Inputs",
-                status = if (prefix == "current") "warning" else "info",
+                status = status_name,
                 solidHeader = TRUE,
 
-                textInput(
-                  paste0(prefix, "_eh_name"),
-                  "Scenario Name (Input Method: Enter Single Values):",
-                  paste(title, "Event Horizon Run — Single Values")
+                conditionalPanel(
+                  condition = sprintf(
+                    "input.%s_input_method == 'single'",
+                    prefix
+                  ),
+
+                  textInput(
+                    paste0(prefix, "_eh_name"),
+                    "Scenario Name (Input Method: Enter Single Values):",
+                    paste(title, "Event Horizon Run — Single Values")
+                  ),
+
+                  numericInput(
+                    paste0(prefix, "_eh_exp"),
+                    "EXP — Combined Export (cfs):",
+                    6000
+                  ),
+                  numericInput(
+                    paste0(prefix, "_eh_ver"),
+                    "VER — Vernalis Flow (cfs):",
+                    3000
+                  ),
+                  numericInput(
+                    paste0(prefix, "_eh_east"),
+                    "EAST — East-Side Flow (cfs):",
+                    1500
+                  ),
+                  numericInput(
+                    paste0(prefix, "_eh_xgeo"),
+                    "XGEO — Interior Delta Flow (cfs):",
+                    3000
+                  )
                 ),
-                numericInput(paste0(prefix, "_eh_exp"), "EXP — Combined Export (cfs):", 6000),
-                numericInput(paste0(prefix, "_eh_ver"), "VER — Vernalis Flow (cfs):", 3000),
-                numericInput(paste0(prefix, "_eh_east"), "EAST — East-Side Flow (cfs):", 1500),
-                numericInput(paste0(prefix, "_eh_xgeo"), "XGEO — Interior Delta Flow (cfs):", 3000),
+
+                conditionalPanel(
+                  condition = sprintf(
+                    "input.%s_input_method == 'folder'",
+                    prefix
+                  ),
+
+                  textInput(
+                    paste0(prefix, "_eh_archive_name"),
+                    "Scenario Name (Input Method: Archive Folder):",
+                    paste(title, "Event Horizon Run — Archive Folder")
+                  ),
+
+                  tags$p(
+                    class = "figure-note",
+                    if (is_current) {
+                      paste(
+                        "The current-condition model is run for seven rolling",
+                        "7-day measured windows."
+                      )
+                    } else {
+                      paste(
+                        "The forecast-condition model uses the first seven",
+                        "forecast days and the latest measured XGEO."
+                      )
+                    }
+                  )
+                ),
+
                 selectInput(
                   paste0(prefix, "_eh_risk"),
                   "Risk Level (%):",
                   choices = seq(15, 80, by = 5),
                   selected = 25
                 ),
+
                 actionButton(
                   paste0("run_", prefix, "_eh"),
                   "Run Event Horizon",
@@ -210,7 +569,9 @@ run_page <- function(prefix, title, theme_class) {
                   class = "btn-success",
                   width = "100%"
                 ),
+
                 br(), br(),
+
                 downloadButton(
                   paste0("download_", prefix, "_eh"),
                   "Download Event Horizon Result (CSV)",
@@ -222,19 +583,89 @@ run_page <- function(prefix, title, theme_class) {
               box(
                 width = 8,
                 title = "Event Horizon Results",
-                status = if (prefix == "current") "warning" else "info",
+                status = status_name,
                 solidHeader = TRUE,
+
                 tags$h4("Table 1. Event Horizon Prediction"),
-                div(class = "wide-table-scroll", tableOutput(paste0(prefix, "_eh_table"))),
+
+                div(
+                  class = "wide-table-scroll",
+                  tableOutput(paste0(prefix, "_eh_table"))
+                ),
+
                 br(),
+
                 tags$h4("Figure 1. Predicted Event Horizon Map"),
-                tags$p(class = "figure-note", "The red reach represents the predicted upstream Event Horizon distance for the selected risk level."),
-                leafletOutput(paste0(prefix, "_eh_map"), height = 500),
-                downloadButton(paste0("download_", prefix, "_eh_map"), "Download Map (PNG)", class = "btn-primary map-download"),
+
+                conditionalPanel(
+                  condition = sprintf(
+                    "input.%s_input_method == 'folder' && '%s' == 'current'",
+                    prefix,
+                    prefix
+                  ),
+                  uiOutput(paste0(prefix, "_eh_map_date_ui"))
+                ),
+
+                tags$p(
+                  class = "figure-note",
+                  paste(
+                    "The red reach represents the predicted upstream",
+                    "Event Horizon distance."
+                  )
+                ),
+
+                leafletOutput(
+                  paste0(prefix, "_eh_map"),
+                  height = 500
+                ),
+
+                downloadButton(
+                  paste0("download_", prefix, "_eh_map"),
+                  "Download Map (PNG)",
+                  class = "btn-primary map-download"
+                ),
+
                 br(), br(),
-                tags$h4("Figure 2. Historical Event Horizon Conditions"),
-                tags$p(class = "figure-note", "Historical conditions are shown in the background; the selected scenario is highlighted in red. Use the Plotly camera icon to save as PNG."),
-                plotlyOutput(paste0(prefix, "_eh_scatter"), height = 600)
+
+                conditionalPanel(
+                  condition = sprintf(
+                    "input.%s_input_method == 'folder' && '%s' == 'current'",
+                    prefix,
+                    prefix
+                  ),
+
+                  tags$h4(
+                    "Figure 2. Event Horizon Rolling Prediction Time Series"
+                  ),
+
+                  plotlyOutput(
+                    paste0(prefix, "_eh_timeseries"),
+                    height = 500
+                  ),
+
+                  br()
+                ),
+
+                tags$h4(
+                  if (is_current) {
+                    "Figure 3. Historical Event Horizon Conditions"
+                  } else {
+                    "Figure 2. Historical Event Horizon Conditions"
+                  }
+                ),
+
+                tags$p(
+                  class = "figure-note",
+                  paste(
+                    "Historical conditions are shown in the background;",
+                    "the selected result is highlighted in red."
+                  )
+                ),
+
+                plotlyOutput(
+                  paste0(prefix, "_eh_scatter"),
+                  height = 600
+                )
               )
             )
           )
@@ -243,11 +674,6 @@ run_page <- function(prefix, title, theme_class) {
     )
   )
 }
-
-# -----------------------------
-# UI
-# -----------------------------
-app_version <- "1.2.2"
 
 ui <- dashboardPage(
   dashboardHeader(
@@ -295,6 +721,20 @@ ui <- dashboardPage(
           margin-top: 10px;
           margin-bottom: 5px;
         }
+        .archive-control-panel {
+          padding: 12px 14px;
+          margin-top: 10px;
+          background: #f4fbfc;
+          border: 1px solid #b8dce2;
+          border-radius: 6px;
+        }
+
+        .archive-control-panel h4 {
+          margin-top: 0;
+          color: #075f6d;
+          font-weight: 700;
+        }
+
         .wide-table-scroll {
           width: 100%;
           overflow-x: auto;
@@ -615,28 +1055,82 @@ ui <- dashboardPage(
 
           tabPanel(
             "OMRI Archive Comparison",
+
             fluidRow(
               box(
-                width = 12,
-                title = "OMRI Scenario Comparison",
+                width = 4,
+                title = "Archive Comparison Controls",
                 status = "primary",
                 solidHeader = TRUE,
-                uiOutput("omri_comparison_status"),
-                conditionalPanel(
-                  condition = "output.omri_archive_available",
-                  selectInput("omri_comparison_model", "Model:", choices = c(
+
+                uiOutput("omri_archive_dates_ui"),
+
+                selectInput(
+                  "omri_comparison_model",
+                  "Forecast Model:",
+                  choices = c(
                     "PTM 7-Day Entrainment",
-                    "PTM 30-Day Entrainment",
-                    "ECO-PTM Survival",
-                    "ECO-PTM Interior Routing",
                     "Event Horizon"
-                  )),
-                  uiOutput("omri_run_selector"),
-                  downloadButton("download_omri_comparison", "Download OMRI Comparison (CSV)", class = "btn-primary"),
-                  br(), br(),
-                  plotlyOutput("omri_comparison_plot", height = 700),
-                  br(),
-                  div(class = "wide-table-scroll", tableOutput("omri_comparison_table"))
+                  ),
+                  selected = "PTM 7-Day Entrainment"
+                ),
+
+                conditionalPanel(
+                  condition = "input.omri_comparison_model == 'Event Horizon'",
+                  selectInput(
+                    "omri_comparison_risk",
+                    "Event Horizon Risk Level (%):",
+                    choices = seq(15, 80, by = 5),
+                    selected = 25
+                  )
+                ),
+
+                actionButton(
+                  "build_omri_comparison",
+                  "Run All Available OMRI Scenarios",
+                  icon = icon("play"),
+                  class = "btn-success",
+                  width = "100%"
+                ),
+
+                br(), br(),
+
+                downloadButton(
+                  "download_omri_comparison",
+                  "Download OMRI Comparison (CSV)",
+                  class = "btn-primary",
+                  style = "width:100%;"
+                )
+              ),
+
+              box(
+                width = 8,
+                title = "OMRI Forecast Scenario Comparison",
+                status = "primary",
+                solidHeader = TRUE,
+
+                tags$p(
+                  class = "figure-note",
+                  paste(
+                    "For every selected archive date, the app reads each",
+                    "available OMRI CSV, calculates the seven-day forecast",
+                    "average, carries forward the latest measured XGEO,",
+                    "and compares the forecast emulator results."
+                  )
+                ),
+
+                uiOutput("omri_comparison_status"),
+
+                plotlyOutput(
+                  "omri_comparison_plot",
+                  height = 750
+                ),
+
+                br(),
+
+                div(
+                  class = "wide-table-scroll",
+                  tableOutput("omri_comparison_table")
                 )
               )
             )
