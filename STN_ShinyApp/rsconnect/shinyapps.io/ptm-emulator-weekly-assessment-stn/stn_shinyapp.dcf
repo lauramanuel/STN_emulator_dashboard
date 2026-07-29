@@ -1,10 +1,12 @@
 name: stn_shinyapp
-title:
+title: STN_ShinyApp
 username: ptm-emulator-weekly-assessment-stn
 account: ptm-emulator-weekly-assessment-stn
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 17644352
-bundleId: 12327160
+bundleId: 12339064
 url: https://ptm-emulator-weekly-assessment-stn.shinyapps.io/stn_shinyapp/
 version: 1
+asMultiple: FALSE
+asStatic: FALSE
