@@ -1,55 +1,46 @@
+
 library(shiny)
 library(shinydashboard)
 library(leaflet)
+library(plotly)
 library(gt)
-library( plotly)
 
-# -----------------------------
-# Helper UI Functions
-# -----------------------------
+app_version <- "1.2.2"
 
-timeseries_tab <- function(tab_name, title, theme_class, output_id, summary_id, map_id = NULL) {
-  
+run_page <- function(prefix, title, theme_class) {
   tabItem(
-    tabName = tab_name,
-    
+    tabName = paste0("run_", prefix),
     div(
       class = theme_class,
-      
-      if (!is.null(map_id)) {
-        fluidRow(
-          box(
-            width = 12,
-            title = paste(title, "- Entrainment Risk Map"),
-            status = NULL,
-            solidHeader = FALSE,
-            leafletOutput(map_id, height = 550)
+
+      fluidRow(
+        box(
+          width = 12,
+          title = paste(title, "— Input Method"),
+          status = if (prefix == "current") "warning" else "info",
+          solidHeader = TRUE,
+
+          radioButtons(
+            paste0(prefix, "_input_method"),
+            "Input Method:",
+            choices = c(
+              "Enter a Single Set of Values" = "single",
+              "Upload CSV or Excel File (coming soon)" = "upload",
+              "Read from Archive Folder (coming soon)" = "folder"
+            ),
+            selected = "single",
+            inline = TRUE
+          ),
+
+          conditionalPanel(
+            condition = sprintf("input.%s_input_method != 'single'", prefix),
+            tags$div(
+              class = "alert alert-info",
+              "This input method is reserved for the next phase. Select “Enter a Single Set of Values” for now."
+            )
           )
         )
-      },
-      
-      fluidRow(
-        box(
-          width = 12,
-          title = title,
-          status = NULL,
-          solidHeader = FALSE,
-          plotOutput(output_id, height = "900px")
-        )
       ),
-      
-      fluidRow(
-        box(
-          width = 12,
-          title = "Selected Node Detail",
-          status = NULL,
-          solidHeader = FALSE,
-          tableOutput(summary_id)
-        )
-      )
-    )
-  )
-}
 
 ecoptm_tab <- function(tab_name, title, theme_class, table_id) {
   tabItem(
@@ -104,7 +95,6 @@ event_horizon_tab <- function(
           title = paste(title, "- Event Horizon Scatter"),
           plotlyOutput(scatter_id, height = 600)
         )
-        
       )
     )
   )
@@ -116,125 +106,27 @@ event_horizon_tab <- function(
 app_version <- "1.2.2"
 
 ui <- dashboardPage(
-  
-  # -----------------------------
-  # Header
-  # -----------------------------
   dashboardHeader(
     titleWidth = 300,
-    
     title = tags$div(
-      style = "display:flex; align-items:center;",
-      
-      tags$img(
-        src = "logo.png",
-        height = "30px",
-        style = "margin-right:10px;"
-      ),
-      
-      tags$span(
-        "Entrainment Dashboard",
-        style = "font-family: Segoe UI Semibold; font-size: 16px;"
-      )
+      style = "display:flex;align-items:center;",
+      tags$img(src = "logo.png", height = "30px", style = "margin-right:10px;"),
+      tags$span("Entrainment Dashboard", style = "font-family:Segoe UI Semibold;font-size:16px;")
     )
   ),
-  
-  # -----------------------------
-  # Sidebar
-  # -----------------------------
+
   dashboardSidebar(
-    
     sidebarMenu(
       id = "tabs",
-      
       menuItem("About", tabName = "about", icon = icon("info-circle")),
-      
-      menuItem(
-        "Current 7d Average Flow",
-        icon = icon("water"),
-        startExpanded = TRUE,
-        menuSubItem("PTM 7d Entrain", tabName = "current7_ptm7", icon = icon("chart-line")),
-        menuSubItem("Event Horizon", tabName = "current7_event", icon = icon("map"))
-      ),
-      
-      menuItem(
-        "Current 30d Average Flow",
-        icon = icon("droplet"),
-        startExpanded = FALSE,
-        menuSubItem("PTM 30d Entrain", tabName = "current30_ptm30", icon = icon("chart-line")),
-        menuSubItem("ECO PTM", tabName = "current30_ecoptm", icon = icon("table"))
-      ),
-      
-      menuItem(
-        "Forecast 7d Average Flow",
-        icon = icon("cloud-sun"),
-        startExpanded = FALSE,
-        menuSubItem("PTM 7d Entrain", tabName = "forecast7_ptm7", icon = icon("chart-line")),
-        menuSubItem("Event Horizon", tabName = "forecast7_event", icon = icon("map"))
-      ),
-      
+      menuItem("Run Current Conditions", tabName = "run_current", icon = icon("water")),
+      menuItem("Run Forecast Conditions", tabName = "run_forecast", icon = icon("cloud-sun")),
+      menuItem("Scenario Comparison", tabName = "comparison", icon = icon("balance-scale")),
       menuItem("Data Access", tabName = "data", icon = icon("database"))
-    ),
-    
-    br(),
-    
-    div(
-      class = "sidebar-controls",
-      
-      # Selects which dated run folder's master xlsx drives the app,
-      # e.g. "20260623" -> Jun 23, 2026. Choices are populated from
-      # the folder names found under STN_EMULATOR/Output/.
-      selectInput("run_date", "Model Run Date:", choices = NULL),
-      
-      # Informational display of the active scenario's date window
-      # (e.g. "Jun 15 - Jun 21, 2026 (7-day average)"). Not a filter --
-      # each averaging window is a fixed snapshot in the master file.
-      uiOutput("date_window"),
-      
-      uiOutput("scenario_control"),
-      
-      conditionalPanel(
-        condition = "
-    input.tabs == 'current7_ptm7' ||
-    input.tabs == 'current30_ptm30' ||
-    input.tabs == 'forecast7_ptm7'
-  ",
-        selectInput("node", "Node:", choices = NULL)
-      ),
-      conditionalPanel(
-        condition = "
-    input.tabs == 'current7_ptm7' ||
-    input.tabs == 'current30_ptm30' ||
-    input.tabs == 'forecast7_ptm7'
-  ",
-        selectInput(
-          "entrainment_risk_threshold",
-          "Entrainment Risk Threshold:",
-          choices = c(25, 50, 75),
-          selected = 25
-        )
-      ),
-      
-      conditionalPanel(
-        condition = "
-    input.tabs == 'current7_event' ||
-    input.tabs == 'forecast7_event'
-  ",
-        selectInput(
-          "eh_risk",
-          "Event Horizon Risk:",
-          choices = c(25, 50, 75),
-          selected = 25
-        )
-      )
     )
   ),
-  
-  # -----------------------------
-  # Body
-  # -----------------------------
+
   dashboardBody(
-    
     tags$head(
       tags$style(HTML("
         
@@ -430,9 +322,8 @@ ui <- dashboardPage(
         
       "))
     ),
-    
+
     tabItems(
-      
       # -----------------------------
       # About
       # -----------------------------
@@ -691,56 +582,7 @@ ui <- dashboardPage(
         "current7_ptm7_summary",
         "current7_ptm7_map"
       ),
-      
-      
-      event_horizon_tab(
-        "current7_event",
-        "Current 7d Average Flow - Event Horizon",
-        "current-theme",
-        "current7_event_map",
-        "current7_event_scatter"
-      ),
-      
-      # -----------------------------
-      # Current 30d Average Flow
-      # -----------------------------
 
-      timeseries_tab(
-        "current30_ptm30",
-        "Current 30d Average Flow - PTM 30d Entrainment",
-        "current-theme",
-        "current30_ptm30_plot",
-        "current30_ptm30_summary",
-        "current30_ptm30_map"
-      ),
-      
-      ecoptm_tab(
-        "current30_ecoptm",
-        "Current 30d Average Flow - ECO PTM",
-        "current-theme",
-        "current30_ecoptm_table"
-      ),
-      
-      # -----------------------------
-      # Forecast 7d Average Flow
-      # -----------------------------
-      timeseries_tab(
-        "forecast7_ptm7",
-        "Forecast 7d Average Flow - PTM 7d Entrainment",
-        "forecast-theme",
-        "forecast7_ptm7_plot",
-        "forecast7_ptm7_summary",
-        "forecast7_ptm7_map"
-      ),
-      
-      event_horizon_tab(
-        "forecast7_event",
-        "Forecast 7d Average Flow - Event Horizon",
-        "forecast-theme",
-        "forecast7_event_map",
-        "forecast7_event_scatter"
-      ),
-      
       # -----------------------------
       # Data Access
       # -----------------------------
