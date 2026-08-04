@@ -16,6 +16,7 @@ library(lightgbm)
 library(xgboost)
 library(metR)
 library(mgcv)
+library (ps)
 
 MODEL_DIR <- "STN_EMULATOR/models"
 OUTPUT_DIR <- "STN_EMULATOR/Output"
