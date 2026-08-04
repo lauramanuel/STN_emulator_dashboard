@@ -21,7 +21,7 @@ run_page <- function(prefix, title, theme_class) {
       fluidRow(
         box(
           width = 12,
-          title = paste(title, "??? Input Method"),
+          title = paste(title, " Input Method"),
           status = status_name,
           solidHeader = TRUE,
           
@@ -108,32 +108,32 @@ run_page <- function(prefix, title, theme_class) {
                   textInput(
                     paste0(prefix, "_ptm_name"),
                     "Scenario Name (User Defined):",
-                    paste(title, "PTM Run - Single Values")
+                    paste(title, "PTM Run Single Values")
                   ),
                   
                   numericInput(
                     paste0(prefix, "_ptm_exp"),
-                    "EXP - Combined Export (cfs):",
+                    "EXP: Combined Export (cfs):",
                     6000
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_ver"),
-                    "VER - Vernalis Flow (cfs):",
+                    "VER: Vernalis Flow (cfs):",
                     3000
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_sac"),
-                    "SAC - Freeport Flow (cfs):",
+                    "SAC: Freeport Flow (cfs):",
                     18000
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_east"),
-                    "EAST - East-Side Flow (cfs):",
+                    "EAST: East-Side Flow (cfs):",
                     1500
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_xgeo"),
-                    "XGEO - Interior Delta Flow (cfs):",
+                    "XGEO: Interior Delta Flow (cfs):",
                     3000
                   )
                 ),
@@ -144,7 +144,7 @@ run_page <- function(prefix, title, theme_class) {
                   textInput(
                     paste0(prefix, "_ptm_archive_name"),
                     "Scenario Name (Input Method: Archive Folder):",
-                    paste(title, "PTM Emulator Run - Archive Folder")
+                    paste(title, "PTM Emulator Run: Archive Folder")
                   ),
                   
                   uiOutput(paste0(prefix, "_ptm_archive_summary"))
@@ -193,13 +193,13 @@ run_page <- function(prefix, title, theme_class) {
               
               box(
                 width = 8,
-                title = "PTM Emulator Results - All Supported Nodes",
+                title = "PTM Emulator Results: All Supported Nodes",
                 status = status_name,
                 solidHeader = TRUE,
                 
                 tabsetPanel(
                   tabPanel(
-                    "7-Day - 15 Nodes",
+                    "7-Day: 15 Nodes",
                     
                     tags$h4("PTM Emulator 7-Day Entrainment Risk Map"),
                     
@@ -296,7 +296,7 @@ run_page <- function(prefix, title, theme_class) {
                   ),
                   
                   tabPanel(
-                    "30-Day - 39 Nodes",
+                    "30-Day: 39 Nodes",
                     
                     conditionalPanel(
                       condition = sprintf(
@@ -411,22 +411,22 @@ run_page <- function(prefix, title, theme_class) {
                     textInput(
                       paste0(prefix, "_eco_name"),
                       "Scenario Name (User Defined):",
-                      paste(title, "ECO-PTM Emulator Run - Single Values")
+                      paste(title, "ECO-PTM Emulator Run: Single Values")
                     ),
                     
                     numericInput(
                       paste0(prefix, "_eco_sac"),
-                      "SAC - Freeport Flow (cfs):",
+                      "SAC: Freeport Flow (cfs):",
                       18000
                     ),
                     numericInput(
                       paste0(prefix, "_eco_yol"),
-                      "YOL - Yolo Bypass Flow (cfs):",
+                      "YOL: Yolo Bypass Flow (cfs):",
                       1000
                     ),
                     numericInput(
                       paste0(prefix, "_eco_moke"),
-                      "MOKE - Mokelumne Flow (cfs):",
+                      "MOKE: Mokelumne Flow (cfs):",
                       800
                     ),
                     radioButtons(
@@ -447,7 +447,7 @@ run_page <- function(prefix, title, theme_class) {
                     textInput(
                       paste0(prefix, "_eco_archive_name"),
                       "Scenario Name (Input Method: Archive Folder):",
-                      paste(title, "ECO-PTM Emulator Run - Archive Folder")
+                      paste(title, "ECO-PTM Emulator Run: Archive Folder")
                     ),
                     
                     tags$p(
@@ -515,27 +515,27 @@ run_page <- function(prefix, title, theme_class) {
                   textInput(
                     paste0(prefix, "_eh_name"),
                     "Scenario Name (User Defined):",
-                    paste(title, "Event Horizon Run - Single Values")
+                    paste(title, "Event Horizon Run: Single Values")
                   ),
                   
                   numericInput(
                     paste0(prefix, "_eh_exp"),
-                    "EXP - Combined Export (cfs):",
+                    "EXP: Combined Export (cfs):",
                     6000
                   ),
                   numericInput(
                     paste0(prefix, "_eh_ver"),
-                    "VER - Vernalis Flow (cfs):",
+                    "VER: Vernalis Flow (cfs):",
                     3000
                   ),
                   numericInput(
                     paste0(prefix, "_eh_east"),
-                    "EAST - East-Side Flow (cfs):",
+                    "EAST: East-Side Flow (cfs):",
                     1500
                   ),
                   numericInput(
                     paste0(prefix, "_eh_xgeo"),
-                    "XGEO - Interior Delta Flow (cfs):",
+                    "XGEO: Interior Delta Flow (cfs):",
                     3000
                   )
                 ),
@@ -549,7 +549,7 @@ run_page <- function(prefix, title, theme_class) {
                   textInput(
                     paste0(prefix, "_eh_archive_name"),
                     "Scenario Name (Input Method: Archive Folder):",
-                    paste(title, "Event Horizon Run - Archive Folder")
+                    paste(title, "Event Horizon Run: Archive Folder")
                   ),
                   
                   tags$p(

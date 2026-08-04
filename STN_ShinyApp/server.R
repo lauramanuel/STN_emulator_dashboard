@@ -46,18 +46,18 @@ if (length(missing_model_files) > 0) {
   )
 }
 
-cat("Loading PTM7\n")
+cat("Loading PTM7 ")
 ptm7_model <- lgb.load(file.path(MODEL_DIR, "PTM_Entrainment7d_lightgbm.txt"))
-cat("Loading PTM30\n")
+cat("Loading PTM30 ")
 ptm30_model <- lgb.load(file.path(MODEL_DIR, "PTM_Entrainment30d_lightgbm.txt"))
-cat("Loading ECO Survival\n")
+cat("Loading ECO Survival ")
 eco_survival_model <- lgb.load(file.path(MODEL_DIR, "ECOPTM_survival_lightgbm.txt"))
-cat("Loading ECO Interior\n")
+cat("Loading ECO Interior ")
 eco_interior_model <- lgb.load(file.path(MODEL_DIR, "ECOPTM_interior_lightgbm.txt"))
-cat("Loading Event Horizon model\n")
+cat("Loading Event Horizon model ")
 event_horizon_model <- xgb.load(  file.path(MODEL_DIR, "xgb_event_horizon.json"))
-cat("Finished Event Horizon model\n")
-cat("Finished loading models\n")
+cat("Finished Event Horizon model ")
+cat("Finished loading models ")
 
 bound_percent <- function(x) pmax(0, pmin(100, x))
 
@@ -2741,7 +2741,7 @@ server <- function(input, output, session) {
           DSM2_Node,
           paste0(
             DSM2_Node,
-            " ??? ",
+            " - ",
             Location
           )
         ),
@@ -2985,7 +2985,7 @@ server <- function(input, output, session) {
         node_label = ifelse(
           is.na(Location) | Location == "",
           DSM2_Node,
-          paste0(DSM2_Node, " ??? ", Location)
+          paste0(DSM2_Node, " - ", Location)
         ),
         value_label = sprintf("%.0f%%", Prediction_Final),
         hover_text = paste0(
@@ -3295,7 +3295,7 @@ server <- function(input, output, session) {
         position = "topright",
         colors = c("#e8b5b5", "#a9d4e6"),
         labels = c(
-          paste0("High Risk Zone: ??? ", threshold, "%"),
+          paste0("High Risk Zone: > ", threshold, "%"),
           paste0("Low Risk Zone: < ", threshold, "%")
         ),
         title = "Entrainment Risk Zones",
@@ -3308,7 +3308,11 @@ server <- function(input, output, session) {
         ),
         options = layersControlOptions(collapsed = FALSE)
       ) %>%
-      fitBounds(-122.15, 37.75, -121.15, 38.85)
+      leaflet::setView(
+        lng = -121.60,
+        lat = 38.05,
+        zoom = 9
+      )
   }
   
   make_event_geometry <- function(distance_miles) {
@@ -3390,12 +3394,11 @@ server <- function(input, output, session) {
         options = layersControlOptions(collapsed = FALSE)
       ) |>
       
-      fitBounds(
-        -122.15,
-        37.75,
-        -121.15,
-        38.85
-      )
+    leaflet::setView(
+      lng = -121.60,
+      lat = 38.05,
+      zoom = 10
+    )
   }
   
   make_eh_scatter <- function(df) {
@@ -3608,8 +3611,7 @@ server <- function(input, output, session) {
         inherit.aes = FALSE,
         size = 4,
         fontface = "bold",
-        color = "black",
-        bg.color = "white"
+        color = "black"
       )+
       
       geom_point(
@@ -3668,7 +3670,7 @@ server <- function(input, output, session) {
       
       scale_color_viridis_d(
         option = "viridis",
-        name = "Historical Event Horizon\nDistance (miles)",
+        name = "Historical Event Horizon Distance (miles)",
         drop = FALSE
       )+
       
@@ -3699,7 +3701,7 @@ server <- function(input, output, session) {
       
       labs(
         title = paste0(
-          "Historical Event Horizon Conditions ??? ",
+          "Historical Event Horizon Conditions > ",
           risk,
           "% Risk"
         ),
@@ -3797,13 +3799,13 @@ server <- function(input, output, session) {
         mutate(Risk_Zone = paste0("Low risk: < ", threshold, "%"))
       
       high_zone <- st_transform(st_make_valid(zones$high), 26910) %>%
-        mutate(Risk_Zone = paste0("High risk: ??? ", threshold, "%"))
+        mutate(Risk_Zone = paste0("High risk: > ", threshold, "%"))
       
       zone_values <- stats::setNames(
         c("#A9D4E6", "#E8B5B5"),
         c(
           paste0("Low risk: < ", threshold, "%"),
-          paste0("High risk: ??? ", threshold, "%")
+          paste0("High risk: > ", threshold, "%")
         )
       )
       
@@ -3850,7 +3852,7 @@ server <- function(input, output, session) {
       ) +
       scale_color_viridis_c(
         option = "D",
-        name = "Predicted\nentrainment (%)",
+        name = "Predicted entrainment (%)",
         limits = c(0, 100),
         breaks = c(0, 25, 50, 75, 100)
       ) +
@@ -3869,7 +3871,7 @@ server <- function(input, output, session) {
           )
         } else {
           paste0(
-            "Red shading indicates entrainment ??? ",
+            "Red shading indicates entrainment > ",
             threshold,
             "%; blue shading indicates entrainment < ",
             threshold,
@@ -4444,7 +4446,7 @@ server <- function(input, output, session) {
           data$DSM2_Node,
           paste0(
             data$DSM2_Node,
-            " ??? ",
+            " - ",
             data$Location
           )
         ),
@@ -5250,7 +5252,7 @@ server <- function(input, output, session) {
       mutate(
         Run_Label = ifelse(
           is.na(Saved_Run_ID),
-          paste(Condition, Scenario_Name, sep = " ??? "),
+          paste(Condition, Scenario_Name, sep = " - "),
           Saved_Run_ID
         ),
         hover_text = paste0(
@@ -5444,7 +5446,7 @@ server <- function(input, output, session) {
                   scenario_name <- paste(
                     archive_date,
                     scenario,
-                    sep = " ??? OMRI "
+                    sep = " - OMRI "
                   )
                   
                   if (
@@ -6469,11 +6471,10 @@ server <- function(input, output, session) {
           )
         )
       ) |>
-      leaflet::fitBounds(
-        lng1 = min(data$X, na.rm = TRUE),
-        lat1 = min(data$Y, na.rm = TRUE),
-        lng2 = max(data$X, na.rm = TRUE),
-        lat2 = max(data$Y, na.rm = TRUE)
+      leaflet::setView(
+        lng = -121.60,
+        lat = 38.05,
+        zoom = 15
       )
   }
   
