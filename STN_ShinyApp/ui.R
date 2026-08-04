@@ -133,7 +133,7 @@ run_page <- function(prefix, title, theme_class) {
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_xgeo"),
-                    "'XGEO' Interior Delta Flow (cfs):",
+                    "XGEO ??? Interior Delta Flow (cfs):",
                     3000
                   )
                 ),

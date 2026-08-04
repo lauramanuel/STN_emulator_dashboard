@@ -3084,160 +3084,107 @@ server <- function(input, output, session) {
       )
   }
   
-  make_entrainment_zones <- function(
-    nodes,
-    threshold,
-    buffer_distance_ft = 1500
-  ) {
+  make_entrainment_zones <- function(nodes, threshold) {
     
     validate(
       need(
-        nrow(nodes) > 1,
-        "Not enough nodes to build risk zones."
+        nrow(nodes) >= 3,
+        "Not enough nodes to create risk zones."
       )
     )
-    nodes <- nodes %>%
-      dplyr::mutate(
-        DSM2_Node = as.integer(DSM2_Node)
+    
+    #-----------------------------------------
+    # High-risk nodes
+    #-----------------------------------------
+    
+    high_nodes <- nodes %>%
+      filter(
+        entrainment >= threshold
       )
     
-    #--------------------------------------------------
-    # Join current entrainment values to DSM2 nodes
-    #--------------------------------------------------
-    
-    node_risk <- dsm2_nodes |>
-      dplyr::left_join(
-        nodes |>
-          st_drop_geometry() |>
-          dplyr::select(
-            DSM2_Node,
-            entrainment
-          ),
-        by = "DSM2_Node"
+    validate(
+      need(
+        nrow(high_nodes) >= 3,
+        paste(
+          "Not enough nodes exceed the",
+          threshold,
+          "% threshold."
+        )
       )
+    )
     
-    #--------------------------------------------------
-    # Assign node risk classes
-    #--------------------------------------------------
+    #-----------------------------------------
+    # Very-low-risk nodes
+    #
+    # These create "holes" in the high-risk
+    # polygon but only if entrainment is
+    # truly low.
+    #-----------------------------------------
     
-    node_risk <- node_risk |>
-      dplyr::mutate(
-        entrainment = tidyr::replace_na(
-          entrainment,
-          0
+    low_nodes <- nodes %>%
+      filter(
+        entrainment < max(
+          10,
+          threshold * 0.25
         )
       )
     
-    #--------------------------------------------------
-    # Build channel risk values
-    #--------------------------------------------------
+    #-----------------------------------------
+    # Build high-risk envelope
+    #-----------------------------------------
     
-    up_values <- channel_definition |>
-      dplyr::left_join(
-        node_risk |>
-          st_drop_geometry() |>
-          dplyr::select(
-            DSM2_Node,
-            entrainment
-          ),
-        by = c(
-          "UPNODE" = "DSM2_Node"
-        )
-      ) |>
-      dplyr::rename(
-        up_entrainment = entrainment
+    high_zone <- high_nodes %>%
+      st_buffer(6000) %>%
+      st_union() %>%
+      st_concave_hull(
+        ratio = 0.3
       )
     
-    channel_risk <- up_values |>
-      dplyr::left_join(
-        node_risk |>
-          st_drop_geometry() |>
-          dplyr::select(
-            DSM2_Node,
-            entrainment
-          ),
-        by = c(
-          "DOWNNODE" = "DSM2_Node"
-        )
-      ) |>
-      dplyr::rename(
-        down_entrainment = entrainment
+    #-----------------------------------------
+    # Build low-risk exclusion areas
+    #-----------------------------------------
+    
+    if (nrow(low_nodes) >= 3) {
+      
+      low_zone <- low_nodes %>%
+        st_union() %>%
+        st_concave_hull(
+          ratio = 0.3
+        ) %>%
+        st_buffer(4000)
+      
+      high_zone <- st_difference(
+        high_zone,
+        low_zone
       )
+      
+    }
     
-    channel_risk <- channel_risk |>
-      dplyr::mutate(
-        up_entrainment =
-          tidyr::replace_na(
-            up_entrainment,
-            0
-          ),
-        
-        down_entrainment =
-          tidyr::replace_na(
-            down_entrainment,
-            0
-          ),
-        
-        channel_entrainment =
-          pmax(
-            up_entrainment,
-            down_entrainment
-          )
-      )
+    #-----------------------------------------
+    # Clip to Delta boundary
+    #-----------------------------------------
     
-    #--------------------------------------------------
-    # Join to channel geometries
-    #--------------------------------------------------
+    high_zone <- st_intersection(
+      high_zone,
+      delta_boundary
+    )
     
-    channel_sf <- dsm2_channels |>
-      dplyr::left_join(
-        channel_risk |>
-          dplyr::select(
-            CHAN_NO,
-            channel_entrainment
-          ),
-        by = "CHAN_NO"
-      )
+    #-----------------------------------------
+    # Everything else becomes low risk
+    #-----------------------------------------
     
-    #--------------------------------------------------
-    # Split into High / Low
-    #--------------------------------------------------
-    
-    high_channels <- channel_sf |>
-      dplyr::filter(
-        channel_entrainment >= threshold
-      )
-    
-    low_channels <- channel_sf |>
-      dplyr::filter(
-        channel_entrainment < threshold
-      )
-    
-    #--------------------------------------------------
-    # Create risk corridors
-    #--------------------------------------------------
-    
-    high_zone <- high_channels |>
-      st_buffer(buffer_distance_ft) |>
-      st_union() |>
-      st_as_sf() |>
-      st_intersection(delta_boundary)
-    
-    low_zone <- low_channels |>
-      st_buffer(buffer_distance_ft) |>
-      st_union() |>
-      st_as_sf() |>
-      st_intersection(delta_boundary)
+    low_zone <- st_difference(
+      delta_boundary,
+      high_zone
+    )
     
     list(
-      high = st_transform(high_zone, 4326),
-      low = st_transform(low_zone, 4326),
-      high_channels = st_transform(
-        high_channels,
+      high = st_transform(
+        high_zone,
         4326
       ),
-      low_channels = st_transform(
-        low_channels,
+      low = st_transform(
+        low_zone,
         4326
       )
     )
