@@ -16,7 +16,6 @@ library(lightgbm)
 library(xgboost)
 library(metR)
 library(mgcv)
-library (ps)
 
 MODEL_DIR <- "STN_EMULATOR/models"
 OUTPUT_DIR <- "STN_EMULATOR/Output"
@@ -56,34 +55,10 @@ eco_survival_model <- lgb.load(file.path(MODEL_DIR, "ECOPTM_survival_lightgbm.tx
 cat("Loading ECO Interior ")
 eco_interior_model <- lgb.load(file.path(MODEL_DIR, "ECOPTM_interior_lightgbm.txt"))
 cat("Loading Event Horizon model ")
-#event_horizon_model <- xgb.load(  file.path(MODEL_DIR, "xgb_event_horizon.json"))
-event_horizon_model <- NULL
+event_horizon_model <- xgb.load(  file.path(MODEL_DIR, "xgb_event_horizon.json"))
 cat("Finished Event Horizon model ")
 cat("Finished loading models ")
-get_event_horizon_model <- local({
-  
-  model <- NULL
-  
-  function() {
-    
-    if (is.null(model)) {
-      
-      cat("EH STEP 1\n")
-      
-      model <<- xgb.load(
-        file.path(MODEL_DIR, "xgb_event_horizon.json")
-      )
-      
-      cat("EH STEP 2\n")
-      
-      print(gc())
-      
-      cat("EH STEP 3\n")
-    }
-    
-    model
-  }
-})
+
 bound_percent <- function(x) pmax(0, pmin(100, x))
 
 read_lgb_features <- function(model_file) {
@@ -820,7 +795,7 @@ server <- function(input, output, session) {
       Risk = risk
     )
     
-    raw <- predict(get_event_horizon_model(), as.matrix(model_input))
+    raw <- predict(event_horizon_model, as.matrix(model_input))
     
     data.frame(
       Condition = condition,
@@ -3171,7 +3146,9 @@ server <- function(input, output, session) {
     high_zone <- high_nodes %>%
       st_buffer(6000) %>%
       st_union() %>%
-      st_convex_hull()
+      st_concave_hull(
+        ratio = 0.3
+      )
     
     #-----------------------------------------
     # Build low-risk exclusion areas
@@ -3181,7 +3158,9 @@ server <- function(input, output, session) {
       
       low_zone <- low_nodes %>%
         st_union() %>%
-        st_convex_hull() %>%
+        st_concave_hull(
+          ratio = 0.3
+        ) %>%
         st_buffer(4000)
       
       high_zone <- st_difference(
