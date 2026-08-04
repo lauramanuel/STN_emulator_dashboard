@@ -98,7 +98,7 @@ run_page <- function(prefix, title, theme_class) {
             fluidRow(
               box(
                 width = 4,
-                title = "PTM Inputs",
+                title = "PTM Inputs (7 or 30 day average flows)",
                 status = status_name,
                 solidHeader = TRUE,
                 
@@ -189,7 +189,7 @@ run_page <- function(prefix, title, theme_class) {
                   tabPanel(
                     "7-Day ??? 15 Nodes",
                     
-                    tags$h4("Figure 1. PTM 7-Day Entrainment Risk Map"),
+                    tags$h4("PTM 7-Day Entrainment Risk Map"),
                     
                     conditionalPanel(
                       condition = sprintf(
@@ -229,7 +229,7 @@ run_page <- function(prefix, title, theme_class) {
                       ),
                       
                       tags$h4(
-                        "Figure 2. PTM 7-Day Rolling Prediction Time Series"
+                        " PTM 7-Day Rolling Prediction Time Series"
                       ),
                       
                       uiOutput(paste0(prefix, "_ptm7_timeseries_nodes_ui")),
@@ -252,18 +252,18 @@ run_page <- function(prefix, title, theme_class) {
                     
                     tags$h4(
                       if (is_current) {
-                        "Figure 3. Latest PTM 7-Day Entrainment by DSM2 Node"
+                        " Latest PTM 7-Day Entrainment by DSM2 Node"
                       } else {
-                        "Figure 2. Forecast PTM 7-Day Entrainment by DSM2 Node"
+                        "Forecast PTM 7-Day Entrainment by DSM2 Node"
                       }
                     ),
                     
                     tags$p(
                       class = "figure-note",
                       paste(
-                        "The bar chart and Table 1 show the latest rolling",
-                        "window for archive-current runs, or the selected",
-                        "forecast-scenario average."
+                        "For Read from Archive runs, the following chart and PTM 7-Day Node Results Table show the",
+                        "7-day average flow results from the week prior to the selected date for current conditions runs",
+                        "and the 7-day average flow results from the forecast week begining on the selected date for forecast conditions runs."
                       )
                     ),
                     
@@ -274,7 +274,7 @@ run_page <- function(prefix, title, theme_class) {
                     
                     br(),
                     
-                    tags$h4("Table 1. PTM 7-Day Node Results"),
+                    tags$h4("PTM 7-Day Node Results"),
                     
                     div(
                       class = "wide-table-scroll",
@@ -307,7 +307,7 @@ run_page <- function(prefix, title, theme_class) {
                         prefix
                       ),
                       
-                      tags$h4("Figure 4. PTM 30-Day Entrainment Risk Map"),
+                      tags$h4("PTM 30-Day Entrainment Risk Map"),
                       
                       tags$p(
                         class = "figure-note",
@@ -331,7 +331,7 @@ run_page <- function(prefix, title, theme_class) {
                       br(), br(),
                       
                       tags$h4(
-                        "Figure 5. PTM 30-Day Entrainment by DSM2 Node"
+                        "PTM 30-Day Entrainment by DSM2 Node"
                       ),
                       
                       plotlyOutput(
@@ -341,7 +341,7 @@ run_page <- function(prefix, title, theme_class) {
                       
                       br(),
                       
-                      tags$h4("Table 2. PTM 30-Day Node Results"),
+                      tags$h4("PTM 30-Day Node Results"),
                       
                       div(
                         class = "wide-table-scroll",
@@ -385,7 +385,7 @@ run_page <- function(prefix, title, theme_class) {
               fluidRow(
                 box(
                   width = 4,
-                  title = "ECO-PTM Inputs",
+                  title = "ECO-PTM Inputs (30-day average flows)",
                   status = status_name,
                   solidHeader = TRUE,
                   
@@ -489,7 +489,7 @@ run_page <- function(prefix, title, theme_class) {
             fluidRow(
               box(
                 width = 4,
-                title = "Event Horizon Inputs",
+                title = "Event Horizon Inputs (7-day average flows)",
                 status = status_name,
                 solidHeader = TRUE,
                 
@@ -586,7 +586,7 @@ run_page <- function(prefix, title, theme_class) {
                 status = status_name,
                 solidHeader = TRUE,
                 
-                tags$h4("Table 1. Event Horizon Prediction"),
+                tags$h4("Event Horizon Prediction"),
                 
                 div(
                   class = "wide-table-scroll",
@@ -595,7 +595,7 @@ run_page <- function(prefix, title, theme_class) {
                 
                 br(),
                 
-                tags$h4("Figure 1. Predicted Event Horizon Map"),
+                tags$h4("Predicted Event Horizon Map"),
                 
                 conditionalPanel(
                   condition = sprintf(
@@ -635,7 +635,7 @@ run_page <- function(prefix, title, theme_class) {
                   ),
                   
                   tags$h4(
-                    "Figure 2. Event Horizon Rolling Prediction Time Series"
+                    "Event Horizon Rolling Prediction Time Series"
                   ),
                   
                   plotlyOutput(
@@ -648,9 +648,9 @@ run_page <- function(prefix, title, theme_class) {
                 
                 tags$h4(
                   if (is_current) {
-                    "Figure 3. Historical Event Horizon Conditions"
+                    "Historical Event Horizon Conditions"
                   } else {
-                    "Figure 2. Historical Event Horizon Conditions"
+                    "Historical Event Horizon Conditions"
                   }
                 ),
                 
@@ -681,7 +681,7 @@ ui <- dashboardPage(
     title = tags$div(
       style = "display:flex;align-items:center;",
       tags$img(src = "logo.png", height = "30px", style = "margin-right:10px;"),
-      tags$span("Entrainment Dashboard", style = "font-family:Segoe UI Semibold;font-size:16px;")
+      tags$span("DRAFT Entrainment Dashboard", style = "font-family:Segoe UI Semibold;font-size:16px;")
     )
   ),
   
@@ -777,7 +777,7 @@ ui <- dashboardPage(
                       div(
                         style = "margin-left: 30px;margin-right:50px;",
                         
-                        h1("PTM Emulator Dashboard"),
+                        h1("DRAFT Entrainment Dashboard"),
                         h4("Version:",
                            tags$code(style = "margin-left:20px",
                                      paste0("  ", app_version, "  ")

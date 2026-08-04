@@ -68,6 +68,14 @@ read_lgb_features <- function(model_file) {
   strsplit(sub("^feature_names=", "", feature_line), "\\s+")[[1]]
 }
 
+fmt_int <- function(x) {
+  format(
+    round(x),
+    big.mark = ",",
+    scientific = FALSE,
+    trim = TRUE
+  )
+}
 parse_dsm2_channel_definition <- function(path) {
   
   lines <- readLines(path, warn = FALSE)
@@ -2100,7 +2108,7 @@ server <- function(input, output, session) {
           MOKE,
           na.rm = TRUE
         ),
-        DCC = round(
+        DCC = fmt_int(
           mean(
             DCC,
             na.rm = TRUE
@@ -2746,7 +2754,7 @@ server <- function(input, output, session) {
           Node_Label,
           "<br><b>Prediction:</b> ",
           sprintf(
-            "%.2f%%",
+            "%.0f%%",
             Prediction_Final
           )
         )
@@ -2901,7 +2909,7 @@ server <- function(input, output, session) {
           "%",
           "<br><b>Event Horizon:</b> ",
           sprintf(
-            "%.2f river miles",
+            "%.0f river miles",
             Prediction_Final
           )
         )
@@ -2977,13 +2985,13 @@ server <- function(input, output, session) {
           DSM2_Node,
           paste0(DSM2_Node, " ??? ", Location)
         ),
-        value_label = sprintf("%.2f%%", Prediction_Final),
+        value_label = sprintf("%.0f%%", Prediction_Final),
         hover_text = paste0(
           "<b>DSM2 Node:</b> ", DSM2_Node,
           "<br><b>Location:</b> ", Location,
           "<br><b>Region:</b> ", Region,
           "<br><b>Predicted entrainment:</b> ",
-          sprintf("%.2f%%", Prediction_Final)
+          sprintf("%.0f%%", Prediction_Final)
         )
       ) %>%
       arrange(DSM2_Node_Num, DSM2_Node)
@@ -3222,7 +3230,7 @@ server <- function(input, output, session) {
       "<div><b>Location:</b> ", Location, "</div>",
       "<div><b>Region:</b> ", Region, "</div>",
       "<div style='font-size:18px;font-weight:800;margin-top:8px;color:#8b1e1e;'>Entrainment: ",
-      sprintf("%.2f", entrainment), "%</div>",
+      sprintf("%.0f", entrainment), "%</div>",
       "</div>"
     )
     
@@ -3352,7 +3360,7 @@ server <- function(input, output, session) {
           "<br><b>From node:</b> ", FROM_NODE,
           "<br><b>To node:</b> ", TO_NODE,
           "<br><b>Event Horizon:</b> ",
-          sprintf("%.2f", Event_Horizon_miles),
+          sprintf("%.0f", Event_Horizon_miles),
           " river miles",
           "</div>"
         ),
@@ -3466,21 +3474,18 @@ server <- function(input, output, session) {
         text = paste0(
           "Historical Point",
           "<br>Export: ",
-          round(
-            EXP,
-            0
+          fmt_int(
+            EXP
           ),
           " cfs",
           "<br>Vernalis: ",
-          round(
-            VER,
-            0
+          fmt_int(
+            VER
           ),
           " cfs",
           "<br>Event Horizon: ",
-          round(
-            Historical_Event_Horizon,
-            1
+          fmt_int(
+            Historical_Event_Horizon
           ),
           " miles"
         )
@@ -3508,21 +3513,18 @@ server <- function(input, output, session) {
             "<br>Condition: ",
             Condition,
             "<br>Export: ",
-            round(
-              EXP,
-              0
+            fmt_int(
+              EXP
             ),
             " cfs",
             "<br>Vernalis: ",
-            round(
-              VER,
-              0
+            fmt_int(
+              VER
             ),
             " cfs",
             "<br>Event Horizon: ",
-            round(
-              Prediction_Final,
-              1
+            fmt_int(
+              Prediction_Final
             ),
             " miles"
           )
@@ -3807,7 +3809,7 @@ server <- function(input, output, session) {
         title = title,
         subtitle = paste0(
           "Predicted Event Horizon: ",
-          sprintf("%.2f", df$Prediction_Final[1]),
+          sprintf("%.0f", df$Prediction_Final[1]),
           " river miles at ",
           df$Risk_Level_Percent[1],
           "% risk"
@@ -4621,9 +4623,8 @@ server <- function(input, output, session) {
           Location,
           Region,
           
-          Prediction_Percent = round(
-            Prediction_Final,
-            2
+          Entrainment_Percentage = fmt_int(
+            Prediction_Final
           )
         ) %>%
         arrange(
@@ -4659,9 +4660,8 @@ server <- function(input, output, session) {
           Location,
           Region,
           
-          Prediction_Percent = round(
-            Prediction_Final,
-            2
+          Entrainment_Percentage = fmt_int(
+            Prediction_Final
           )
         ) %>%
         arrange(
@@ -4713,24 +4713,20 @@ server <- function(input, output, session) {
           
           Model,
           
-          Prediction_Percent = round(
-            Prediction_Final,
-            2
+          Predicted_Population_Percentage = fmt_int(
+            Prediction_Final
           ),
           
-          SAC = round(
-            SAC,
-            2
+          SAC = fmt_int(
+            SAC
           ),
           
-          YOL = round(
-            YOL,
-            2
+          YOL = fmt_int(
+            YOL
           ),
           
-          MOKE = round(
-            MOKE,
-            2
+          MOKE = fmt_int(
+            MOKE
           ),
           
           DCC
@@ -4862,29 +4858,24 @@ server <- function(input, output, session) {
           Scenario_Name,
           Risk_Level_Percent,
           
-          Event_Horizon_Miles = round(
-            Prediction_Final,
-            2
+          Event_Horizon_Miles = fmt_int(
+            Prediction_Final
           ),
           
-          EXP = round(
-            EXP,
-            2
+          EXP = fmt_int(
+            EXP
           ),
           
-          VER = round(
-            VER,
-            2
+          VER = fmt_int(
+            VER
           ),
           
-          EAST = round(
-            EAST,
-            2
+          EAST = fmt_int(
+            EAST
           ),
           
-          XGEO = round(
-            XGEO,
-            2
+          XGEO = fmt_int(
+            XGEO
           )
         )
     })
@@ -4984,8 +4975,7 @@ server <- function(input, output, session) {
                   is.numeric
                 ),
                 ~ round(
-                  .x,
-                  2
+                  .x
                 )
               )
             ),
@@ -5021,8 +5011,7 @@ server <- function(input, output, session) {
                   is.numeric
                 ),
                 ~ round(
-                  .x,
-                  2
+                  .x
                 )
               )
             ),
@@ -5058,8 +5047,7 @@ server <- function(input, output, session) {
                   is.numeric
                 ),
                 ~ round(
-                  .x,
-                  2
+                  .x
                 )
               )
             ),
@@ -5137,7 +5125,7 @@ server <- function(input, output, session) {
             ""
           ),
           "<br><b>Prediction:</b> ",
-          sprintf("%.2f", Prediction_Final),
+          sprintf("%.0f", Prediction_Final),
           " ", Output_Unit
         )
       )
@@ -5168,7 +5156,7 @@ server <- function(input, output, session) {
         color = ~Run_Label,
         type = "bar",
         orientation = "h",
-        text = ~sprintf("%.2f", Prediction_Final),
+        text = ~sprintf("%.0f", Prediction_Final),
         textposition = "auto",
         hovertext = ~hover_text,
         hoverinfo = "text"
@@ -5192,7 +5180,7 @@ server <- function(input, output, session) {
         y = ~Prediction_Final,
         color = ~Run_Label,
         type = "bar",
-        text = ~sprintf("%.2f", Prediction_Final),
+        text = ~sprintf("%.0f", Prediction_Final),
         textposition = "outside",
         hovertext = ~hover_text,
         hoverinfo = "text"
@@ -5251,7 +5239,7 @@ server <- function(input, output, session) {
       paste0("scenario_comparison_", Sys.Date(), ".csv")
     },
     content = function(file) {
-      write_csv(comparison_data() %>% mutate(across(where(is.numeric), ~round(.x, 2))), file)
+      write_csv(comparison_data() %>% mutate(across(where(is.numeric), ~round(.x))), file)
     }
   )
   
@@ -5418,9 +5406,8 @@ server <- function(input, output, session) {
           Window_End_Date,
           DSM2_Node,
           Location,
-          Prediction_Percent = round(
-            Prediction_Final,
-            2
+          Entrainment_Percentage = fmt_int(
+            Prediction_Final
           )
         ) %>%
         arrange(
@@ -5446,25 +5433,20 @@ server <- function(input, output, session) {
           Window_Start_Date,
           Window_End_Date,
           Risk_Level_Percent,
-          Event_Horizon_Miles = round(
-            Prediction_Final,
-            2
+          Event_Horizon_Miles = fmt_int(
+            Prediction_Final
           ),
-          EXP = round(
-            EXP,
-            2
+          EXP = fmt_int(
+            EXP
           ),
-          VER = round(
-            VER,
-            2
+          VER = fmt_int(
+            VER
           ),
-          EAST = round(
-            EAST,
-            2
+          EAST = fmt_int(
+            EAST
           ),
-          XGEO = round(
-            XGEO,
-            2
+          XGEO = fmt_int(
+            XGEO
           )
         ) %>%
         arrange(
@@ -5539,7 +5521,7 @@ server <- function(input, output, session) {
             Location,
             "<br><b>Prediction:</b> ",
             sprintf(
-              "%.2f%%",
+              "%.0f%%",
               Prediction_Final
             )
           )
@@ -5553,7 +5535,7 @@ server <- function(input, output, session) {
         type = "bar",
         orientation = "h",
         text = ~sprintf(
-          "%.2f",
+          "%.0f",
           Prediction_Final
         ),
         hovertext = ~Hover_Text,
@@ -5618,7 +5600,7 @@ server <- function(input, output, session) {
             "%",
             "<br><b>Event Horizon:</b> ",
             sprintf(
-              "%.2f river miles",
+              "%.0f river miles",
               Prediction_Final
             )
           )
@@ -5631,7 +5613,7 @@ server <- function(input, output, session) {
         color = ~Comparison_Label,
         type = "bar",
         text = ~sprintf(
-          "%.2f",
+          "%.0f",
           Prediction_Final
         ),
         textposition = "outside",
@@ -5708,8 +5690,7 @@ server <- function(input, output, session) {
                 is.numeric
               ),
               ~ round(
-                .x,
-                2
+                .x
               )
             )
           ),
