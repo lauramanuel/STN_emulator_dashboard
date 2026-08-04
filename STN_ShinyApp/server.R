@@ -14,6 +14,8 @@ library(plotly)
 library(gt)
 library(lightgbm)
 library(xgboost)
+library(metR)
+library(mgcv)
 
 MODEL_DIR <- "STN_EMULATOR/models"
 OUTPUT_DIR <- "STN_EMULATOR/Output"
@@ -3455,57 +3457,189 @@ server <- function(input, output, session) {
           n = 10000
         )
     }
+    # ---------------------------------------------------------------
+    # Create smooth Event Horizon surface for contour lines
+    # Contours represent Event Horizon distance in river miles.
+    # ---------------------------------------------------------------
     
+    contour_breaks <- c(5, 10, 15, 20)
+    
+    contour_background <- background %>%
+      filter(
+        !is.na(EXP),
+        !is.na(VER),
+        !is.na(Historical_Event_Horizon),
+        EXP > 0,
+        VER > 0
+      ) %>%
+      mutate(
+        log_VER = log10(VER)
+      )
+    eh_breaks <- seq(
+      floor(min(contour_background$Historical_Event_Horizon, na.rm = TRUE)),
+      ceiling(max(contour_background$Historical_Event_Horizon, na.rm = TRUE)),
+      length.out = 21
+    )
+    
+    eh_labels <- paste0(
+      round(head(eh_breaks, -1)),
+      "-",
+      round(tail(eh_breaks, -1)),
+      " mi"
+    )
+    
+    contour_background <- contour_background %>%
+      mutate(
+        EH_Bin = cut(
+          Historical_Event_Horizon,
+          breaks = eh_breaks,
+          labels = eh_labels,
+          include.lowest = TRUE
+        )
+      )
+    validate(
+      need(
+        nrow(contour_background) >= 30,
+        "Not enough historical Event Horizon points to draw contour lines."
+      )
+    )
+    
+    contour_model <- mgcv::gam(
+      Historical_Event_Horizon ~ te(EXP, log_VER, k = c(12, 12)),
+      data = contour_background,
+      method = "REML"
+    )
+    
+    contour_grid <- expand.grid(
+      EXP = seq(
+        min(contour_background$EXP, na.rm = TRUE),
+        max(contour_background$EXP, na.rm = TRUE),
+        length.out = 180
+      ),
+      log_VER = seq(
+        min(contour_background$log_VER, na.rm = TRUE),
+        max(contour_background$log_VER, na.rm = TRUE),
+        length.out = 180
+      )
+    )
+    
+    # Mask the grid to the convex hull of the historical point cloud.
+    # This prevents contours from extrapolating far outside the observed data.
+    hull_index <- chull(
+      contour_background$EXP,
+      contour_background$log_VER
+    )
+    
+    hull_points <- contour_background[hull_index, ]
+    
+    inside_hull <- sp::point.in.polygon(
+      point.x = contour_grid$EXP,
+      point.y = contour_grid$log_VER,
+      pol.x = hull_points$EXP,
+      pol.y = hull_points$log_VER
+    )
+    
+    contour_prediction <- contour_grid %>%
+      mutate(
+        Historical_Event_Horizon = as.numeric(
+          predict(
+            contour_model,
+            newdata = contour_grid
+          )
+        ),
+        inside_hull = inside_hull > 0
+      ) %>%
+      filter(
+        inside_hull,
+        !is.na(Historical_Event_Horizon)
+      )
     scenario_point <- df %>%
       filter(
         EXP > 0,
         VER > 0
+      ) %>%
+      mutate(
+        log_VER = log10(VER)
       )
-    
-    p <- ggplot(
-      
-      background,
-      
-      aes(
-        x = EXP,
-        y = VER,
-        color = Historical_Event_Horizon,
-        
-        text = paste0(
-          "Historical Point",
-          "<br>Export: ",
-          fmt_int(
-            EXP
-          ),
-          " cfs",
-          "<br>Vernalis: ",
-          fmt_int(
-            VER
-          ),
-          " cfs",
-          "<br>Event Horizon: ",
-          fmt_int(
-            Historical_Event_Horizon
-          ),
-          " miles"
+    contour_df <- ggplot_build(
+      ggplot(
+        contour_prediction,
+        aes(
+          x = EXP,
+          y = log_VER,
+          z = Historical_Event_Horizon
         )
+      ) +
+        geom_contour(
+          breaks = c(5, 10, 15, 20)
+        )
+    )$data[[1]]
+    contour_labels <- contour_df %>%
+      group_by(level) %>%
+      slice(n() %/% 2) %>%
+      ungroup() %>%
+      mutate(
+        label = paste0(level, " mi")
       )
+ 
+    
+    p <- ggplot() +
       
-    ) +
+      geom_contour(
+        data = contour_prediction,
+        aes(
+          x = EXP,
+          y = log_VER,
+          z = Historical_Event_Horizon
+        ),
+        breaks = c(5, 10, 15, 20),
+        color = "black",
+        linewidth = 0.4,
+        alpha = 0.7
+      ) +
+      
+      geom_text(
+        data = contour_labels,
+        aes(
+          x = x,
+          y = y,
+          label = label
+        ),
+        inherit.aes = FALSE,
+        size = 4,
+        fontface = "bold",
+        color = "black",
+        bg.color = "white"
+      )+
       
       geom_point(
+        data = contour_background,
+        aes(
+          x = EXP,
+          y = log_VER,
+          color = EH_Bin,
+          text = paste0(
+            "Historical Point",
+            "<br>Export: ",
+            fmt_int(EXP),
+            " cfs",
+            "<br>Vernalis: ",
+            fmt_int(VER),
+            " cfs",
+            "<br>Event Horizon: ",
+            fmt_int(Historical_Event_Horizon),
+            " miles"
+          )
+        ),
         size = 2,
-        alpha = 0.35
+        alpha = 0.45
       ) +
       
       geom_point(
-        
         data = scenario_point,
-        
         aes(
           x = EXP,
-          y = VER,
-          
+          y = log_VER,
           text = paste0(
             "Selected Scenario",
             "<br>Name: ",
@@ -3513,50 +3647,53 @@ server <- function(input, output, session) {
             "<br>Condition: ",
             Condition,
             "<br>Export: ",
-            fmt_int(
-              EXP
-            ),
+            fmt_int(EXP),
             " cfs",
             "<br>Vernalis: ",
-            fmt_int(
-              VER
-            ),
+            fmt_int(VER),
             " cfs",
             "<br>Event Horizon: ",
-            fmt_int(
-              Prediction_Final
-            ),
+            fmt_int(Prediction_Final),
             " miles"
           )
         ),
-        
         inherit.aes = FALSE,
-        
         shape = 21,
         size = 7,
         fill = "red",
         color = "white",
         stroke = 2
-        
       ) +
+    
       
-      scale_color_viridis_c(
+      scale_color_viridis_d(
         option = "viridis",
-        name = "Historical Event Horizon\nDistance (miles)"
-      ) +
+        name = "Historical Event Horizon\nDistance (miles)",
+        drop = FALSE
+      )+
       
       scale_x_continuous(
         labels = scales::comma
       ) +
       
-      scale_y_log10(
-        labels = scales::comma,
-        breaks = c(
-          1000,
-          2000,
-          5000,
-          10000,
-          20000
+      scale_y_continuous(
+        breaks = log10(
+          c(
+            1000,
+            2000,
+            5000,
+            10000,
+            20000
+          )
+        ),
+        labels = scales::comma(
+          c(
+            1000,
+            2000,
+            5000,
+            10000,
+            20000
+          )
         )
       ) +
       
@@ -4621,7 +4758,7 @@ server <- function(input, output, session) {
           
           DSM2_Node,
           Location,
-          Region,
+          
           
           Entrainment_Percentage = fmt_int(
             Prediction_Final
