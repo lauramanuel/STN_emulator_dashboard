@@ -19,10 +19,6 @@ MODEL_DIR <- "STN_EMULATOR/models"
 OUTPUT_DIR <- "STN_EMULATOR/Output"
 SHAPE_DIR <- "STN_EMULATOR/shapefiles"
 ARCHIVE_DIR <- "STN_EMULATOR/Archive_Folder"
-DSM2_NODE_SHP <- file.path( SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_nodes.shp")
-DSM2_CHANNEL_SHP <- file.path(  SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_channels_centerlines.shp")
-DSM2_CHANNEL_DEF <- file.path(  "STN_EMULATOR",  "channel_std_delta_grid_NAVD_20121214.txt")
-DSM2_PATH_FILE <- file.path(  "STN_EMULATOR",  "Region_Location_Node_Path.csv")
 
 required_model_files <- c(
   file.path(MODEL_DIR, "PTM_Entrainment7d_lightgbm.txt"),
@@ -68,77 +64,6 @@ read_lgb_features <- function(model_file) {
   strsplit(sub("^feature_names=", "", feature_line), "\\s+")[[1]]
 }
 
-parse_dsm2_channel_definition <- function(path) {
-  
-  lines <- readLines(path, warn = FALSE)
-  
-  channel_start <- which(trimws(lines) == "CHANNEL")[1]
-  
-  if (is.na(channel_start)) {
-    stop("Could not find CHANNEL block in: ", path)
-  }
-  
-  header_line <- channel_start + 1
-  
-  end_candidates <- which(
-    seq_along(lines) > header_line &
-      trimws(lines) == "END"
-  )
-  
-  if (length(end_candidates) == 0) {
-    stop("Could not find END after CHANNEL block in: ", path)
-  }
-  
-  channel_end <- end_candidates[1]
-  
-  channel_lines <- lines[(header_line + 1):(channel_end - 1)]
-  
-  channel_lines <- channel_lines[
-    nzchar(trimws(channel_lines)) &
-      !grepl("^\\s*#", channel_lines)
-  ]
-  
-  channel_table <- read.table(
-    text = paste(channel_lines, collapse = "\n"),
-    header = FALSE,
-    col.names = c(
-      "CHAN_NO",
-      "LENGTH_FT",
-      "MANNING",
-      "DISPERSION",
-      "UPNODE",
-      "DOWNNODE"
-    ),
-    stringsAsFactors = FALSE
-  )
-  
-  channel_table |>
-    dplyr::mutate(
-      CHAN_NO = as.integer(CHAN_NO),
-      LENGTH_FT = as.numeric(LENGTH_FT),
-      UPNODE = as.integer(UPNODE),
-      DOWNNODE = as.integer(DOWNNODE)
-    )
-}
-find_first_existing_column <- function(data, candidates, label) {
-  
-  normalized_names <- toupper(gsub("[^A-Za-z0-9]", "", names(data)))
-  normalized_candidates <- toupper(gsub("[^A-Za-z0-9]", "", candidates))
-  
-  match_index <- match(normalized_candidates, normalized_names)
-  match_index <- match_index[!is.na(match_index)]
-  
-  if (length(match_index) == 0) {
-    stop(
-      "Could not identify ",
-      label,
-      " column. Available columns are: ",
-      paste(names(data), collapse = ", ")
-    )
-  }
-  
-  names(data)[match_index[1]]
-}
 eco_survival_features <- read_lgb_features(
   file.path(MODEL_DIR, "ECOPTM_survival_lightgbm.txt")
 )
@@ -199,72 +124,11 @@ server <- function(input, output, session) {
     file.path(SHAPE_DIR, "Bay_Delta_Poly_New.shp"),
     quiet = TRUE
   ) %>% st_transform(26910)
+  
   delta_channels <- st_read(
     file.path(SHAPE_DIR, "hydro_delta_marsh.shp"),
     quiet = TRUE
   ) %>% st_transform(26910)
-  
-  dsm2_nodes_raw <- st_read(
-    DSM2_NODE_SHP,
-    quiet = TRUE
-  )
-  
-  dsm2_channels_raw <- st_read(
-    DSM2_CHANNEL_SHP,
-    quiet = TRUE
-  )
-  
-  channel_definition <- parse_dsm2_channel_definition(
-    DSM2_CHANNEL_DEF
-  )
-  
-  eh_paths <- readr::read_csv(
-    DSM2_PATH_FILE,
-    show_col_types = FALSE
-  )
-  
-  node_id_col <- find_first_existing_column(
-    dsm2_nodes_raw,
-    c(
-      "DSM2_Node",
-      "DSM2NODE",
-      "NODE",
-      "NODE_ID",
-      "NODEID",
-      "ID"
-    ),
-    "DSM2 node ID"
-  )
-  
-  channel_id_col <- find_first_existing_column(
-    dsm2_channels_raw,
-    c(
-      "CHAN_NO",
-      "CHANO",
-      "CHANNEL",
-      "CHANNEL_ID",
-      "CHANNELID",
-      "CHAN",
-      "ID"
-    ),
-    "DSM2 channel ID"
-  )
-  
-  dsm2_nodes <- dsm2_nodes_raw |>
-    dplyr::mutate(
-      DSM2_Node = as.integer(.data[[node_id_col]])
-    ) |>
-    st_transform(26910)
-  
-  dsm2_channels <- dsm2_channels_raw |>
-    dplyr::mutate(
-      CHAN_NO = as.integer(.data[[channel_id_col]])
-    ) |>
-    dplyr::left_join(
-      channel_definition,
-      by = "CHAN_NO"
-    ) |>
-    st_transform(26910)
   
   river_centerline <- st_read(
     file.path(SHAPE_DIR, "CCF_OldRiver_CL.shp"),
@@ -332,359 +196,8 @@ server <- function(input, output, session) {
     
     key
   }
-  add_event_horizon_bridge_edges <- function(edges) {
-    
-    if (
-      is.null(event_horizon_bridge_channels) ||
-      nrow(event_horizon_bridge_channels) == 0 ||
-      nrow(edges) == 0
-    ) {
-      edges$VISUAL_ONLY <- FALSE
-      return(edges)
-    }
-    
-    edges <- edges |>
-      dplyr::mutate(
-        VISUAL_ONLY = FALSE
-      )
-    
-    bridge_rows <- lapply(
-      seq_len(nrow(edges)),
-      function(i) {
-        
-        edge <- edges[i, ]
-        
-        matching_bridge <- event_horizon_bridge_channels |>
-          dplyr::filter(
-            FROM_NODE == edge$FROM_NODE,
-            TO_NODE == edge$TO_NODE
-          )
-        
-        if (nrow(matching_bridge) == 0) {
-          return(NULL)
-        }
-        
-        dplyr::bind_rows(
-          lapply(
-            seq_len(nrow(matching_bridge)),
-            function(j) {
-              
-              bridge <- matching_bridge[j, ]
-              
-              bridge_def <- channel_definition |>
-                dplyr::filter(
-                  CHAN_NO == bridge$BRIDGE_CHAN_NO
-                )
-              
-              if (nrow(bridge_def) == 0) {
-                warning(
-                  "Bridge channel ",
-                  bridge$BRIDGE_CHAN_NO,
-                  " was not found in the channel definition table."
-                )
-                return(NULL)
-              }
-              
-              path_order_offset <- ifelse(
-                bridge$BRIDGE_POSITION == "before",
-                -0.1,
-                0.1
-              )
-              
-              tibble::tibble(
-                FROM_NODE = bridge_def$UPNODE[1],
-                TO_NODE = bridge_def$DOWNNODE[1],
-                PATH_ORDER = edge$PATH_ORDER + path_order_offset,
-                CHAN_NO = bridge_def$CHAN_NO[1],
-                LENGTH_FT = 0,
-                UPNODE = bridge_def$UPNODE[1],
-                DOWNNODE = bridge_def$DOWNNODE[1],
-                CUM_START_FT = edge$CUM_START_FT,
-                CUM_END_FT = edge$CUM_START_FT,
-                VISUAL_ONLY = TRUE
-              )
-            }
-          )
-        )
-      }
-    )
-    
-    bridge_rows <- bridge_rows[
-      !vapply(
-        bridge_rows,
-        is.null,
-        logical(1)
-      )
-    ]
-    
-    if (length(bridge_rows) == 0) {
-      return(edges)
-    }
-    
-    dplyr::bind_rows(
-      edges,
-      dplyr::bind_rows(bridge_rows)
-    ) |>
-      dplyr::arrange(
-        PATH_ORDER
-      )
-  }
   
-  path_to_edges <- function(path_string) {
-    
-    nodes <- strsplit(as.character(path_string), "_", fixed = TRUE)[[1]]
-    nodes <- as.integer(nodes)
-    
-    if (length(nodes) < 2) {
-      return(
-        data.frame(
-          FROM_NODE = integer(),
-          TO_NODE = integer(),
-          PATH_ORDER = integer()
-        )
-      )
-    }
-    
-    data.frame(
-      FROM_NODE = nodes[-length(nodes)],
-      TO_NODE = nodes[-1],
-      PATH_ORDER = seq_len(length(nodes) - 1)
-    )
-  }
-  orient_channel_geometry <- function(channel_geom, from_node, to_node, node_sf) {
-    
-    from_geom <- node_sf |>
-      dplyr::filter(DSM2_Node == from_node) |>
-      st_geometry()
-    
-    to_geom <- node_sf |>
-      dplyr::filter(DSM2_Node == to_node) |>
-      st_geometry()
-    
-    if (length(from_geom) == 0 || length(to_geom) == 0) {
-      return(channel_geom)
-    }
-    
-    line_cast <- st_cast(channel_geom, "LINESTRING", warn = FALSE)
-    coords <- st_coordinates(line_cast)
-    
-    first_pt <- st_sfc(
-      st_point(coords[1, c("X", "Y")]),
-      crs = st_crs(line_cast)
-    )
-    
-    last_pt <- st_sfc(
-      st_point(coords[nrow(coords), c("X", "Y")]),
-      crs = st_crs(line_cast)
-    )
-    
-    from_to_first <- as.numeric(st_distance(from_geom, first_pt))
-    from_to_last <- as.numeric(st_distance(from_geom, last_pt))
-    
-    if (from_to_last < from_to_first) {
-      reversed_coords <- coords[nrow(coords):1, c("X", "Y")]
-      return(
-        st_sfc(
-          st_linestring(as.matrix(reversed_coords)),
-          crs = st_crs(line_cast)
-        )
-      )
-    }
-    
-    channel_geom
-  }
-  event_horizon_bridge_channels <- tibble::tribble(
-    ~FROM_NODE, ~TO_NODE, ~BRIDGE_CHAN_NO, ~BRIDGE_POSITION,
-    121L,       123L,     144L,           "before"
-  )
-  make_event_horizon_path_geometry <- function(
-    distance_miles,
-    regions = c("OMR")
-  ) {
-    
-    distance_ft <- as.numeric(distance_miles) * 5280
-    
-    validate(
-      need(
-        !is.na(distance_ft) && distance_ft > 0,
-        "Event Horizon distance must be greater than zero."
-      )
-    )
-    
-    path_table <- eh_paths |>
-      dplyr::filter(Start_Node == 72)
-    
-    if (!is.null(regions)) {
-      path_table <- path_table |>
-        dplyr::filter(Region %in% regions)
-    }
-    
-    validate(
-      need(
-        nrow(path_table) > 0,
-        "No matching Event Horizon paths were found."
-      )
-    )
-    
-    all_path_lines <- lapply(
-      seq_len(nrow(path_table)),
-      function(path_i) {
-        
-        one_path <- path_table[path_i, ]
-        
-        edges <- path_to_edges(one_path$Path)
-        
-        if (nrow(edges) == 0) {
-          return(NULL)
-        }
-        
-        edges <- edges |>
-          dplyr::left_join(
-            channel_definition |>
-              dplyr::select(CHAN_NO, LENGTH_FT, UPNODE, DOWNNODE),
-            by = c(
-              "FROM_NODE" = "UPNODE",
-              "TO_NODE" = "DOWNNODE"
-            )
-          )
-        
-        # If the path direction is opposite of the stored UPNODE/DOWNNODE,
-        # try the reverse direction.
-        missing_index <- is.na(edges$CHAN_NO)
-        
-        if (any(missing_index)) {
-          
-          reverse_lookup <- edges[missing_index, c("FROM_NODE", "TO_NODE", "PATH_ORDER")] |>
-            dplyr::left_join(
-              channel_definition |>
-                dplyr::select(CHAN_NO, LENGTH_FT, UPNODE, DOWNNODE),
-              by = c(
-                "FROM_NODE" = "DOWNNODE",
-                "TO_NODE" = "UPNODE"
-              )
-            )
-          
-          edges[missing_index, c("CHAN_NO", "LENGTH_FT")] <-
-            reverse_lookup[, c("CHAN_NO", "LENGTH_FT")]
-        }
-        
-        edges <- edges |>
-          dplyr::filter(!is.na(CHAN_NO), !is.na(LENGTH_FT)) |>
-          dplyr::arrange(PATH_ORDER) |>
-          dplyr::mutate(
-            CUM_START_FT = dplyr::lag(cumsum(LENGTH_FT), default = 0),
-            CUM_END_FT = cumsum(LENGTH_FT)
-          )
-        
-        if (nrow(edges) == 0) {
-          return(NULL)
-        }
-        
-        keep_edges <- edges |>
-          dplyr::filter(CUM_START_FT < distance_ft)
-        
-        if (nrow(keep_edges) == 0) {
-          return(NULL)
-        }
-        keep_edges <- add_event_horizon_bridge_edges(
-          keep_edges
-        )
-        
-        segment_geoms <- lapply(
-          seq_len(nrow(keep_edges)),
-          function(edge_i) {
-            
-            edge <- keep_edges[edge_i, ]
-            
-            channel <- dsm2_channels |>
-              dplyr::filter(CHAN_NO == edge$CHAN_NO)
-            
-            if (nrow(channel) == 0) {
-              return(NULL)
-            }
-            
-            geom <- st_geometry(channel)
-            
-            geom <- orient_channel_geometry(
-              channel_geom = geom,
-              from_node = edge$FROM_NODE,
-              to_node = edge$TO_NODE,
-              node_sf = dsm2_nodes
-            )
-            
-            if (
-              "VISUAL_ONLY" %in% names(edge) &&
-              isTRUE(edge$VISUAL_ONLY)
-            ) {
-              
-              out_geom <- geom
-              
-            } else if (edge$CUM_END_FT <= distance_ft) {
-              
-              out_geom <- geom
-              
-            } else {
-              
-              remaining_ft <- distance_ft - edge$CUM_START_FT
-              
-              fraction <- max(
-                0,
-                min(
-                  1,
-                  remaining_ft / edge$LENGTH_FT
-                )
-              )
-              
-              out_geom <- lwgeom::st_linesubstring(
-                st_cast(geom, "LINESTRING", warn = FALSE),
-                0,
-                fraction
-              )
-            }
-            st_sf(
-              Region = one_path$Region,
-              Location = one_path$`Insertion Location Name`,
-              Target_Node = one_path$DSM2_Node,
-              Start_Node = one_path$Start_Node,
-              Path_TotalLength_ft = one_path$TotalLength_ft,
-              Event_Horizon_miles = distance_miles,
-              Event_Horizon_ft = distance_ft,
-              CHAN_NO = edge$CHAN_NO,
-              FROM_NODE = edge$FROM_NODE,
-              TO_NODE = edge$TO_NODE,
-              PATH_ORDER = edge$PATH_ORDER,
-              geometry = st_geometry(out_geom),
-              crs = st_crs(dsm2_channels),
-              Visual_Only = ifelse(
-                "VISUAL_ONLY" %in% names(edge),
-                edge$VISUAL_ONLY,
-                FALSE
-              )
-            )
-          }
-        )
-        
-        segment_geoms <- segment_geoms[!vapply(segment_geoms, is.null, logical(1))]
-        
-        if (length(segment_geoms) == 0) {
-          return(NULL)
-        }
-        
-        dplyr::bind_rows(segment_geoms)
-      }
-    )
-    
-    all_path_lines <- all_path_lines[!vapply(all_path_lines, is.null, logical(1))]
-    
-    validate(
-      need(
-        length(all_path_lines) > 0,
-        "No Event Horizon channel geometry could be created from the selected paths."
-      )
-    )
-    
-    dplyr::bind_rows(all_path_lines)
-  }
+  
   make_ptm_results <- function(condition, scenario_name, exp, ver, sac, east, xgeo) {
     ref <- reference_data()
     
@@ -3084,164 +2597,46 @@ server <- function(input, output, session) {
       )
   }
   
-  make_entrainment_zones <- function(
-    nodes,
-    threshold,
-    buffer_distance_ft = 1500
-  ) {
+  make_entrainment_zones <- function(nodes, threshold) {
+    validate(need(nrow(nodes) > 3, "Not enough node results to create risk zones."))
+    
+    bbox <- st_bbox(delta_boundary)
+    grid <- expand.grid(
+      x = seq(bbox["xmin"], bbox["xmax"], length.out = 150),
+      y = seq(bbox["ymin"], bbox["ymax"], length.out = 150)
+    ) %>%
+      st_as_sf(coords = c("x", "y"), crs = st_crs(nodes))
+    
+    sp_grid <- as(grid, "Spatial")
+    sp_nodes <- as(nodes, "Spatial")
+    names(sp_nodes)[names(sp_nodes) == "entrainment"] <- "z"
+    
+    pred <- gstat::idw(z ~ 1, sp_nodes, newdata = sp_grid) %>%
+      st_as_sf() %>%
+      rename(entrainment = var1.pred)
+    
+    high_pts <- pred %>% filter(entrainment >= threshold)
     
     validate(
       need(
-        nrow(nodes) > 1,
-        "Not enough nodes to build risk zones."
+        nrow(high_pts) > 10,
+        paste0("Not enough points exceed the ", threshold, "% threshold.")
       )
     )
-    nodes <- nodes %>%
-      dplyr::mutate(
-        DSM2_Node = as.integer(DSM2_Node)
-      )
     
-    #--------------------------------------------------
-    # Join current entrainment values to DSM2 nodes
-    #--------------------------------------------------
-    
-    node_risk <- dsm2_nodes |>
-      dplyr::left_join(
-        nodes |>
-          st_drop_geometry() |>
-          dplyr::select(
-            DSM2_Node,
-            entrainment
-          ),
-        by = "DSM2_Node"
-      )
-    
-    #--------------------------------------------------
-    # Assign node risk classes
-    #--------------------------------------------------
-    
-    node_risk <- node_risk |>
-      dplyr::mutate(
-        entrainment = tidyr::replace_na(
-          entrainment,
-          0
-        )
-      )
-    
-    #--------------------------------------------------
-    # Build channel risk values
-    #--------------------------------------------------
-    
-    up_values <- channel_definition |>
-      dplyr::left_join(
-        node_risk |>
-          st_drop_geometry() |>
-          dplyr::select(
-            DSM2_Node,
-            entrainment
-          ),
-        by = c(
-          "UPNODE" = "DSM2_Node"
-        )
-      ) |>
-      dplyr::rename(
-        up_entrainment = entrainment
-      )
-    
-    channel_risk <- up_values |>
-      dplyr::left_join(
-        node_risk |>
-          st_drop_geometry() |>
-          dplyr::select(
-            DSM2_Node,
-            entrainment
-          ),
-        by = c(
-          "DOWNNODE" = "DSM2_Node"
-        )
-      ) |>
-      dplyr::rename(
-        down_entrainment = entrainment
-      )
-    
-    channel_risk <- channel_risk |>
-      dplyr::mutate(
-        up_entrainment =
-          tidyr::replace_na(
-            up_entrainment,
-            0
-          ),
-        
-        down_entrainment =
-          tidyr::replace_na(
-            down_entrainment,
-            0
-          ),
-        
-        channel_entrainment =
-          pmax(
-            up_entrainment,
-            down_entrainment
-          )
-      )
-    
-    #--------------------------------------------------
-    # Join to channel geometries
-    #--------------------------------------------------
-    
-    channel_sf <- dsm2_channels |>
-      dplyr::left_join(
-        channel_risk |>
-          dplyr::select(
-            CHAN_NO,
-            channel_entrainment
-          ),
-        by = "CHAN_NO"
-      )
-    
-    #--------------------------------------------------
-    # Split into High / Low
-    #--------------------------------------------------
-    
-    high_channels <- channel_sf |>
-      dplyr::filter(
-        channel_entrainment >= threshold
-      )
-    
-    low_channels <- channel_sf |>
-      dplyr::filter(
-        channel_entrainment < threshold
-      )
-    
-    #--------------------------------------------------
-    # Create risk corridors
-    #--------------------------------------------------
-    
-    high_zone <- high_channels |>
-      st_buffer(buffer_distance_ft) |>
-      st_union() |>
-      st_as_sf() |>
+    high_zone <- high_pts %>%
+      st_intersection(delta_boundary) %>%
+      st_union() %>%
+      sf::st_concave_hull(ratio = 0.5) %>%
+      st_as_sf() %>%
       st_intersection(delta_boundary)
     
-    low_zone <- low_channels |>
-      st_buffer(buffer_distance_ft) |>
-      st_union() |>
-      st_as_sf() |>
-      st_intersection(delta_boundary)
+    low_zone <- st_difference(delta_boundary, st_union(high_zone))
     
     list(
       high = st_transform(high_zone, 4326),
-      low = st_transform(low_zone, 4326),
-      high_channels = st_transform(
-        high_channels,
-        4326
-      ),
-      low_channels = st_transform(
-        low_channels,
-        4326
-      )
+      low = st_transform(low_zone, 4326)
     )
-    
   }
   
   make_ptm_map <- function(df, threshold) {
@@ -3363,82 +2758,42 @@ server <- function(input, output, session) {
   }
   
   make_eh_map <- function(df) {
+    validate(need(nrow(df) > 0, "Run the model to display results."))
+    geom <- make_event_geometry(df$Prediction_Final[1])
     
-    validate(
-      need(
-        nrow(df) > 0,
-        "Run the Event Horizon model to display results."
-      )
-    )
-    
-    eh_lines <- make_event_horizon_path_geometry(
-      distance_miles = df$Prediction_Final[1],
-      regions = c("OMR")
-    )
-    
-    eh_lines_display <- st_transform(eh_lines, 4326)
-    channels_display <- st_transform(dsm2_channels, 4326)
-    nodes_display <- st_transform(dsm2_nodes, 4326)
-    
-    leaflet() |>
-      addProviderTiles(providers$CartoDB.Positron) |>
-      
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      addPolygons(
+        data = st_transform(delta_boundary, 4326),
+        fillColor = "#eef7f9",
+        fillOpacity = 0.25,
+        color = "#0a7e8c",
+        weight = 1
+      ) %>%
       addPolylines(
-        data = channels_display,
-        color = "#9ECAE1",
+        data = st_transform(delta_channels, 4326),
+        color = "#2b8cbe",
         weight = 1,
-        opacity = 0.65,
-        group = "DSM2 Channels"
-      ) |>
-      
+        opacity = 0.6
+      ) %>%
       addPolylines(
-        data = eh_lines_display,
-        color = "#B2182B",
-        weight = 5,
-        opacity = 0.95,
-        popup = ~paste0(
-          "<div style='font-size:15px;line-height:1.45;'>",
-          "<b>Region:</b> ", Region,
-          "<br><b>Path target:</b> ", Location,
-          "<br><b>Target node:</b> ", Target_Node,
-          "<br><b>Channel:</b> ", CHAN_NO,
-          "<br><b>From node:</b> ", FROM_NODE,
-          "<br><b>To node:</b> ", TO_NODE,
-          "<br><b>Event Horizon:</b> ",
-          sprintf("%.2f", Event_Horizon_miles),
-          " river miles",
-          "</div>"
-        ),
-        group = "Event Horizon"
-      ) |>
-      
+        data = st_transform(geom$high_line, 4326),
+        color = "red",
+        weight = 6
+      ) %>%
       addCircleMarkers(
-        data = nodes_display |>
-          dplyr::filter(DSM2_Node == 72),
-        radius = 7,
-        color = "#1F1F1F",
-        fillColor = "#FFD34E",
+        data = st_transform(geom$point, 4326),
+        radius = 9,
+        color = "red",
+        fillColor = "red",
         fillOpacity = 1,
-        weight = 2,
-        label = "Start node 72: Clifton Court Forebay",
-        group = "Start Node"
-      ) |>
-      
-      addLayersControl(
-        overlayGroups = c(
-          "DSM2 Channels",
-          "Event Horizon",
-          "Start Node"
-        ),
-        options = layersControlOptions(collapsed = FALSE)
-      ) |>
-      
-      fitBounds(
-        -122.15,
-        37.75,
-        -121.15,
-        38.85
-      )
+        label = paste0(
+          "Event Horizon: ",
+          round(df$Prediction_Final[1], 1),
+          " miles"
+        )
+      ) %>%
+      fitBounds(-122.15, 37.75, -121.15, 38.85)
   }
   
   make_eh_scatter <- function(df) {

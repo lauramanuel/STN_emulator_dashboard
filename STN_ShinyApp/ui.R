@@ -8,23 +8,23 @@ library(gt)
 app_version <- "1.2.2"
 
 run_page <- function(prefix, title, theme_class) {
-
+  
   is_current <- identical(prefix, "current")
   status_name <- if (is_current) "warning" else "info"
-
+  
   tabItem(
     tabName = paste0("run_", prefix),
-
+    
     div(
       class = theme_class,
-
+      
       fluidRow(
         box(
           width = 12,
-          title = paste(title, "— Input Method"),
+          title = paste(title, "??? Input Method"),
           status = status_name,
           solidHeader = TRUE,
-
+          
           radioButtons(
             paste0(prefix, "_input_method"),
             "Input Method:",
@@ -36,7 +36,7 @@ run_page <- function(prefix, title, theme_class) {
             selected = "single",
             inline = TRUE
           ),
-
+          
           conditionalPanel(
             condition = sprintf("input.%s_input_method == 'upload'", prefix),
             tags$div(
@@ -44,18 +44,18 @@ run_page <- function(prefix, title, theme_class) {
               "The upload-file workflow will be implemented in a later phase."
             )
           ),
-
+          
           conditionalPanel(
             condition = sprintf("input.%s_input_method == 'folder'", prefix),
             tags$div(
               class = "archive-control-panel",
               tags$h4("Archive Selection"),
               uiOutput(paste0(prefix, "_archive_date_ui")),
-
+              
               if (!is_current) {
                 uiOutput(paste0(prefix, "_archive_scenario_ui"))
               },
-
+              
               tags$p(
                 class = "figure-note",
                 if (is_current) {
@@ -78,85 +78,85 @@ run_page <- function(prefix, title, theme_class) {
           )
         )
       ),
-
+      
       conditionalPanel(
         condition = sprintf(
           "input.%s_input_method == 'single' || input.%s_input_method == 'folder'",
           prefix,
           prefix
         ),
-
+        
         tabsetPanel(
           id = paste0(prefix, "_model_tabs"),
-
+          
           # ==========================================================
           # PTM
           # ==========================================================
           tabPanel(
             "PTM Emulator",
-
+            
             fluidRow(
               box(
                 width = 4,
                 title = "PTM Inputs",
                 status = status_name,
                 solidHeader = TRUE,
-
+                
                 conditionalPanel(
                   condition = sprintf("input.%s_input_method == 'single'", prefix),
-
+                  
                   textInput(
                     paste0(prefix, "_ptm_name"),
                     "Scenario Name (Input Method: Enter Single Values):",
-                    paste(title, "PTM Run — Single Values")
+                    paste(title, "PTM Run ??? Single Values")
                   ),
-
+                  
                   numericInput(
                     paste0(prefix, "_ptm_exp"),
-                    "EXP — Combined Export (cfs):",
+                    "EXP ??? Combined Export (cfs):",
                     6000
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_ver"),
-                    "VER — Vernalis Flow (cfs):",
+                    "VER ??? Vernalis Flow (cfs):",
                     3000
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_sac"),
-                    "SAC — Freeport Flow (cfs):",
+                    "SAC ??? Freeport Flow (cfs):",
                     18000
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_east"),
-                    "EAST — East-Side Flow (cfs):",
+                    "EAST ??? East-Side Flow (cfs):",
                     1500
                   ),
                   numericInput(
                     paste0(prefix, "_ptm_xgeo"),
-                    "XGEO — Interior Delta Flow (cfs):",
+                    "'XGEO' Interior Delta Flow (cfs):",
                     3000
                   )
                 ),
-
+                
                 conditionalPanel(
                   condition = sprintf("input.%s_input_method == 'folder'", prefix),
-
+                  
                   textInput(
                     paste0(prefix, "_ptm_archive_name"),
                     "Scenario Name (Input Method: Archive Folder):",
-                    paste(title, "PTM Run — Archive Folder")
+                    paste(title, "PTM Run ??? Archive Folder")
                   ),
-
+                  
                   uiOutput(paste0(prefix, "_ptm_archive_summary"))
                 ),
-
+                
                 selectInput(
                   paste0(prefix, "_ptm_threshold"),
                   "Entrainment Risk Threshold (%):",
                   choices = c(25, 50, 75),
                   selected = 25
                 ),
-
+                
                 actionButton(
                   paste0("run_", prefix, "_ptm"),
                   if (is_current) {
@@ -168,9 +168,9 @@ run_page <- function(prefix, title, theme_class) {
                   class = "btn-success",
                   width = "100%"
                 ),
-
+                
                 br(), br(),
-
+                
                 downloadButton(
                   paste0("download_", prefix, "_ptm"),
                   "Download PTM Results (CSV)",
@@ -178,19 +178,19 @@ run_page <- function(prefix, title, theme_class) {
                   style = "width:100%;"
                 )
               ),
-
+              
               box(
                 width = 8,
-                title = "PTM Results — All Supported Nodes",
+                title = "PTM Results ??? All Supported Nodes",
                 status = status_name,
                 solidHeader = TRUE,
-
+                
                 tabsetPanel(
                   tabPanel(
-                    "7-Day — 15 Nodes",
-
+                    "7-Day ??? 15 Nodes",
+                    
                     tags$h4("Figure 1. PTM 7-Day Entrainment Risk Map"),
-
+                    
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'current'",
@@ -199,7 +199,7 @@ run_page <- function(prefix, title, theme_class) {
                       ),
                       uiOutput(paste0(prefix, "_ptm7_map_date_ui"))
                     ),
-
+                    
                     tags$p(
                       class = "figure-note",
                       paste(
@@ -207,33 +207,33 @@ run_page <- function(prefix, title, theme_class) {
                         "seven rolling windows. Click a node for details."
                       )
                     ),
-
+                    
                     leafletOutput(
                       paste0(prefix, "_ptm7_map"),
                       height = 500
                     ),
-
+                    
                     downloadButton(
                       paste0("download_", prefix, "_ptm7_map"),
                       "Download Map (PNG)",
                       class = "btn-primary map-download"
                     ),
-
+                    
                     br(), br(),
-
+                    
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'current'",
                         prefix,
                         prefix
                       ),
-
+                      
                       tags$h4(
                         "Figure 2. PTM 7-Day Rolling Prediction Time Series"
                       ),
-
+                      
                       uiOutput(paste0(prefix, "_ptm7_timeseries_nodes_ui")),
-
+                      
                       tags$p(
                         class = "figure-note",
                         paste(
@@ -241,15 +241,15 @@ run_page <- function(prefix, title, theme_class) {
                           "windows ending on the last seven measured dates."
                         )
                       ),
-
+                      
                       plotlyOutput(
                         paste0(prefix, "_ptm7_timeseries"),
                         height = 600
                       ),
-
+                      
                       br()
                     ),
-
+                    
                     tags$h4(
                       if (is_current) {
                         "Figure 3. Latest PTM 7-Day Entrainment by DSM2 Node"
@@ -257,7 +257,7 @@ run_page <- function(prefix, title, theme_class) {
                         "Figure 2. Forecast PTM 7-Day Entrainment by DSM2 Node"
                       }
                     ),
-
+                    
                     tags$p(
                       class = "figure-note",
                       paste(
@@ -266,25 +266,25 @@ run_page <- function(prefix, title, theme_class) {
                         "forecast-scenario average."
                       )
                     ),
-
+                    
                     plotlyOutput(
                       paste0(prefix, "_ptm7_plot"),
                       height = 700
                     ),
-
+                    
                     br(),
-
+                    
                     tags$h4("Table 1. PTM 7-Day Node Results"),
-
+                    
                     div(
                       class = "wide-table-scroll",
                       tableOutput(paste0(prefix, "_ptm7_table"))
                     )
                   ),
-
+                  
                   tabPanel(
-                    "30-Day — 39 Nodes",
-
+                    "30-Day ??? 39 Nodes",
+                    
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'forecast'",
@@ -299,16 +299,16 @@ run_page <- function(prefix, title, theme_class) {
                         )
                       )
                     ),
-
+                    
                     conditionalPanel(
                       condition = sprintf(
                         "!(input.%s_input_method == 'folder' && '%s' == 'forecast')",
                         prefix,
                         prefix
                       ),
-
+                      
                       tags$h4("Figure 4. PTM 30-Day Entrainment Risk Map"),
-
+                      
                       tags$p(
                         class = "figure-note",
                         paste(
@@ -316,33 +316,33 @@ run_page <- function(prefix, title, theme_class) {
                           "30 measured days."
                         )
                       ),
-
+                      
                       leafletOutput(
                         paste0(prefix, "_ptm30_map"),
                         height = 500
                       ),
-
+                      
                       downloadButton(
                         paste0("download_", prefix, "_ptm30_map"),
                         "Download Map (PNG)",
                         class = "btn-primary map-download"
                       ),
-
+                      
                       br(), br(),
-
+                      
                       tags$h4(
                         "Figure 5. PTM 30-Day Entrainment by DSM2 Node"
                       ),
-
+                      
                       plotlyOutput(
                         paste0(prefix, "_ptm30_plot"),
                         height = 900
                       ),
-
+                      
                       br(),
-
+                      
                       tags$h4("Table 2. PTM 30-Day Node Results"),
-
+                      
                       div(
                         class = "wide-table-scroll",
                         tableOutput(paste0(prefix, "_ptm30_table"))
@@ -353,13 +353,13 @@ run_page <- function(prefix, title, theme_class) {
               )
             )
           ),
-
+          
           # ==========================================================
           # ECO-PTM
           # ==========================================================
           tabPanel(
             "ECO-PTM",
-
+            
             conditionalPanel(
               condition = sprintf(
                 "input.%s_input_method == 'folder' && '%s' == 'forecast'",
@@ -374,46 +374,46 @@ run_page <- function(prefix, title, theme_class) {
                 )
               )
             ),
-
+            
             conditionalPanel(
               condition = sprintf(
                 "!(input.%s_input_method == 'folder' && '%s' == 'forecast')",
                 prefix,
                 prefix
               ),
-
+              
               fluidRow(
                 box(
                   width = 4,
                   title = "ECO-PTM Inputs",
                   status = status_name,
                   solidHeader = TRUE,
-
+                  
                   conditionalPanel(
                     condition = sprintf(
                       "input.%s_input_method == 'single'",
                       prefix
                     ),
-
+                    
                     textInput(
                       paste0(prefix, "_eco_name"),
                       "Scenario Name (Input Method: Enter Single Values):",
-                      paste(title, "ECO-PTM Run — Single Values")
+                      paste(title, "ECO-PTM Run ??? Single Values")
                     ),
-
+                    
                     numericInput(
                       paste0(prefix, "_eco_sac"),
-                      "SAC — Freeport Flow (cfs):",
+                      "SAC ??? Freeport Flow (cfs):",
                       18000
                     ),
                     numericInput(
                       paste0(prefix, "_eco_yol"),
-                      "YOL — Yolo Bypass Flow (cfs):",
+                      "YOL ??? Yolo Bypass Flow (cfs):",
                       1000
                     ),
                     numericInput(
                       paste0(prefix, "_eco_moke"),
-                      "MOKE — Mokelumne Flow (cfs):",
+                      "MOKE ??? Mokelumne Flow (cfs):",
                       800
                     ),
                     radioButtons(
@@ -424,19 +424,19 @@ run_page <- function(prefix, title, theme_class) {
                       inline = TRUE
                     )
                   ),
-
+                  
                   conditionalPanel(
                     condition = sprintf(
                       "input.%s_input_method == 'folder'",
                       prefix
                     ),
-
+                    
                     textInput(
                       paste0(prefix, "_eco_archive_name"),
                       "Scenario Name (Input Method: Archive Folder):",
-                      paste(title, "ECO-PTM Run — Archive Folder")
+                      paste(title, "ECO-PTM Run ??? Archive Folder")
                     ),
-
+                    
                     tags$p(
                       class = "figure-note",
                       paste(
@@ -446,7 +446,7 @@ run_page <- function(prefix, title, theme_class) {
                       )
                     )
                   ),
-
+                  
                   actionButton(
                     paste0("run_", prefix, "_eco"),
                     "Run ECO-PTM Models",
@@ -454,9 +454,9 @@ run_page <- function(prefix, title, theme_class) {
                     class = "btn-success",
                     width = "100%"
                   ),
-
+                  
                   br(), br(),
-
+                  
                   downloadButton(
                     paste0("download_", prefix, "_eco"),
                     "Download ECO-PTM Results (CSV)",
@@ -464,13 +464,13 @@ run_page <- function(prefix, title, theme_class) {
                     style = "width:100%;"
                   )
                 ),
-
+                
                 box(
                   width = 8,
                   title = "ECO-PTM Results",
                   status = status_name,
                   solidHeader = TRUE,
-
+                  
                   div(
                     class = "wide-table-scroll",
                     tableOutput(paste0(prefix, "_eco_table"))
@@ -479,66 +479,66 @@ run_page <- function(prefix, title, theme_class) {
               )
             )
           ),
-
+          
           # ==========================================================
           # Event Horizon
           # ==========================================================
           tabPanel(
             "Event Horizon",
-
+            
             fluidRow(
               box(
                 width = 4,
                 title = "Event Horizon Inputs",
                 status = status_name,
                 solidHeader = TRUE,
-
+                
                 conditionalPanel(
                   condition = sprintf(
                     "input.%s_input_method == 'single'",
                     prefix
                   ),
-
+                  
                   textInput(
                     paste0(prefix, "_eh_name"),
                     "Scenario Name (Input Method: Enter Single Values):",
-                    paste(title, "Event Horizon Run — Single Values")
+                    paste(title, "Event Horizon Run ??? Single Values")
                   ),
-
+                  
                   numericInput(
                     paste0(prefix, "_eh_exp"),
-                    "EXP — Combined Export (cfs):",
+                    "EXP ??? Combined Export (cfs):",
                     6000
                   ),
                   numericInput(
                     paste0(prefix, "_eh_ver"),
-                    "VER — Vernalis Flow (cfs):",
+                    "VER ??? Vernalis Flow (cfs):",
                     3000
                   ),
                   numericInput(
                     paste0(prefix, "_eh_east"),
-                    "EAST — East-Side Flow (cfs):",
+                    "EAST ??? East-Side Flow (cfs):",
                     1500
                   ),
                   numericInput(
                     paste0(prefix, "_eh_xgeo"),
-                    "XGEO — Interior Delta Flow (cfs):",
+                    "XGEO ??? Interior Delta Flow (cfs):",
                     3000
                   )
                 ),
-
+                
                 conditionalPanel(
                   condition = sprintf(
                     "input.%s_input_method == 'folder'",
                     prefix
                   ),
-
+                  
                   textInput(
                     paste0(prefix, "_eh_archive_name"),
                     "Scenario Name (Input Method: Archive Folder):",
-                    paste(title, "Event Horizon Run — Archive Folder")
+                    paste(title, "Event Horizon Run ??? Archive Folder")
                   ),
-
+                  
                   tags$p(
                     class = "figure-note",
                     if (is_current) {
@@ -554,14 +554,14 @@ run_page <- function(prefix, title, theme_class) {
                     }
                   )
                 ),
-
+                
                 selectInput(
                   paste0(prefix, "_eh_risk"),
                   "Risk Level (%):",
                   choices = seq(15, 80, by = 5),
                   selected = 25
                 ),
-
+                
                 actionButton(
                   paste0("run_", prefix, "_eh"),
                   "Run Event Horizon",
@@ -569,9 +569,9 @@ run_page <- function(prefix, title, theme_class) {
                   class = "btn-success",
                   width = "100%"
                 ),
-
+                
                 br(), br(),
-
+                
                 downloadButton(
                   paste0("download_", prefix, "_eh"),
                   "Download Event Horizon Result (CSV)",
@@ -579,24 +579,24 @@ run_page <- function(prefix, title, theme_class) {
                   style = "width:100%;"
                 )
               ),
-
+              
               box(
                 width = 8,
                 title = "Event Horizon Results",
                 status = status_name,
                 solidHeader = TRUE,
-
+                
                 tags$h4("Table 1. Event Horizon Prediction"),
-
+                
                 div(
                   class = "wide-table-scroll",
                   tableOutput(paste0(prefix, "_eh_table"))
                 ),
-
+                
                 br(),
-
+                
                 tags$h4("Figure 1. Predicted Event Horizon Map"),
-
+                
                 conditionalPanel(
                   condition = sprintf(
                     "input.%s_input_method == 'folder' && '%s' == 'current'",
@@ -605,7 +605,7 @@ run_page <- function(prefix, title, theme_class) {
                   ),
                   uiOutput(paste0(prefix, "_eh_map_date_ui"))
                 ),
-
+                
                 tags$p(
                   class = "figure-note",
                   paste(
@@ -613,39 +613,39 @@ run_page <- function(prefix, title, theme_class) {
                     "Event Horizon distance."
                   )
                 ),
-
+                
                 leafletOutput(
                   paste0(prefix, "_eh_map"),
                   height = 500
                 ),
-
+                
                 downloadButton(
                   paste0("download_", prefix, "_eh_map"),
                   "Download Map (PNG)",
                   class = "btn-primary map-download"
                 ),
-
+                
                 br(), br(),
-
+                
                 conditionalPanel(
                   condition = sprintf(
                     "input.%s_input_method == 'folder' && '%s' == 'current'",
                     prefix,
                     prefix
                   ),
-
+                  
                   tags$h4(
                     "Figure 2. Event Horizon Rolling Prediction Time Series"
                   ),
-
+                  
                   plotlyOutput(
                     paste0(prefix, "_eh_timeseries"),
                     height = 500
                   ),
-
+                  
                   br()
                 ),
-
+                
                 tags$h4(
                   if (is_current) {
                     "Figure 3. Historical Event Horizon Conditions"
@@ -653,7 +653,7 @@ run_page <- function(prefix, title, theme_class) {
                     "Figure 2. Historical Event Horizon Conditions"
                   }
                 ),
-
+                
                 tags$p(
                   class = "figure-note",
                   paste(
@@ -661,7 +661,7 @@ run_page <- function(prefix, title, theme_class) {
                     "the selected result is highlighted in red."
                   )
                 ),
-
+                
                 plotlyOutput(
                   paste0(prefix, "_eh_scatter"),
                   height = 600
@@ -684,7 +684,7 @@ ui <- dashboardPage(
       tags$span("Entrainment Dashboard", style = "font-family:Segoe UI Semibold;font-size:16px;")
     )
   ),
-
+  
   dashboardSidebar(
     sidebarMenu(
       id = "tabs",
@@ -695,7 +695,7 @@ ui <- dashboardPage(
       menuItem("Data Access", tabName = "data", icon = icon("database"))
     )
   ),
-
+  
   dashboardBody(
     tags$head(
       tags$style(HTML("
@@ -756,7 +756,7 @@ ui <- dashboardPage(
         }
       "))
     ),
-
+    
     tabItems(
       # -----------------------------
       # About
@@ -764,255 +764,255 @@ ui <- dashboardPage(
       tabItem(
         tabName = "about",
         div(style = "width: 100%;height: calc(100vh - 100px);overflow-x: auto;overflow-y: auto;box-sizing: border-box;",
-        div(style = "width: 1100px;min-width: 1100px;margin: 0 auto;box-sizing: border-box;",
-        fluidRow(
-          box(
-            width = 12,
-            height = 300,
-            solidHeader = FALSE,
-            div(
-              style = "display: flex; align-items: center;",
-              tags$img(src = "logo.png", height = "160px"),
-              
-              div(
-                style = "margin-left: 30px;margin-right:50px;",
-                
-                h1("PTM Emulator Dashboard"),
-                h4("Version:",
-                  tags$code(style = "margin-left:20px",
-                    paste0("  ", app_version, "  ")
-                  ),
-                  tags$a(style = "font-style:italic;margin-left:20px;",
-                    "[Release Notes]",
-                    href = "#release-notes"
+            div(style = "width: 1100px;min-width: 1100px;margin: 0 auto;box-sizing: border-box;",
+                fluidRow(
+                  box(
+                    width = 12,
+                    height = 300,
+                    solidHeader = FALSE,
+                    div(
+                      style = "display: flex; align-items: center;",
+                      tags$img(src = "logo.png", height = "160px"),
+                      
+                      div(
+                        style = "margin-left: 30px;margin-right:50px;",
+                        
+                        h1("PTM Emulator Dashboard"),
+                        h4("Version:",
+                           tags$code(style = "margin-left:20px",
+                                     paste0("  ", app_version, "  ")
+                           ),
+                           tags$a(style = "font-style:italic;margin-left:20px;",
+                                  "[Release Notes]",
+                                  href = "#release-notes"
+                           )
+                        ),
+                        h4("Date Last Updated:", weight = "bold", 
+                           tags$b("2026-07-22")
+                        ),
+                        
+                        
+                        tags$hr(),
+                        
+                        
+                        h5(style = "text-align: justify;", "Data Refresh Schedule: Some available datasets will be uploaded weekly provided by our client (DWR? CCWD? USBR?). Other data will be retrieved through API from certain USGS gauges upon request from users within the App. For the specific data information, please go to Chapter XX (link to the chapter) on the Data Access page."),
+                        h5("GitHub Application Repository:",
+                           tags$a("PTM Emulator Dashboard", style = "font-style: italic;",
+                                  href = "https://github.com/lauramanuel/STN_emulator_dashboard")
+                        ),
+                        
+                        h5("Data Sources:", 
+                           tags$a("Historical Results for All PTM, ECO-PTM, and Event Horizon models", style = "font-style: italic;",
+                                  href = "https://github.com/lauramanuel/STN_emulator_dashboard/tree/main/STN_EMULATOR/Output")
+                        )
+                      )
+                    )
                   )
                 ),
-                h4("Date Last Updated:", weight = "bold", 
-                   tags$b("2026-07-22")
-                ),
-                
-                
-                tags$hr(),
-                
-                
-                h5(style = "text-align: justify;", "Data Refresh Schedule: Some available datasets will be uploaded weekly provided by our client (DWR? CCWD? USBR?). Other data will be retrieved through API from certain USGS gauges upon request from users within the App. For the specific data information, please go to Chapter XX (link to the chapter) on the Data Access page."),
-                h5("GitHub Application Repository:",
-                   tags$a("PTM Emulator Dashboard", style = "font-style: italic;",
-                          href = "https://github.com/lauramanuel/STN_emulator_dashboard")
-                ),
-                
-                h5("Data Sources:", 
-                   tags$a("Historical Results for All PTM, ECO-PTM, and Event Horizon models", style = "font-style: italic;",
-                          href = "https://github.com/lauramanuel/STN_emulator_dashboard/tree/main/STN_EMULATOR/Output")
-                )
-              )
-            )
-          )
-        ),
-        fluidRow(
-          box(
-            width = 12,
-            height = 2000,
-            div(style = "margin-left: 60px;margin-right:120px",
-                h2("Overview"),
-                h5(style = "text-align: justify;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)’s",
-                   tags$a("hydraulic footprint project",
-                          href = "https://github.com/cchang-ccwater/CCWD_Hydraulic_Footprints"),
-                   tags$b("."),
-                   "Further details on the model development, the original training datasets, and the comparative evaluation of model results are available in the CCWD report ",
-                   tags$sup(
-                     tags$a(
-                       "(1)",
-                       href = "#reference",
-                       rel = "noopener noreferrer"
-                     ),
-                     style = "font-size:0.75em;"
-                   ),
-                   " and other related studies that are currently underway or have been published ",
-                   tags$sup(
-                     tags$a(
-                       "(2, 3)",
-                       href = "#reference",
-                       rel = "noopener noreferrer"
-                     ),
-                     style = "font-size:0.75em;"
-                   ),
-                   "."
-                ),
-                
-                h3("Author & Contact Information"),
-                gt_output("about_info_table"),
-                h3("Technical Guidelines:"),
-                div(style = "margin-left: 60px;",
-                    h4("Visual Identity Compliance:"),
-                    h5(style = "text-align: justify;", "The application framework is built using the ", 
-                       tags$code("shiny"), 
-                                 "and ", 
-                       tags$code("shinydashboard"),
-                                 "packages. Figures are generated using the", 
-                       tags$code("ggplot"),
-                                 "and ", 
-                       tags$code("viridis"),
-                       "packages. Additional packages including",
-                       tags$code("leaflet"),
-                                 ", ", 
-                       tags$code("sf"),
-                                 ", ",                        
-                       tags$code("lwgeom"),  
-                                 ", and ", 
-                       tags$code("dplyr"),                                 
-                                 ", are used for interactive mapping, spatial data processing, and geometric calculations. Most interface text uses font sizes between 13px and 16px to ensure good readability under normal viewing conditions. The application primarily uses the Segoe UI font family, with,",
-                       tags$b("Regular", style = "font-family: Segoe UI"),
-                       tags$b(","),
-                       tags$b("Semibold", style = "font-family: Segoe UI Semibold"),
-                       tags$b(","),
-                       tags$b("Italic", style = "font-style: italic"),
-                       "styles applied where appropriate. Additional accessibility features have been implemented or are planned for future releases to further improve accessibility:"
-                    ),
-                    h5(style = "margin-left: 60px; text-align: justify;","	- Adjustable text size: A text size adjustment option is available, allowing users to change the font size from small to large to improve readability. The default text size is Medium."),
-                    p(style = "text-align: center;",
-                      tags$span(style = "font-size: 0.83em;margin-right:20px;","Small"),
-                      tags$span(style = "font-size: 1.17em;margin-right:20px;","Medium"),
-                      tags$span(style = "font-size: 2.00em;","Large")
-                      ),
-                    h5(style = "margin-left: 60px; text-align: justify;","  - Colorblind-friendly color palette: A color palette option is available, allowing users to switch between different plot color schemes. By default, the application uses the Viridis color palette, which is designed to be perceptually uniform and accessible for users with color vision deficiency. Users may also switch to a high-contrast color palette to enhance visibility."),
-                    h4("Browser Compatibility:"),
-                    h5(
-                      "This app can work on Edge, Chrome, Safari, and Firefox, as tested through version ",
-                      tags$code(paste0("v", app_version)),
-                      "."
-                    ),
-                    h4("Performance Standards: "),
-                    h5(style = "text-align: justify;","The application provides reasonable load times under normal operating conditions. The ECO-PTM page typically loads in less than 1 second; the PTM page in approximately 2-3 seconds; and the Event Horizon page in approximately 7-9 seconds because it loads Leaflet maps, geo-spatial files, and multiple plots. Standard weekly prediction tasks are generally completed almost immediately, while large prediction requests involving long time series and many input features, e.g., 190k records, may require substantially more processing and rendering time."),
-                    h5(style = "text-align: justify;","Concurrent-user capacity depends on the deployment environment, including available CPU, memory, and the number of Shiny worker processes. The application is expected to support multiple users performing normal navigation, data exploration, and standard predictions, although several simultaneous computationally intensive prediction requests may increase response times. Final concurrent-user capacity should therefore be confirmed through load testing in the production environment."),
-                    h4("Mobile Responsiveness:"),
-                    h5("This application is usable also on mobile devices.")
-
-                ),
-                h3(id = "reference",  "References"),                
-                div(style = "margin-left: 60px;",
-                    h5(style = "text-align: justify;", "Contra Costa Water District.(2026) Intuitive Quantitative Metrics for Rapid Assessment of Entrainment Risks and Salmonid Responses in The Delta.",
-                       tags$a(
-                         "[Link]",
-                         href = "https://stantec.sharepoint.com/:w:/r/teams/LTOTechnicalSupport2025-2030/Shared%20Documents/CCWD%20Entrainment%20TM/20260419_CCWD_Entrainment_memo.docx?d=wa6ce67b163e341bd9a8e2767a75736e9&csf=1&web=1&e=b9mjqJ"
-                       )),
-                    h5(style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
-                       tags$a(
-                         "[Link]",
-                         href = ""
-                       )),
-                    h5(style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
-                       tags$a(
-                         "[Link]",
-                         href = ""
-                       )),
-                ),
-                h3(id = "release-notes", "Release Notes:"),
-                div(style = "margin-left: 60px;",
-                    tags$div(
-                      style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
-                      h4(style = "margin-bottom: 8px;font-weight: 600;",
-                         "Version ",
-                        tags$code("1.2.0", style = "font-weight: 400;margin-left: 10px;"),
-                        tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
-                         "July 18, 2026"
+                fluidRow(
+                  box(
+                    width = 12,
+                    height = 2000,
+                    div(style = "margin-left: 60px;margin-right:120px",
+                        h2("Overview"),
+                        h5(style = "text-align: justify;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)???s",
+                           tags$a("hydraulic footprint project",
+                                  href = "https://github.com/cchang-ccwater/CCWD_Hydraulic_Footprints"),
+                           tags$b("."),
+                           "Further details on the model development, the original training datasets, and the comparative evaluation of model results are available in the CCWD report ",
+                           tags$sup(
+                             tags$a(
+                               "(1)",
+                               href = "#reference",
+                               rel = "noopener noreferrer"
+                             ),
+                             style = "font-size:0.75em;"
+                           ),
+                           " and other related studies that are currently underway or have been published ",
+                           tags$sup(
+                             tags$a(
+                               "(2, 3)",
+                               href = "#reference",
+                               rel = "noopener noreferrer"
+                             ),
+                             style = "font-size:0.75em;"
+                           ),
+                           "."
+                        ),
+                        
+                        h3("Author & Contact Information"),
+                        gt_output("about_info_table"),
+                        h3("Technical Guidelines:"),
+                        div(style = "margin-left: 60px;",
+                            h4("Visual Identity Compliance:"),
+                            h5(style = "text-align: justify;", "The application framework is built using the ", 
+                               tags$code("shiny"), 
+                               "and ", 
+                               tags$code("shinydashboard"),
+                               "packages. Figures are generated using the", 
+                               tags$code("ggplot"),
+                               "and ", 
+                               tags$code("viridis"),
+                               "packages. Additional packages including",
+                               tags$code("leaflet"),
+                               ", ", 
+                               tags$code("sf"),
+                               ", ",                        
+                               tags$code("lwgeom"),  
+                               ", and ", 
+                               tags$code("dplyr"),                                 
+                               ", are used for interactive mapping, spatial data processing, and geometric calculations. Most interface text uses font sizes between 13px and 16px to ensure good readability under normal viewing conditions. The application primarily uses the Segoe UI font family, with,",
+                               tags$b("Regular", style = "font-family: Segoe UI"),
+                               tags$b(","),
+                               tags$b("Semibold", style = "font-family: Segoe UI Semibold"),
+                               tags$b(","),
+                               tags$b("Italic", style = "font-style: italic"),
+                               "styles applied where appropriate. Additional accessibility features have been implemented or are planned for future releases to further improve accessibility:"
+                            ),
+                            h5(style = "margin-left: 60px; text-align: justify;","	- Adjustable text size: A text size adjustment option is available, allowing users to change the font size from small to large to improve readability. The default text size is Medium."),
+                            p(style = "text-align: center;",
+                              tags$span(style = "font-size: 0.83em;margin-right:20px;","Small"),
+                              tags$span(style = "font-size: 1.17em;margin-right:20px;","Medium"),
+                              tags$span(style = "font-size: 2.00em;","Large")
+                            ),
+                            h5(style = "margin-left: 60px; text-align: justify;","  - Colorblind-friendly color palette: A color palette option is available, allowing users to switch between different plot color schemes. By default, the application uses the Viridis color palette, which is designed to be perceptually uniform and accessible for users with color vision deficiency. Users may also switch to a high-contrast color palette to enhance visibility."),
+                            h4("Browser Compatibility:"),
+                            h5(
+                              "This app can work on Edge, Chrome, Safari, and Firefox, as tested through version ",
+                              tags$code(paste0("v", app_version)),
+                              "."
+                            ),
+                            h4("Performance Standards: "),
+                            h5(style = "text-align: justify;","The application provides reasonable load times under normal operating conditions. The ECO-PTM page typically loads in less than 1 second; the PTM page in approximately 2-3 seconds; and the Event Horizon page in approximately 7-9 seconds because it loads Leaflet maps, geo-spatial files, and multiple plots. Standard weekly prediction tasks are generally completed almost immediately, while large prediction requests involving long time series and many input features, e.g., 190k records, may require substantially more processing and rendering time."),
+                            h5(style = "text-align: justify;","Concurrent-user capacity depends on the deployment environment, including available CPU, memory, and the number of Shiny worker processes. The application is expected to support multiple users performing normal navigation, data exploration, and standard predictions, although several simultaneous computationally intensive prediction requests may increase response times. Final concurrent-user capacity should therefore be confirmed through load testing in the production environment."),
+                            h4("Mobile Responsiveness:"),
+                            h5("This application is usable also on mobile devices.")
+                            
+                        ),
+                        h3(id = "reference",  "References"),                
+                        div(style = "margin-left: 60px;",
+                            h5(style = "text-align: justify;", "Contra Costa Water District.(2026) Intuitive Quantitative Metrics for Rapid Assessment of Entrainment Risks and Salmonid Responses in The Delta.",
+                               tags$a(
+                                 "[Link]",
+                                 href = "https://stantec.sharepoint.com/:w:/r/teams/LTOTechnicalSupport2025-2030/Shared%20Documents/CCWD%20Entrainment%20TM/20260419_CCWD_Entrainment_memo.docx?d=wa6ce67b163e341bd9a8e2767a75736e9&csf=1&web=1&e=b9mjqJ"
+                               )),
+                            h5(style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
+                               tags$a(
+                                 "[Link]",
+                                 href = ""
+                               )),
+                            h5(style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
+                               tags$a(
+                                 "[Link]",
+                                 href = ""
+                               )),
+                        ),
+                        h3(id = "release-notes", "Release Notes:"),
+                        div(style = "margin-left: 60px;",
+                            tags$div(
+                              style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
+                              h4(style = "margin-bottom: 8px;font-weight: 600;",
+                                 "Version ",
+                                 tags$code("1.2.0", style = "font-weight: 400;margin-left: 10px;"),
+                                 tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
+                                            "July 18, 2026"
+                                 )
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Added: "),
+                                 "A new ",
+                                 tags$code("Event Horizon"),
+                                 " page with interactive ",
+                                 tags$code("leaflet"),
+                                 " maps and additional visualization tools."
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Improved: "),
+                                 "Prediction performance for standard weekly analysis periods."
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Fixed: "),
+                                 "Minor layout and data-loading issues in the ",
+                                 tags$code("PTM"),
+                                 " module."
+                              )
+                            )
+                        ),
+                        div(style = "margin-left: 60px;",
+                            tags$div(
+                              style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
+                              h4(style = "margin-bottom: 8px;font-weight: 600;",
+                                 "Version ",
+                                 tags$code("1.2.1", style = "font-weight: 400;margin-left: 10px;"),
+                                 tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
+                                            "July 22, 2026"
+                                 )
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Added: "),
+                                 "A new ",
+                                 tags$code("Event Horizon"),
+                                 " page with interactive ",
+                                 tags$code("leaflet"),
+                                 " maps and additional visualization tools."
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Improved: "),
+                                 "Prediction performance for standard weekly analysis periods."
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Fixed: "),
+                                 "Minor layout and data-loading issues in the ",
+                                 tags$code("PTM"),
+                                 " module."
+                              )
+                            )
+                        ),
+                        div(style = "margin-left: 60px;",
+                            tags$div(
+                              style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
+                              h4(style = "margin-bottom: 8px;font-weight: 600;",
+                                 "Version ",
+                                 tags$code("1.2.2", style = "font-weight: 400;margin-left: 10px;"),
+                                 tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
+                                            "July 24, 2026"
+                                 )
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Added: "),
+                                 "A new ",
+                                 tags$code("Event Horizon"),
+                                 " page with interactive ",
+                                 tags$code("leaflet"),
+                                 " maps and additional visualization tools."
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Improved: "),
+                                 "Prediction performance for standard weekly analysis periods."
+                              ),
+                              h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
+                                 tags$b("-Fixed: "),
+                                 "Minor layout and data-loading issues in the ",
+                                 tags$code("PTM"),
+                                 " module."
+                              )
+                            )
                         )
-                        ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                        tags$b("-Added: "),
-                        "A new ",
-                        tags$code("Event Horizon"),
-                        " page with interactive ",
-                        tags$code("leaflet"),
-                        " maps and additional visualization tools."
-                        ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                        tags$b("-Improved: "),
-                        "Prediction performance for standard weekly analysis periods."
-                        ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                        tags$b("-Fixed: "),
-                        "Minor layout and data-loading issues in the ",
-                        tags$code("PTM"),
-                        " module."
                     )
-                    )
-                    ),
-                div(style = "margin-left: 60px;",
-                    tags$div(
-                      style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
-                      h4(style = "margin-bottom: 8px;font-weight: 600;",
-                         "Version ",
-                         tags$code("1.2.1", style = "font-weight: 400;margin-left: 10px;"),
-                         tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
-                                    "July 22, 2026"
-                         )
-                      ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                         tags$b("-Added: "),
-                         "A new ",
-                         tags$code("Event Horizon"),
-                         " page with interactive ",
-                         tags$code("leaflet"),
-                         " maps and additional visualization tools."
-                      ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                         tags$b("-Improved: "),
-                         "Prediction performance for standard weekly analysis periods."
-                      ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                         tags$b("-Fixed: "),
-                         "Minor layout and data-loading issues in the ",
-                         tags$code("PTM"),
-                         " module."
-                      )
-                      )
-                      ),
-                div(style = "margin-left: 60px;",
-                    tags$div(
-                      style = "margin-bottom: 24px;padding-left: 12px;border-left: 4px solid #3c8dbc;",
-                      h4(style = "margin-bottom: 8px;font-weight: 600;",
-                         "Version ",
-                         tags$code("1.2.2", style = "font-weight: 400;margin-left: 10px;"),
-                         tags$small(style = "margin-left: 10px;color: #777777;font-weight: normal;",
-                                    "July 24, 2026"
-                         )
-                      ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                         tags$b("-Added: "),
-                         "A new ",
-                         tags$code("Event Horizon"),
-                         " page with interactive ",
-                         tags$code("leaflet"),
-                         " maps and additional visualization tools."
-                      ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                         tags$b("-Improved: "),
-                         "Prediction performance for standard weekly analysis periods."
-                      ),
-                      h5(style = "line-height: 1.6;margin-top: 6px;margin-bottom: 6px;margin-left: 30px;font-weight: normal;",
-                         tags$b("-Fixed: "),
-                         "Minor layout and data-loading issues in the ",
-                         tags$code("PTM"),
-                         " module."
-                      )
-                      )
-                      )
-              )
+                  )
+                )
             )
-          )
         )
-      )
       ),
-
+      
       run_page("current", "Current Conditions", "current-theme"),
       run_page("forecast", "Forecast Conditions", "forecast-theme"),
-
+      
       tabItem(
         tabName = "comparison",
         tabsetPanel(
           id = "comparison_sections",
-
+          
           tabPanel(
             "General Scenario Comparison",
             fluidRow(
@@ -1052,19 +1052,19 @@ ui <- dashboardPage(
               )
             )
           ),
-
+          
           tabPanel(
             "OMRI Archive Comparison",
-
+            
             fluidRow(
               box(
                 width = 4,
                 title = "Archive Comparison Controls",
                 status = "primary",
                 solidHeader = TRUE,
-
+                
                 uiOutput("omri_archive_dates_ui"),
-
+                
                 selectInput(
                   "omri_comparison_model",
                   "Forecast Model:",
@@ -1074,7 +1074,7 @@ ui <- dashboardPage(
                   ),
                   selected = "PTM 7-Day Entrainment"
                 ),
-
+                
                 conditionalPanel(
                   condition = "input.omri_comparison_model == 'Event Horizon'",
                   selectInput(
@@ -1084,7 +1084,7 @@ ui <- dashboardPage(
                     selected = 25
                   )
                 ),
-
+                
                 actionButton(
                   "build_omri_comparison",
                   "Run All Available OMRI Scenarios",
@@ -1092,9 +1092,9 @@ ui <- dashboardPage(
                   class = "btn-success",
                   width = "100%"
                 ),
-
+                
                 br(), br(),
-
+                
                 downloadButton(
                   "download_omri_comparison",
                   "Download OMRI Comparison (CSV)",
@@ -1102,13 +1102,13 @@ ui <- dashboardPage(
                   style = "width:100%;"
                 )
               ),
-
+              
               box(
                 width = 8,
                 title = "OMRI Forecast Scenario Comparison",
                 status = "primary",
                 solidHeader = TRUE,
-
+                
                 tags$p(
                   class = "figure-note",
                   paste(
@@ -1118,16 +1118,16 @@ ui <- dashboardPage(
                     "and compares the forecast emulator results."
                   )
                 ),
-
+                
                 uiOutput("omri_comparison_status"),
-
+                
                 plotlyOutput(
                   "omri_comparison_plot",
                   height = 750
                 ),
-
+                
                 br(),
-
+                
                 div(
                   class = "wide-table-scroll",
                   tableOutput("omri_comparison_table")
@@ -1137,149 +1137,149 @@ ui <- dashboardPage(
           )
         )
       ),
-
+      
       # -----------------------------
       # Data Access
       # -----------------------------
       tabItem(
         tabName = "data",
         div(style = "width: 100%;height: calc(100vh - 100px);overflow-x: auto;overflow-y: auto;box-sizing: border-box;",
-        div(style = "width: 1800px;min-width: 1800px;margin: 0 auto;box-sizing: border-box;",        
-        fluidRow(
-          box(
-            style = "margin-left: 20px;",
-            width = 6,
-            h1("Data Access", style = "margin-left: 10px;"),
-            solidHeader = FALSE,
-            h3("Quick Overview", style = "margin-left: 10px;"),
-            style = "text-align: Justify;margin-left: 10px;margin-right:60px;",
-            p(style = "margin-left: 10px;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)’s hydraulic footprint project."),
-            h5("Here are three types of models:", style = "margin-left: 10px;"),
-            div(style = "margin-left:60px",
-              h5("- DSM2 ECO-PTM emulator models",
-                 tags$a(" (part 1)", href = "#intro-eco-ptm")
-              ),
-              h5("- DSM2 PTM emulator models",
-                 tags$a(" (part 2)", href = "#intro-ptm")
-              ),
-              h5("- Model for the Entrainment Event Horizon",
-                 tags$a(" (part 3)", href = "#intro-event-horizon")
-              )
-            ),
-            h3("Data Availability", style = "margin-left: 10px;"),
-            
-            p(style = "margin-left: 10px;",
-              "Data and tools supporting the PTM Emulator dashboard are provided below."
-            ),
-            
-            tags$hr(),
-            
-            # ---------------------
-            # GitHub
-            # ---------------------
-            div(
-              style = "
+            div(style = "width: 1800px;min-width: 1800px;margin: 0 auto;box-sizing: border-box;",        
+                fluidRow(
+                  box(
+                    style = "margin-left: 20px;",
+                    width = 6,
+                    h1("Data Access", style = "margin-left: 10px;"),
+                    solidHeader = FALSE,
+                    h3("Quick Overview", style = "margin-left: 10px;"),
+                    style = "text-align: Justify;margin-left: 10px;margin-right:60px;",
+                    p(style = "margin-left: 10px;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)???s hydraulic footprint project."),
+                    h5("Here are three types of models:", style = "margin-left: 10px;"),
+                    div(style = "margin-left:60px",
+                        h5("- DSM2 ECO-PTM emulator models",
+                           tags$a(" (part 1)", href = "#intro-eco-ptm")
+                        ),
+                        h5("- DSM2 PTM emulator models",
+                           tags$a(" (part 2)", href = "#intro-ptm")
+                        ),
+                        h5("- Model for the Entrainment Event Horizon",
+                           tags$a(" (part 3)", href = "#intro-event-horizon")
+                        )
+                    ),
+                    h3("Data Availability", style = "margin-left: 10px;"),
+                    
+                    p(style = "margin-left: 10px;",
+                      "Data and tools supporting the PTM Emulator dashboard are provided below."
+                    ),
+                    
+                    tags$hr(),
+                    
+                    # ---------------------
+                    # GitHub
+                    # ---------------------
+                    div(
+                      style = "
           padding:15px;
           border:1px solid #d9d9d9;
           border-radius:6px;
           margin-bottom:15px;
           background:white;
         ",
-              
-              tags$h4("PTM Emulator GitHub Repository"),
-              
-              p(
-                "Access source code, model workflow documentation, emulator development resources, and supporting scripts."
-              ),
-              
-              tags$a(
-                class = "btn btn-success",
-                href = "https://github.com/rojkv/PTM_Emulator_Workflow",
-                target = "_blank",
-                icon("github"),
-                " View on GitHub"
-              )
-            ),
-            
-            # ---------------------
-            # SacPAS
-            # ---------------------
-            div(
-              style = "
+                      
+                      tags$h4("PTM Emulator GitHub Repository"),
+                      
+                      p(
+                        "Access source code, model workflow documentation, emulator development resources, and supporting scripts."
+                      ),
+                      
+                      tags$a(
+                        class = "btn btn-success",
+                        href = "https://github.com/rojkv/PTM_Emulator_Workflow",
+                        target = "_blank",
+                        icon("github"),
+                        " View on GitHub"
+                      )
+                    ),
+                    
+                    # ---------------------
+                    # SacPAS
+                    # ---------------------
+                    div(
+                      style = "
           padding:15px;
           border:1px solid #d9d9d9;
           border-radius:6px;
           background:white;
         ",
-              
-              tags$h4("SacPAS Weekly Assessment"),
-              
-              p(
-                "Weekly Sacramento River Winter-Run assessment forecasts and supporting evaluation products."
-              ),
-              
-              tags$a(
-                class = "btn btn-primary",
-                href = "https://can01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fcbr.washington.edu%2Fsacramento%2Fassessments%2Ftest%2Fforecast_sacpas.html&data=05%7C02%7CLaura.Manuel%40stantec.com%7C7d690048e1804ee4cc7408deccc5ac84%7C413c6f2c219a469297d3f2b4d80281e7%7C0%7C0%7C639173346569845423%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=OIZCfSzN%2BkO8UrHo3QV4D4Aike6mQpP7LvkmfgoCKa0%3D&reserved=0",
-                target = "_blank",
-                icon("external-link-alt"),
-                " Open SacPAS Assessment"
-              )
+                      
+                      tags$h4("SacPAS Weekly Assessment"),
+                      
+                      p(
+                        "Weekly Sacramento River Winter-Run assessment forecasts and supporting evaluation products."
+                      ),
+                      
+                      tags$a(
+                        class = "btn btn-primary",
+                        href = "https://can01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fcbr.washington.edu%2Fsacramento%2Fassessments%2Ftest%2Fforecast_sacpas.html&data=05%7C02%7CLaura.Manuel%40stantec.com%7C7d690048e1804ee4cc7408deccc5ac84%7C413c6f2c219a469297d3f2b4d80281e7%7C0%7C0%7C639173346569845423%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=OIZCfSzN%2BkO8UrHo3QV4D4Aike6mQpP7LvkmfgoCKa0%3D&reserved=0",
+                        target = "_blank",
+                        icon("external-link-alt"),
+                        " Open SacPAS Assessment"
+                      )
+                    )
+                  ),
+                  box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
+                      h3(id = "intro-eco-ptm","P1 DSM2 ECO-PTM emulator models",style = "margin-left:10px;"),
+                      gt::gt_output("ecoptm_inputs_table"),
+                      tags$hr(),
+                      fluidRow(
+                        column(width = 7,
+                               box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                                   tags$iframe(src = "ECOPTM_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                               )
+                        ),
+                        column(width = 5,
+                               box(title = "Model Parameters",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("ecoptm_parameters_table"))
+                               )
+                        )
+                      )
+                  ),
+                  box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
+                      h3(id = "intro-ptm","P2 DSM2 PTM emulator models",style = "margin-left:10px;"),
+                      gt::gt_output("ptm_inputs_table"),
+                      tags$hr(),
+                      fluidRow(
+                        column(width = 7,
+                               box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                                   tags$iframe(src = "PTM_Entrainment_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                               )
+                        ),
+                        column(width = 5,
+                               box(title = "Model Parameters",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("ptm_parameters_table"))
+                               )
+                        )
+                      )
+                  ),         
+                  box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
+                      h3(id = "intro-event-horizon","P3 Model for the Entrainment Event Horizon",style = "margin-left:10px;"),
+                      gt::gt_output("horizon_inputs_table"),
+                      tags$hr(),
+                      fluidRow(
+                        column(width = 6,
+                               box(title = "Inputs Data Range",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
+                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_datarange_table"))
+                               )
+                        ),
+                        column(width = 6,
+                               box(title = "Model Parameters",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
+                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_parameter_table"))
+                               )
+                        )
+                      )
+                  ),         
+                )
             )
-          ),
-          box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
-              h3(id = "intro-eco-ptm","P1 DSM2 ECO-PTM emulator models",style = "margin-left:10px;"),
-              gt::gt_output("ecoptm_inputs_table"),
-              tags$hr(),
-              fluidRow(
-                column(width = 7,
-                       box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                           tags$iframe(src = "ECOPTM_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
-                       )
-                ),
-                column(width = 5,
-                       box(title = "Model Parameters",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                           div(style = "height:650px;overflow-y:auto;",gt::gt_output("ecoptm_parameters_table"))
-                       )
-                )
-              )
-          ),
-          box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
-              h3(id = "intro-ptm","P2 DSM2 PTM emulator models",style = "margin-left:10px;"),
-              gt::gt_output("ptm_inputs_table"),
-              tags$hr(),
-              fluidRow(
-                column(width = 7,
-                       box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                           tags$iframe(src = "PTM_Entrainment_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
-                       )
-                ),
-                column(width = 5,
-                       box(title = "Model Parameters",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                           div(style = "height:650px;overflow-y:auto;",gt::gt_output("ptm_parameters_table"))
-                       )
-                )
-              )
-          ),         
-          box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
-              h3(id = "intro-event-horizon","P3 Model for the Entrainment Event Horizon",style = "margin-left:10px;"),
-              gt::gt_output("horizon_inputs_table"),
-              tags$hr(),
-              fluidRow(
-                column(width = 6,
-                       box(title = "Inputs Data Range",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
-                           div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_datarange_table"))
-                       )
-                ),
-                column(width = 6,
-                       box(title = "Model Parameters",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
-                           div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_parameter_table"))
-                       )
-                )
-              )
-            ),         
-            )
-          )
         )
       )
     )
