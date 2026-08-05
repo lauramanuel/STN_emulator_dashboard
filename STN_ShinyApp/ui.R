@@ -60,7 +60,7 @@ run_page <- function(prefix, title, theme_class) {
                 class = "figure-note",
                 if (is_current) {
                   paste(
-                    "Current-condition calculations use measured rows.",
+                    "Observed-condition calculations use measured rows.",
                     "The PTM Emulator 7-day and Event Horizon models use seven rolling",
                     "7-day windows ending on the last seven measured dates.",
                     "The PTM Emulator 30-day and ECO-PTM Emulator models use the most recent",
@@ -93,96 +93,119 @@ run_page <- function(prefix, title, theme_class) {
           # PTM
           # ==========================================================
           tabPanel(
-            "PTM Emulator",
-            
+            "PTM and Event Horizon Emulators",
+
             fluidRow(
               box(
                 width = 4,
-                title = "PTM Emulator Inputs (7 or 30 day average flows)",
+                title = "Emulator Inputs (PTM and Event Horizon)",
                 status = status_name,
                 solidHeader = TRUE,
-                
+
+                tags$div(
+                  class = "alert alert-info",
+                  style = "padding:10px 12px; margin-bottom:12px; font-size:13px;",
+                  tags$b("Input Averaging"),
+                  tags$br(),
+                  HTML("&#8226; <b>PTM 7-Day</b> and <b>Event Horizon</b> emulators use <b>7-day average flow</b> inputs."),
+                  tags$br(),
+                  HTML("&#8226; <b>PTM 30-Day</b> emulator uses <b>30-day average flow</b> inputs.")
+                ),
+
                 conditionalPanel(
                   condition = sprintf("input.%s_input_method == 'single'", prefix),
-                  
+
                   textInput(
                     paste0(prefix, "_ptm_name"),
                     "Scenario Name (User Defined):",
                     paste(title, "PTM Run Single Values")
                   ),
-                  
+
                   numericInput(
                     paste0(prefix, "_ptm_exp"),
-                    "EXP: Combined Export (cfs):",
+                    "EXP: Combined CVP and SWP Export (cfs):",
                     6000
                   ),
+
                   numericInput(
                     paste0(prefix, "_ptm_ver"),
-                    "VER: Vernalis Flow (cfs):",
+                    "VER: San Joaquin River Flow at Vernalis Flow (cfs):",
                     3000
                   ),
+
+                  tags$div(
+                    class = "alert alert-info",
+                    style = "padding:8px 10px;margin-bottom:8px;font-size:12px;",
+                    tags$b("PTM emulator input only: "),
+                    "SAC is used by the PTM emulators and is not used by the Event Horizon emulator."
+                  ),
+
                   numericInput(
                     paste0(prefix, "_ptm_sac"),
-                    "SAC: Freeport Flow (cfs):",
+                    "SAC: Sacramento River Flow at Freeport Flow (cfs):",
                     18000
                   ),
+
                   numericInput(
                     paste0(prefix, "_ptm_east"),
-                    "EAST: East-Side Flow (cfs):",
+                    "EAST: East-Side River Flow (cfs):",
                     1500
                   ),
+
                   numericInput(
                     paste0(prefix, "_ptm_xgeo"),
                     "XGEO: Interior Delta Flow (cfs):",
                     3000
                   )
                 ),
-                
+
                 conditionalPanel(
                   condition = sprintf("input.%s_input_method == 'folder'", prefix),
-                  
+
                   textInput(
                     paste0(prefix, "_ptm_archive_name"),
                     "Scenario Name (Input Method: Archive Folder):",
                     paste(title, "PTM Emulator Run: Archive Folder")
                   ),
-                  
+
                   uiOutput(paste0(prefix, "_ptm_archive_summary"))
                 ),
+
                 conditionalPanel(
                   condition = sprintf(
                     "input.%s_input_method == 'folder' && '%s' == 'forecast'",
                     prefix,
                     prefix
                   ),
-                  
+
                   tags$p(
                     class = "figure-note",
                     style = "margin-top:6px;font-size:12px;",
                     "Note: Forecast calculations hold XGEO constant at the latest observed value."
                   )
                 ),
+
                 selectInput(
                   paste0(prefix, "_ptm_threshold"),
-                  "Entrainment Risk Threshold (%):",
-                  choices = c(25, 50, 75),
+                  "Entrainment Risk/Event Horizon Risk Threshold (%):",
+                  choices = seq(15, 80, by = 5),
                   selected = 25
                 ),
-                
+
                 actionButton(
                   paste0("run_", prefix, "_ptm"),
                   if (is_current) {
-                    "Run Current Conditions PTM Emulator Models"
+                    "Run Observed Conditions PTM and Event Horizon Emulators"
                   } else {
-                    "Run Forecast PTM Emulator 7-Day Model"
+                    "Run Forecast PTM 7-Day and Event Horizon Emulators"
                   },
                   icon = icon("play"),
                   class = "btn-success",
                   width = "100%"
                 ),
-                
+
                 br(), br(),
-                
+
                 downloadButton(
                   paste0("download_", prefix, "_ptm"),
                   "Download PTM Emulator Results (CSV)",
@@ -190,19 +213,25 @@ run_page <- function(prefix, title, theme_class) {
                   style = "width:100%;"
                 )
               ),
-              
+
               box(
                 width = 8,
                 title = "PTM Emulator Results: All Supported Nodes",
                 status = status_name,
                 solidHeader = TRUE,
-                
+
                 tabsetPanel(
+                  id = paste0(prefix, "_ptm_result_tabs"),
+
                   tabPanel(
                     "7-Day: 15 Nodes",
-                    
-                    tags$h4("PTM Emulator 7-Day Entrainment Risk Map"),
-                    
+
+                    tags$h4("PTM 7-Day Entrainment and Event Horizon Map"),
+
+                    uiOutput(
+                      paste0(prefix, "_eh_summary")
+                    ),
+
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'current'",
@@ -211,42 +240,42 @@ run_page <- function(prefix, title, theme_class) {
                       ),
                       uiOutput(paste0(prefix, "_ptm7_map_date_ui"))
                     ),
-                    
+
                     tags$p(
                       class = "figure-note",
                       paste(
                         "The archive-current map can be stepped through the",
                         "seven rolling windows. Click a node for details.",
-                        "*Risk Zone polygons are an approximation based on Emulator node availibility*"
+                        "Risk-zone polygons are an approximation based on emulator node availability."
                       )
                     ),
-                    
+
                     leafletOutput(
                       paste0(prefix, "_ptm7_map"),
                       height = 500
                     ),
-                    
+
                     downloadButton(
                       paste0("download_", prefix, "_ptm7_map"),
                       "Download Map (PNG)",
                       class = "btn-primary map-download"
                     ),
-                    
+
                     br(), br(),
-                    
+
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'current'",
                         prefix,
                         prefix
                       ),
-                      
+
                       tags$h4(
-                        " PTM Emulator 7-Day Rolling Prediction Time Series"
+                        "PTM Emulator 7-Day Rolling Prediction Time Series"
                       ),
-                      
+
                       uiOutput(paste0(prefix, "_ptm7_timeseries_nodes_ui")),
-                      
+
                       tags$p(
                         class = "figure-note",
                         paste(
@@ -254,56 +283,24 @@ run_page <- function(prefix, title, theme_class) {
                           "windows ending on the last seven measured dates."
                         )
                       ),
-                      
+
                       plotlyOutput(
                         paste0(prefix, "_ptm7_timeseries"),
                         height = 600
-                      ),
-                      
-                      br()
-                    ),
-                    
-                    tags$h4(
-                      if (is_current) {
-                        " Latest PTM Emulator 7-Day Entrainment by DSM2 Node"
-                      } else {
-                        "Forecast PTM Emulator 7-Day Entrainment by DSM2 Node"
-                      }
-                    ),
-                    
-                    tags$p(
-                      class = "figure-note",
-                      paste(
-                        "For Read from Archive runs, the following chart and PTM Emulator 7-Day Node Results Table show the",
-                        "7-day average flow results from the week prior to the selected date for current conditions runs",
-                        "and the 7-day average flow results from the forecast week begining on the selected date for forecast conditions runs."
                       )
-                    ),
-                    
-                    plotlyOutput(
-                      paste0(prefix, "_ptm7_plot"),
-                      height = 700
-                    ),
-                    
-                    br(),
-                    
-                    tags$h4("PTM Emulator 7-Day Node Results"),
-                    
-                    div(
-                      class = "wide-table-scroll",
-                      tableOutput(paste0(prefix, "_ptm7_table"))
                     )
                   ),
-                  
+
                   tabPanel(
                     "30-Day: 39 Nodes",
-                    
+
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'forecast'",
                         prefix,
                         prefix
                       ),
+
                       tags$div(
                         class = "alert alert-info",
                         paste(
@@ -312,16 +309,16 @@ run_page <- function(prefix, title, theme_class) {
                         )
                       )
                     ),
-                    
+
                     conditionalPanel(
                       condition = sprintf(
                         "!(input.%s_input_method == 'folder' && '%s' == 'forecast')",
                         prefix,
                         prefix
                       ),
-                      
+
                       tags$h4("PTM Emulator 30-Day Entrainment Risk Map"),
-                      
+
                       tags$p(
                         class = "figure-note",
                         paste(
@@ -329,38 +326,110 @@ run_page <- function(prefix, title, theme_class) {
                           "30 measured days."
                         )
                       ),
-                      
+
                       leafletOutput(
                         paste0(prefix, "_ptm30_map"),
                         height = 500
                       ),
-                      
+
                       downloadButton(
                         paste0("download_", prefix, "_ptm30_map"),
                         "Download Map (PNG)",
                         class = "btn-primary map-download"
                       ),
-                      
+
                       br(), br(),
-                      
+
                       tags$h4(
                         "PTM Emulator 30-Day Entrainment by DSM2 Node"
                       ),
-                      
+
                       plotlyOutput(
                         paste0(prefix, "_ptm30_plot"),
                         height = 900
                       ),
-                      
+
                       br(),
-                      
+
                       tags$h4("PTM Emulator 30-Day Node Results"),
-                      
+
                       div(
                         class = "wide-table-scroll",
                         tableOutput(paste0(prefix, "_ptm30_table"))
                       )
                     )
+                  )
+                )
+              )
+            ),
+
+            conditionalPanel(
+              condition = sprintf(
+                "input.%s_ptm_result_tabs == '7-Day: 15 Nodes'",
+                prefix
+              ),
+
+              fluidRow(
+                box(
+                  width = 12,
+                  status = status_name,
+                  solidHeader = FALSE,
+                  class = "combined-emulator-plots-box",
+
+                  fluidRow(
+                    column(
+                      width = 6,
+
+                      tags$h4(
+                        class = "emulator-figure-title",
+
+                        if (is_current) {
+                          "Observed PTM 7-Day Entrainment by DSM2 Node"
+                        } else {
+                          "Forecast PTM 7-Day Entrainment by DSM2 Node"
+                        }
+                      ),
+
+                      plotlyOutput(
+                        paste0(prefix, "_ptm7_plot"),
+                        height = 620
+                      )
+                    ),
+
+                    column(
+                      width = 6,
+
+                      tags$h4(
+                        class = "emulator-figure-title",
+                        "Event Horizon: River Miles from Clifton Court Forebay"
+                      ),
+                      tags$p(
+                        class = "figure-note",
+                        paste(
+                          "Historical 7-day average flows (2023-2026) were used to",
+                          "generate the event horizons that shown in the background of the",
+                          "scatter plot;",
+                          "the selected result is highlighted in red."
+                        )
+                      ),
+                      plotlyOutput(
+                        paste0(prefix, "_eh_scatter"),
+                        height = 620
+                      )
+                    )
+                  )
+                )
+              ),
+
+              fluidRow(
+                box(
+                  width = 12,
+                  title = "PTM Emulator 7-Day Node Results",
+                  status = status_name,
+                  solidHeader = TRUE,
+
+                  tableOutput(
+                    paste0(prefix, "_ptm7_table")
                   )
                 )
               )
@@ -383,7 +452,7 @@ run_page <- function(prefix, title, theme_class) {
                 class = "alert alert-info",
                 paste(
                   "ECO-PTM Emulator is not run for archive-folder forecast conditions.",
-                  "Use Current Conditions with Read from Archive Folder."
+                  "Use Observed Conditions with Read from Archive Folder."
                 )
               )
             ),
@@ -493,197 +562,7 @@ run_page <- function(prefix, title, theme_class) {
             )
           ),
           
-          # ==========================================================
-          # Event Horizon
-          # ==========================================================
-          tabPanel(
-            "Event Horizon",
-            
-            fluidRow(
-              box(
-                width = 4,
-                title = "Event Horizon Inputs (7-day average flows)",
-                status = status_name,
-                solidHeader = TRUE,
-                
-                conditionalPanel(
-                  condition = sprintf(
-                    "input.%s_input_method == 'single'",
-                    prefix
-                  ),
-                  
-                  textInput(
-                    paste0(prefix, "_eh_name"),
-                    "Scenario Name (User Defined):",
-                    paste(title, "Event Horizon Run: Single Values")
-                  ),
-                  
-                  numericInput(
-                    paste0(prefix, "_eh_exp"),
-                    "EXP: Combined Export (cfs):",
-                    6000
-                  ),
-                  numericInput(
-                    paste0(prefix, "_eh_ver"),
-                    "VER: Vernalis Flow (cfs):",
-                    3000
-                  ),
-                  numericInput(
-                    paste0(prefix, "_eh_east"),
-                    "EAST: East-Side Flow (cfs):",
-                    1500
-                  ),
-                  numericInput(
-                    paste0(prefix, "_eh_xgeo"),
-                    "XGEO: Interior Delta Flow (cfs):",
-                    3000
-                  )
-                ),
-                
-                conditionalPanel(
-                  condition = sprintf(
-                    "input.%s_input_method == 'folder'",
-                    prefix
-                  ),
-                  
-                  textInput(
-                    paste0(prefix, "_eh_archive_name"),
-                    "Scenario Name (Input Method: Archive Folder):",
-                    paste(title, "Event Horizon Run: Archive Folder")
-                  ),
-                  
-                  tags$p(
-                    class = "figure-note",
-                    if (is_current) {
-                      paste(
-                        "The current-condition model is run for seven rolling",
-                        "7-day measured windows."
-                      )
-                    } else {
-                      paste(
-                        "The forecast-condition model uses the first seven",
-                        "forecast days and the latest measured XGEO."
-                      )
-                    }
-                  )
-                ),
-                
-                selectInput(
-                  paste0(prefix, "_eh_risk"),
-                  "Risk Level (%):",
-                  choices = seq(15, 80, by = 5),
-                  selected = 25
-                ),
-                
-                actionButton(
-                  paste0("run_", prefix, "_eh"),
-                  "Run Event Horizon",
-                  icon = icon("play"),
-                  class = "btn-success",
-                  width = "100%"
-                ),
-                
-                br(), br(),
-                
-                downloadButton(
-                  paste0("download_", prefix, "_eh"),
-                  "Download Event Horizon Result (CSV)",
-                  class = "btn-primary",
-                  style = "width:100%;"
-                )
-              ),
-              
-              box(
-                width = 8,
-                title = "Event Horizon Results",
-                status = status_name,
-                solidHeader = TRUE,
-                
-                tags$h4("Event Horizon Prediction"),
-                
-                div(
-                  class = "wide-table-scroll",
-                  tableOutput(paste0(prefix, "_eh_table"))
-                ),
-                
-                br(),
-                
-                tags$h4("Predicted Event Horizon Map"),
-                
-                conditionalPanel(
-                  condition = sprintf(
-                    "input.%s_input_method == 'folder' && '%s' == 'current'",
-                    prefix,
-                    prefix
-                  ),
-                  uiOutput(paste0(prefix, "_eh_map_date_ui"))
-                ),
-                
-                tags$p(
-                  class = "figure-note",
-                  paste(
-                    "The red reach represents the predicted upstream",
-                    "Event Horizon distance."
-                  )
-                ),
-                
-                leafletOutput(
-                  paste0(prefix, "_eh_map"),
-                  height = 500
-                ),
-                
-                downloadButton(
-                  paste0("download_", prefix, "_eh_map"),
-                  "Download Map (PNG)",
-                  class = "btn-primary map-download"
-                ),
-                
-                br(), br(),
-                
-                conditionalPanel(
-                  condition = sprintf(
-                    "input.%s_input_method == 'folder' && '%s' == 'current'",
-                    prefix,
-                    prefix
-                  ),
-                  
-                  tags$h4(
-                    "Event Horizon Rolling Prediction Time Series"
-                  ),
-                  
-                  plotlyOutput(
-                    paste0(prefix, "_eh_timeseries"),
-                    height = 500
-                  ),
-                  
-                  br()
-                ),
-                
-                tags$h4(
-                  if (is_current) {
-                    "Historical Event Horizon Conditions"
-                  } else {
-                    "Historical Event Horizon Conditions"
-                  }
-                ),
-                
-                tags$p(
-                  class = "figure-note",
-                  paste(
-                    "Historical 7-day average flows (2023-2026) were used to",
-                    "generate the event horizons that shown in the background of the",
-                    "scatter plot;",
-                    "the selected result is highlighted in red."
-                  )
-                ),
-                
-                plotlyOutput(
-                  paste0(prefix, "_eh_scatter"),
-                  height = 600
-                )
-              )
-            )
-          )
+
         )
       )
     )
@@ -704,7 +583,7 @@ ui <- dashboardPage(
     sidebarMenu(
       id = "tabs",
       menuItem("About", tabName = "about", icon = icon("info-circle")),
-      menuItem("Run Current Conditions", tabName = "run_current", icon = icon("water")),
+      menuItem("Run Observed Conditions", tabName = "run_current", icon = icon("water")),
       menuItem("Run Forecast Conditions", tabName = "run_forecast", icon = icon("cloud-sun")),
       menuItem("Scenario Comparison", tabName = "comparison", icon = icon("balance-scale")),
       menuItem("Data Access", tabName = "data", icon = icon("database"))
@@ -768,6 +647,55 @@ ui <- dashboardPage(
           font-weight: 700;
           padding: 2px 5px;
           box-shadow: none;
+        }
+        /* Event Horizon summary */
+        .event-horizon-summary {
+        margin: 10px 0 16px 0;
+        padding: 14px 18px;
+        background: #fff7f7;
+        border: 1px solid #e1b5b5;
+        border-left: 5px solid #b2182b;
+        border-radius: 6px;
+        }
+
+        .event-horizon-summary-title {
+        margin-bottom: 5px;
+        color: #333333;
+        font-size: 17px;
+        font-weight: 700;
+        }
+
+        .event-horizon-summary-text {
+        color: #333333;
+        font-size: 15px;
+        line-height: 1.55;
+        }
+
+        .event-horizon-highlight {
+        color: #8b1e1e;
+        font-size: 16px;
+        font-weight: 800;
+        }
+        /* Permanent entrainment labels above map nodes */
+        .entrainment-permanent-label {
+        padding: 2px 5px !important;
+        background: rgba(255, 255, 255, 0.92) !important;
+        border: 1px solid #555555 !important;
+        border-radius: 10px !important;
+        box-shadow: none !important;
+        color: #222222 !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        }
+        .combined-emulator-plots-box {
+        margin-top: 14px;
+          }
+
+        .emulator-figure-title {
+        margin: 4px 0 12px 0;
+        color: #333333;
+        font-size: 17px;
+        font-weight: 700;
         }
       "))
     ),
@@ -1020,7 +948,7 @@ ui <- dashboardPage(
         )
       ),
       
-      run_page("current", "Current Conditions", "current-theme"),
+      run_page("current", "Observed Conditions", "current-theme"),
       run_page("forecast", "Forecast Conditions", "forecast-theme"),
       
       tabItem(

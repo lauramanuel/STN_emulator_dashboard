@@ -18,6 +18,7 @@ library(metR)
 library(mgcv)
 library (ps)
 
+
 MODEL_DIR <- "STN_EMULATOR/models"
 OUTPUT_DIR <- "STN_EMULATOR/Output"
 SHAPE_DIR <- "STN_EMULATOR/shapefiles"
@@ -2390,7 +2391,7 @@ server <- function(input, output, session) {
         ptm7_model,
         "PTM 7-Day Entrainment",
         ref$nodes_7d,
-        "Current Conditions",
+        "Observed Conditions",
         scenario_name,
         archive_date,
         "Measured"
@@ -2401,7 +2402,7 @@ server <- function(input, output, session) {
         ptm30_model,
         "PTM 30-Day Entrainment",
         ref$nodes_30d,
-        "Current Conditions",
+        "Observed Conditions",
         scenario_name,
         archive_date,
         "Measured"
@@ -2462,7 +2463,7 @@ server <- function(input, output, session) {
     )
     
     result <- make_eco_results(
-      condition = "Current Conditions",
+      condition = "Observed Conditions",
       scenario_name = scenario_name,
       sac = inputs$SAC,
       yol = inputs$YOL,
@@ -2549,7 +2550,7 @@ server <- function(input, output, session) {
     
     predict_eh_from_windows(
       rolling_7,
-      "Current Conditions",
+      "Observed Conditions",
       scenario_name,
       archive_date,
       "Measured",
@@ -3090,18 +3091,24 @@ server <- function(input, output, session) {
         ),
         margin = list(l = 300, r = 95, t = 100, b = 75),
         showlegend = FALSE,
-        annotations = list(
-          list(
-            text = "Note: Predictions are emulator outputs rounded to two decimal places.",
-            x = 0,
-            y = -0.12,
-            xref = "paper",
-            yref = "paper",
-            showarrow = FALSE,
-            xanchor = "left",
-            font = list(size = 12, color = "#404040")
-          )
+        margin = list(
+          l = 300,
+          r = 95,
+          t = 100,
+          b = 35
         )
+#        annotations = list(
+#          list(
+ #          text = "Note: Predictions are emulator outputs rounded to two decimal places.",
+  #          x = 0,
+#            y = -0.12,
+ #           xref = "paper",
+#            yref = "paper",
+#            showarrow = FALSE,
+ #           xanchor = "left",
+#            font = list(size = 12, color = "#404040")
+ #         )
+ #       )
       ) %>%
       config(
         displaylogo = FALSE,
@@ -3295,15 +3302,24 @@ server <- function(input, output, session) {
       ) %>%
       addLabelOnlyMarkers(
         data = display_nodes,
-        label = ~DSM2_Node,
+        
+        label = ~paste0(
+          round(
+            entrainment,
+            0
+          ),
+          "%"
+        ),
+        
         labelOptions = labelOptions(
           noHide = TRUE,
           direction = "top",
           textOnly = FALSE,
           offset = c(0, -10),
-          className = "node-permanent-label"
+          className = "entrainment-permanent-label"
         ),
-        group = "Node Labels"
+        
+        group = "Entrainment Labels"
       ) %>%
       addLegend(
         position = "bottomright",
@@ -3325,7 +3341,7 @@ server <- function(input, output, session) {
       addLayersControl(
         overlayGroups = c(
           "Delta Boundary", "Channels", "Low Risk Zone",
-          "High Risk Zone", "Nodes", "Node Labels"
+          "High Risk Zone", "Nodes", "Entrainment Labels"
         ),
         options = layersControlOptions(collapsed = FALSE)
       ) %>%
@@ -3335,7 +3351,250 @@ server <- function(input, output, session) {
         zoom = 9
       )
   }
+  make_combined_ptm_eh_map <- function(
+    ptm_df,
+    eh_df,
+    threshold
+  ) {
+    
+    validate(
+      need(
+        nrow(ptm_df) > 0,
+        "Run the PTM and Event Horizon emulators to display results."
+      ),
+      need(
+        nrow(eh_df) > 0,
+        "No Event Horizon emulator result is available."
+      )
+    )
+    
+    sf_nodes <- ptm_df %>%
+      filter(
+        !is.na(X),
+        !is.na(Y)
+      ) %>%
+      transmute(
+        DSM2_Node,
+        Location,
+        Region,
+        entrainment = Prediction_Final,
+        X,
+        Y
+      ) %>%
+      st_as_sf(
+        coords = c("X", "Y"),
+        crs = 4326,
+        remove = FALSE
+      ) %>%
+      st_transform(26910)
+    
+    zones <- make_entrainment_zones(
+      sf_nodes,
+      threshold
+    )
+    
+    display_nodes <- st_transform(
+      sf_nodes,
+      4326
+    )
+    
+    eh_lines <- make_event_horizon_path_geometry(
+      distance_miles = eh_df$Prediction_Final[1],
+      regions = c("OMR")
+    )
+    
+    eh_lines_display <- st_transform(
+      eh_lines,
+      4326
+    )
+    
+    pal <- colorNumeric(
+      "viridis",
+      domain = range(
+        display_nodes$entrainment,
+        na.rm = TRUE
+      )
+    )
+    
+    leaflet() %>%
+      addProviderTiles(
+        providers$CartoDB.Positron
+      ) %>%
+      
+      addPolygons(
+        data = st_transform(
+          delta_boundary,
+          4326
+        ),
+        fillColor = "#eef7f9",
+        fillOpacity = 0.2,
+        color = "#0a7e8c",
+        weight = 1,
+        group = "Delta Boundary"
+      ) %>%
+      
+      addPolylines(
+        data = st_transform(
+          delta_channels,
+          4326
+        ),
+        color = "#2b8cbe",
+        weight = 1,
+        opacity = 0.6,
+        group = "Channels"
+      ) %>%
+      
+      addPolygons(
+        data = zones$low,
+        fillColor = "#a9d4e6",
+        fillOpacity = 0.45,
+        color = "#427799",
+        weight = 1,
+        group = "Low Risk Zone"
+      ) %>%
+      
+      addPolygons(
+        data = zones$high,
+        fillColor = "#e8b5b5",
+        fillOpacity = 0.6,
+        color = "#a74a4a",
+        weight = 1,
+        group = "High Risk Zone"
+      ) %>%
+      
+      addCircleMarkers(
+        data = display_nodes,
+        radius = ~4 + entrainment / 100 * 10,
+        color = ~pal(entrainment),
+        fillColor = ~pal(entrainment),
+        fillOpacity = 0.9,
+        stroke = TRUE,
+        weight = 1,
+        
+        popup = ~paste0(
+          "<div style='font-size:16px;line-height:1.55;min-width:280px;'>",
+          "<div><b>DSM2 Node:</b> ", DSM2_Node, "</div>",
+          "<div><b>Location:</b> ", Location, "</div>",
+          "<div><b>Region:</b> ", Region, "</div>",
+          "<div style='font-size:18px;font-weight:800;color:#8b1e1e;'>",
+          "Entrainment: ",
+          sprintf("%.0f", entrainment),
+          "%",
+          "</div>",
+          "</div>"
+        ),
+        
+        group = "PTM Nodes"
+      ) %>%
+      
+      addLabelOnlyMarkers(
+        data = display_nodes,
+        
+        label = ~paste0(
+          round(
+            entrainment,
+            0
+          ),
+          "%"
+        ),
+        
+        labelOptions = labelOptions(
+          noHide = TRUE,
+          direction = "top",
+          offset = c(0, -10),
+          className = "entrainment-permanent-label"
+        ),
+        
+        group = "Entrainment Labels"
+      ) %>%
+      
+      addPolylines(
+        data = eh_lines_display,
+        color = "#B2182B",
+        weight = 5,
+        opacity = 0.95,
+        
+        popup = ~paste0(
+          "<b>Event Horizon:</b> ",
+          sprintf(
+            "%.1f",
+            Event_Horizon_miles
+          ),
+          " river miles",
+          "<br><b>Risk level:</b> ",
+          threshold,
+          "%"
+        ),
+        
+        group = "Event Horizon Reach"
+      ) %>%
+      
+      addLegend(
+        position = "bottomright",
+        pal = pal,
+        values = display_nodes$entrainment,
+        title = "PTM Entrainment (%)",
+        opacity = 1
+      ) %>%
+      
+      addLegend(
+        position = "topright",
+        
+        colors = c(
+          "#e8b5b5",
+          "#a9d4e6",
+          "#B2182B"
+        ),
+        
+        labels = c(
+          paste0(
+            "High Risk Zone: > ",
+            threshold,
+            "%"
+          ),
+          paste0(
+            "Low Risk Zone: < ",
+            threshold,
+            "%"
+          ),
+          paste0(
+            "Event Horizon: ",
+            sprintf(
+              "%.1f",
+              eh_df$Prediction_Final[1]
+            ),
+            " miles"
+          )
+        ),
+        
+        title = "Map Key",
+        opacity = 0.85
+      ) %>%
+      
+      addLayersControl(
+        overlayGroups = c(
+          "Delta Boundary",
+          "Channels",
+          "Low Risk Zone",
+          "High Risk Zone",
+          "PTM Nodes",
+          "Entrainment Labels",
+          "Event Horizon Reach"
+        ),
+        
+        options = layersControlOptions(
+          collapsed = FALSE
+        )
+      ) %>%
+      
+      leaflet::setView(
+        lng = -121.60,
+        lat = 38.05,
+        zoom = 9
+      )
+  }
   
+   
   make_event_geometry <- function(distance_miles) {
     fraction <- max(0, min(1, distance_miles / river_length_miles))
     list(
@@ -3732,16 +3991,81 @@ server <- function(input, output, session) {
         y = "Vernalis Flow, VER (cfs)"
       ) +
       
-      theme_bw()
+      theme_bw(base_family = "Arial", base_size = 14) +
+      theme(
+        text = element_text(
+          family = "Arial",
+          size = 14,
+          color = "#1F1F1F"
+        ),
+        
+        plot.title = element_text(
+          family = "Arial",
+          face = "bold",
+          size = 18,
+          color = "#1F1F1F"
+        ),
+        
+        plot.subtitle = element_text(
+          family = "Arial",
+          size = 13,
+          color = "#404040"
+        ),
+        
+        axis.title = element_text(
+          family = "Arial",
+          face = "bold",
+          size = 14,
+          color = "#1F1F1F"
+        ),
+        
+        axis.text = element_text(
+          family = "Arial",
+          size = 12,
+          color = "#1F1F1F"
+        ),
+        
+        legend.title = element_text(
+          family = "Arial",
+          face = "bold",
+          size = 12,
+          color = "#1F1F1F"
+        ),
+        
+        legend.text = element_text(
+          family = "Arial",
+          size = 11,
+          color = "#1F1F1F"
+        )
+      )
+    
+    
     
     ggplotly(
       p,
       tooltip = "text"
     ) %>%
       
+      layout(
+        font = list(
+          family = "Arial, Segoe UI, sans-serif",
+          size = 14,
+          color = "#1F1F1F"
+        ),
+        
+        legend = list(
+          font = list(
+            family = "Arial, Segoe UI, sans-serif",
+            size = 12,
+            color = "#1F1F1F"
+          )
+        )
+      ) %>%
+      
       config(
         displaylogo = FALSE
       )
+    
   }
   
   make_ptm_png_plot <- function(df, threshold, title) {
@@ -3781,7 +4105,7 @@ server <- function(input, output, session) {
       stop("PTM node coordinates are missing, so the PNG map cannot be created.")
     }
     
-    # Create plain coordinate columns for reliable node labels.
+    # Create plain coordinate columns for reliable Entrainment Labels.
     node_xy <- st_coordinates(nodes_utm)
     
     node_labels <- nodes_utm %>%
@@ -4242,7 +4566,7 @@ server <- function(input, output, session) {
               is_current,
               paste(
                 "ECO-PTM archive-folder runs are available",
-                "only for Current Conditions."
+                "only for Observed Conditions."
               )
             )
           )
@@ -4279,7 +4603,7 @@ server <- function(input, output, session) {
       input[[paste0(
         "run_",
         prefix,
-        "_eh"
+        "_ptm"
       )]],
       {
         
@@ -4291,7 +4615,7 @@ server <- function(input, output, session) {
         risk <- as.numeric(
           input[[paste0(
             prefix,
-            "_eh_risk"
+            "_ptm_threshold"
           )]]
         )
         
@@ -4301,30 +4625,30 @@ server <- function(input, output, session) {
             condition = condition_label,
             scenario_name = input[[paste0(
               prefix,
-              "_eh_name"
+              "_ptm_name"
             )]],
             exp = input[[paste0(
               prefix,
-              "_eh_exp"
+              "_ptm_exp"
             )]],
             ver = input[[paste0(
               prefix,
-              "_eh_ver"
+              "_ptm_ver"
             )]],
             east = input[[paste0(
               prefix,
-              "_eh_east"
+              "_ptm_east"
             )]],
             xgeo = input[[paste0(
               prefix,
-              "_eh_xgeo"
+              "_ptm_xgeo"
             )]],
             risk = risk
           )
           
           run_name <- input[[paste0(
             prefix,
-            "_eh_name"
+            "_ptm_name"
           )]]
           
         } else {
@@ -4336,7 +4660,7 @@ server <- function(input, output, session) {
           
           run_name <- input[[paste0(
             prefix,
-            "_eh_archive_name"
+            "_ptm_archive_name"
           )]]
           
           if (is_current) {
@@ -4555,7 +4879,7 @@ server <- function(input, output, session) {
         )]],
         paste(
           condition_label,
-          "??? PTM 7-Day Rolling Predictions"
+          ": PTM 7-Day Rolling Predictions"
         )
       )
     })
@@ -4575,7 +4899,7 @@ server <- function(input, output, session) {
         data,
         paste(
           condition_label,
-          "??? PTM 7-Day Entrainment"
+          ": PTM 7-Day Entrainment"
         )
       )
     })
@@ -4595,7 +4919,7 @@ server <- function(input, output, session) {
         data,
         paste(
           condition_label,
-          "??? PTM 30-Day Entrainment"
+          ": PTM 30-Day Entrainment"
         )
       )
     })
@@ -4606,7 +4930,7 @@ server <- function(input, output, session) {
       "_ptm7_map"
     )]] <- renderLeaflet({
       
-      data <- selected_result_window(
+      ptm_data <- selected_result_window(
         ptm_result(),
         "PTM 7-Day Entrainment",
         input[[paste0(
@@ -4615,9 +4939,11 @@ server <- function(input, output, session) {
         )]]
       )
       
-      make_ptm_map(
-        data,
-        as.numeric(
+      make_combined_ptm_eh_map(
+        ptm_df = ptm_data,
+        eh_df = selected_eh_result(),
+        
+        threshold = as.numeric(
           input[[paste0(
             prefix,
             "_ptm_threshold"
@@ -4689,7 +5015,7 @@ server <- function(input, output, session) {
           )]],
           title = paste(
             condition_label,
-            "??? PTM 7-Day Entrainment Risk Map"
+            ": PTM 7-Day Entrainment Risk Map"
           )
         )
         
@@ -4743,7 +5069,7 @@ server <- function(input, output, session) {
           )]],
           title = paste(
             condition_label,
-            "??? PTM 30-Day Entrainment Risk Map"
+            ": PTM 30-Day Entrainment Risk Map"
           )
         )
         
@@ -4907,7 +5233,7 @@ server <- function(input, output, session) {
         eh_result(),
         paste(
           condition_label,
-          "??? Event Horizon Rolling Predictions"
+          ": Event Horizon Rolling Predictions"
         )
       )
     })
@@ -4928,7 +5254,7 @@ server <- function(input, output, session) {
         
         selected_date <- input[[paste0(
           prefix,
-          "_eh_map_date"
+          "_ptm7_map_date"
         )]]
         
         if (
@@ -4962,6 +5288,67 @@ server <- function(input, output, session) {
       
       result
     })
+  
+    output[[paste0(
+      prefix,
+      "_eh_summary"
+    )]] <- renderUI({
+      
+      result <- selected_eh_result()
+      
+      req(
+        nrow(result) > 0
+      )
+      
+      risk_level <- as.numeric(
+        result$Risk_Level_Percent[1]
+      )
+      
+      river_miles <- as.numeric(
+        result$Prediction_Final[1]
+      )
+      
+      tags$div(
+        class = "event-horizon-summary",
+        
+        tags$div(
+          class = "event-horizon-summary-title",
+          "Event Horizon Emulator"
+        ),
+        
+        tags$div(
+          class = "event-horizon-summary-text",
+          
+          "The predicted upstream extent (distance) of the Event Horizon, ",
+          "measured in river miles from Clifton Court Forebay, under the ",
+          "specified hydrologic conditions and selected entrainment risk level ",
+          
+          tags$strong(
+            class = "event-horizon-highlight",
+            paste0(
+              risk_level,
+              "%"
+            )
+          ),
+          
+          " is ",
+          
+          tags$strong(
+            class = "event-horizon-highlight",
+            paste0(
+              sprintf(
+                "%.1f",
+                river_miles
+              ),
+              " miles"
+            )
+          ),
+          
+          "."
+        )
+      )
+    })
+    
     
     
     output[[paste0(
@@ -5076,7 +5463,7 @@ server <- function(input, output, session) {
           selected_eh_result(),
           paste(
             condition_label,
-            "??? Event Horizon Map"
+            ": Event Horizon Map"
           )
         )
         
@@ -5220,7 +5607,7 @@ server <- function(input, output, session) {
   
   register_condition(
     "current",
-    "Current Conditions"
+    "Observed Conditions"
   )
   
   register_condition(
@@ -6069,7 +6456,7 @@ server <- function(input, output, session) {
       ) |>
       gt::tab_source_note(
         source_note = gt::html(
-          "<strong>Note:</strong> For some QA/QC data sources, only reviewed or approved stage data are available. Corresponding discharge values are calculated using a stage???discharge rating curve."
+          "<strong>Note:</strong> For some QA/QC data sources, only reviewed or approved stage data are available. Corresponding discharge values are calculated using a stage-discharge rating curve."
         )
       ) |>
       gt::tab_style(
@@ -6237,7 +6624,7 @@ server <- function(input, output, session) {
       ) |>
       gt::tab_source_note(
         source_note = gt::html(
-          "<strong>Note:</strong> For some QA/QC data sources, only reviewed or approved stage data are available. Corresponding discharge values are calculated using a stage???discharge rating curve."
+          "<strong>Note:</strong> For some QA/QC data sources, only reviewed or approved stage data are available. Corresponding discharge values are calculated using a stage-discharge rating curve."
         )
       ) |>
       gt::tab_style(
@@ -6424,7 +6811,7 @@ server <- function(input, output, session) {
       ) |>
       gt::tab_source_note(
         source_note = gt::html(
-          "<strong>Note:</strong> For some QA/QC data sources, only reviewed or approved stage data are available. Corresponding discharge values are calculated using a stage???discharge rating curve."
+          "<strong>Note:</strong> For some QA/QC data sources, only reviewed or approved stage data are available. Corresponding discharge values are calculated using a stage-discharge rating curve."
         )
       ) |>
       gt::tab_style(
