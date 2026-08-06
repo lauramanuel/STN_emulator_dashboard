@@ -33,10 +33,24 @@ run_page <- function(prefix, title, theme_class) {
               "Upload CSV or Excel File (coming soon)" = "upload",
               "Read from Archive Folder" = "folder"
             ),
-            selected = "single",
+            selected = if (is_current) "single" else "folder",
             inline = TRUE
           ),
           
+          conditionalPanel(
+            condition = sprintf(
+              "input.%s_input_method == 'single' && '%s' == 'forecast'",
+              prefix,
+              prefix
+            ),
+            tags$div(
+              class = "alert alert-info forecast-single-warning",
+              tags$b("Forecast runs require Read from Archive Folder."),
+              tags$br(),
+              "Use Observed Conditions with Enter a Single Set of Values for a user-defined single-value run."
+            )
+          ),
+
           conditionalPanel(
             condition = sprintf("input.%s_input_method == 'upload'", prefix),
             tags$div(
@@ -80,11 +94,18 @@ run_page <- function(prefix, title, theme_class) {
       ),
       
       conditionalPanel(
-        condition = sprintf(
-          "input.%s_input_method == 'single' || input.%s_input_method == 'folder'",
-          prefix,
-          prefix
-        ),
+        condition = if (is_current) {
+          sprintf(
+            "input.%s_input_method == 'single' || input.%s_input_method == 'folder'",
+            prefix,
+            prefix
+          )
+        } else {
+          sprintf(
+            "input.%s_input_method == 'folder'",
+            prefix
+          )
+        },
         
         tabsetPanel(
           id = paste0(prefix, "_model_tabs"),
@@ -118,8 +139,19 @@ run_page <- function(prefix, title, theme_class) {
                   textInput(
                     paste0(prefix, "_ptm_name"),
                     "Scenario Name (User Defined):",
-                    paste(title, "PTM Run Single Values")
+                    if (is_current) {
+                      "Observed Conditions Run 1"
+                    } else {
+                      paste(title, "PTM Run Single Values")
+                    }
                   ),
+
+                  if (is_current) {
+                    tags$div(
+                      class = "alert alert-info observed-flow-intro",
+                      "Input flow values are shown below in each box. Boxes are populated with observed conditions when current source data are available."
+                    )
+                  },
 
                   numericInput(
                     paste0(prefix, "_ptm_exp"),
@@ -127,11 +159,19 @@ run_page <- function(prefix, title, theme_class) {
                     6000
                   ),
 
+                  if (is_current) {
+                    uiOutput(paste0(prefix, "_ptm_exp_note"))
+                  },
+
                   numericInput(
                     paste0(prefix, "_ptm_ver"),
                     "VER: San Joaquin River Flow at Vernalis Flow (cfs):",
                     3000
                   ),
+
+                  if (is_current) {
+                    uiOutput(paste0(prefix, "_ptm_ver_note"))
+                  },
 
                   tags$div(
                     class = "alert alert-info",
@@ -146,17 +186,29 @@ run_page <- function(prefix, title, theme_class) {
                     18000
                   ),
 
+                  if (is_current) {
+                    uiOutput(paste0(prefix, "_ptm_sac_note"))
+                  },
+
                   numericInput(
                     paste0(prefix, "_ptm_east"),
                     "EAST: East-Side River Flow (cfs):",
                     1500
                   ),
 
+                  if (is_current) {
+                    uiOutput(paste0(prefix, "_ptm_east_note"))
+                  },
+
                   numericInput(
                     paste0(prefix, "_ptm_xgeo"),
                     "XGEO: Interior Delta Flow (cfs):",
                     3000
-                  )
+                  ),
+
+                  if (is_current) {
+                    uiOutput(paste0(prefix, "_ptm_xgeo_note"))
+                  }
                 ),
 
                 conditionalPanel(
@@ -602,8 +654,32 @@ ui <- dashboardPage(
         .box{border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-top:4px solid #0a7e8c}
         .current-theme{background:#fffaf2;padding:6px;border-radius:8px}
         .current-theme .box{border-top-color:#e69f00}
-        .forecast-theme{background:#f4fbff;padding:6px;border-radius:8px}
-        .forecast-theme .box{border-top-color:#56b4e9}
+        .forecast-theme{background:#f7f3fb;padding:6px;border-radius:8px}
+        .forecast-theme .box{border-top-color:#7b4fa3}
+        .forecast-theme .box.box-info > .box-header{
+          background:#7b4fa3 !important;
+          color:#ffffff !important;
+        }
+        .forecast-theme .box.box-info{
+          border-top-color:#7b4fa3 !important;
+        }
+        .forecast-single-warning{
+          margin-top:10px;
+          margin-bottom:0;
+        }
+        .observed-flow-note{
+          margin-top:-10px;
+          margin-bottom:12px;
+          padding:7px 9px;
+          background:#f7f9fb;
+          border-left:3px solid #5b7894;
+          color:#3d4c59;
+          font-size:12px;
+          line-height:1.45;
+        }
+        .observed-flow-note a{
+          font-weight:600;
+        }
         body{font-family:Segoe UI;color:#333}
 
         .figure-note {
