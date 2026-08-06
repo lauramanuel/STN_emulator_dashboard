@@ -182,7 +182,1030 @@ eco_interior_features <- read_lgb_features(
   file.path(MODEL_DIR, "ECOPTM_interior_lightgbm.txt")
 )
 
+
+# ------------------------------------------------------------------
+# Observed-condition trailing 7-day flow retrieval
+# ------------------------------------------------------------------
+
+cdec_daily_link <- function(station_id, end_date = Sys.Date()) {
+  paste0(
+    "https://cdec.water.ca.gov/dynamicapp/QueryDaily?s=",
+    station_id,
+    "&end=",
+    format(as.Date(end_date), "%Y-%m-%d")
+  )
+}
+
+observed_source_links <- list(
+  CLC = cdec_daily_link("CLC"),
+  TRP = cdec_daily_link("TRP"),
+  VNS = cdec_daily_link("VNS"),
+  FPT = cdec_daily_link("FPT"),
+  NHG = cdec_daily_link("NHG"),
+  MOK = "https://waterdata.usgs.gov/monitoring-location/USGS-11325500/#dataTypeId=daily-00060-0&period=P1Y&showFieldMeasurements=true",
+  COS = "https://waterdata.usgs.gov/monitoring-location/USGS-11335000/#dataTypeId=daily-00060-0&period=P1Y&showFieldMeasurements=true",
+  XGEO_A = "https://waterdata.usgs.gov/monitoring-location/USGS-11447890/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true",
+  XGEO_C = "https://waterdata.usgs.gov/monitoring-location/USGS-11447905/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true"
+)
+
+download_observed_source_file <- function(url, fileext = ".txt") {
+  destination <- tempfile(fileext = fileext)
+  old_timeout <- getOption("timeout")
+
+  on.exit(
+    {
+      options(timeout = old_timeout)
+      if (file.exists(destination)) {
+        unlink(destination)
+      }
+    },
+    add = TRUE
+  )
+
+  options(timeout = max(120, old_timeout))
+
+  previous_user_agent <- getOption("HTTPUserAgent")
+
+  on.exit(
+    options(HTTPUserAgent = previous_user_agent),
+    add = TRUE
+  )
+
+  options(
+    HTTPUserAgent = paste(
+      "Mozilla/5.0",
+      "(Windows NT 10.0; Win64; x64)",
+      "AppleWebKit/537.36",
+      "Chrome/126.0 Safari/537.36"
+    )
+  )
+
+  utils::download.file(
+    url = url,
+    destfile = destination,
+    mode = "wb",
+    method = "libcurl",
+    quiet = TRUE
+  )
+
+  if (!file.exists(destination) || file.info(destination)$size == 0) {
+    stop("The source returned an empty response.")
+  }
+
+  readLines(destination, warn = FALSE)
+}
+
+
+parse_observed_dates <- function(values) {
+  text_values <- trimws(as.character(values))
+
+  parsed <- suppressWarnings(
+    as.Date(
+      substr(text_values, 1, 10),
+      format = "%Y-%m-%d"
+    )
+  )
+
+  missing <- is.na(parsed)
+
+  if (any(missing)) {
+    parsed[missing] <- suppressWarnings(
+      as.Date(
+        substr(text_values[missing], 1, 10),
+        format = "%m/%d/%Y"
+      )
+    )
+  }
+
+  parsed
+}
+
+decode_cdec_html_text <- function(value) {
+  value <- gsub("(?is)<br\\s*/?>", " ", value, perl = TRUE)
+  value <- gsub("(?is)<[^>]+>", " ", value, perl = TRUE)
+  value <- gsub("&nbsp;|&#160;", " ", value, ignore.case = TRUE)
+  value <- gsub("&amp;", "&", value, ignore.case = TRUE)
+  value <- gsub("&lt;", "<", value, ignore.case = TRUE)
+  value <- gsub("&gt;", ">", value, ignore.case = TRUE)
+  value <- gsub("&quot;", "\"", value, ignore.case = TRUE)
+  value <- gsub("&#39;|&apos;", "'", value, ignore.case = TRUE)
+  trimws(gsub("\\s+", " ", value))
+}
+
+
+extract_cdec_query_daily_rows <- function(html_lines) {
+  html_text <- paste(html_lines, collapse = "\n")
+
+  row_matches <- regmatches(
+    html_text,
+    gregexpr(
+      "(?is)<tr\\b[^>]*>.*?</tr>",
+      html_text,
+      perl = TRUE
+    )
+  )[[1]]
+
+  if (length(row_matches) == 0) {
+    stop("The CDEC daily page did not contain a readable data table.")
+  }
+
+  rows <- lapply(
+    row_matches,
+    function(row_text) {
+      cells <- regmatches(
+        row_text,
+        gregexpr(
+          "(?is)<t[dh]\\b[^>]*>.*?</t[dh]>",
+          row_text,
+          perl = TRUE
+        )
+      )[[1]]
+
+      if (length(cells) == 0) {
+        return(character())
+      }
+
+      vapply(
+        cells,
+        decode_cdec_html_text,
+        character(1)
+      )
+    }
+  )
+
+  rows[lengths(rows) > 0]
+}
+
+
+parse_cdec_numeric_value <- function(value) {
+  cleaned <- trimws(as.character(value)[1])
+
+  if (
+    length(cleaned) == 0 ||
+    is.na(cleaned) ||
+    cleaned %in% c("", "---", "--", "M", "m", "BRT")
+  ) {
+    return(NA_real_)
+  }
+
+  cleaned <- gsub(",", "", cleaned, fixed = TRUE)
+
+  match_position <- regexpr(
+    "-?[0-9]+(?:\\.[0-9]+)?",
+    cleaned,
+    perl = TRUE
+  )
+
+  if (length(match_position) == 0 || match_position[1] < 0) {
+    return(NA_real_)
+  }
+
+  numeric_text <- regmatches(
+    cleaned,
+    match_position
+  )
+
+  suppressWarnings(as.numeric(numeric_text)[1])
+}
+
+
+read_cdec_daily_values <- function(
+  station_id,
+  sensor_number,
+  end_date = Sys.Date(),
+  lookback_days = 30
+) {
+  station_id <- toupper(trimws(station_id))
+  end_date <- as.Date(end_date)
+  start_date <- end_date - lookback_days
+
+  query_url <- paste0(
+    "https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet?",
+    "Stations=", utils::URLencode(station_id, reserved = TRUE),
+    "&SensorNums=", utils::URLencode(as.character(sensor_number), reserved = TRUE),
+    "&dur_code=D",
+    "&Start=", format(start_date, "%Y-%m-%d"),
+    "&End=", format(end_date, "%Y-%m-%d")
+  )
+
+  response_text <- paste(
+    download_observed_source_file(
+      query_url,
+      fileext = ".json"
+    ),
+    collapse = "\n"
+  )
+
+  if (!nzchar(trimws(response_text))) {
+    stop(
+      paste0(
+        "CDEC returned an empty response for ",
+        station_id,
+        " sensor ",
+        sensor_number,
+        "."
+      )
+    )
+  }
+
+  cdec_data <- tryCatch(
+    jsonlite::fromJSON(
+      response_text,
+      simplifyDataFrame = TRUE
+    ),
+    error = function(error_condition) {
+      stop(
+        paste0(
+          "The CDEC JSON response could not be parsed for ",
+          station_id,
+          " sensor ",
+          sensor_number,
+          ": ",
+          conditionMessage(error_condition)
+        )
+      )
+    }
+  )
+
+  if (is.null(cdec_data) || length(cdec_data) == 0) {
+    stop(
+      paste0(
+        "CDEC returned no daily records for ",
+        station_id,
+        " sensor ",
+        sensor_number,
+        "."
+      )
+    )
+  }
+
+  cdec_data <- as.data.frame(
+    cdec_data,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+
+  normalized_names <- tolower(
+    gsub(
+      "[^a-z0-9]",
+      "",
+      names(cdec_data)
+    )
+  )
+
+  date_candidates <- c(
+    "obsdate",
+    "date",
+    "datetime"
+  )
+
+  value_candidates <- c(
+    "value",
+    "obsvalue"
+  )
+
+  date_index <- match(
+    date_candidates,
+    normalized_names,
+    nomatch = 0
+  )
+
+  date_index <- date_index[date_index > 0][1]
+
+  value_index <- match(
+    value_candidates,
+    normalized_names,
+    nomatch = 0
+  )
+
+  value_index <- value_index[value_index > 0][1]
+
+  if (
+    length(date_index) == 0 ||
+    is.na(date_index) ||
+    length(value_index) == 0 ||
+    is.na(value_index)
+  ) {
+    stop(
+      paste0(
+        "The CDEC response for ",
+        station_id,
+        " sensor ",
+        sensor_number,
+        " did not contain recognizable date and value fields. ",
+        "Returned fields: ",
+        paste(names(cdec_data), collapse = ", "),
+        "."
+      )
+    )
+  }
+
+  result <- data.frame(
+    Date = parse_observed_dates(
+      cdec_data[[date_index]]
+    ),
+    Value = suppressWarnings(
+      as.numeric(
+        gsub(
+          ",",
+          "",
+          as.character(cdec_data[[value_index]]),
+          fixed = TRUE
+        )
+      )
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  # All CDEC series used here are flows in cfs and should not be
+  # negative. CDEC can return negative missing-value sentinels such as
+  # -9999; exclude those before calculating the trailing average.
+  result <- result[
+    !is.na(result$Date) &
+      is.finite(result$Value) &
+      result$Value >= 0 &
+      result$Date >= start_date &
+      result$Date <= end_date,
+    ,
+    drop = FALSE
+  ]
+
+  result <- result[
+    !duplicated(result$Date, fromLast = TRUE),
+    ,
+    drop = FALSE
+  ]
+
+  result <- result[
+    order(result$Date),
+    ,
+    drop = FALSE
+  ]
+
+  if (nrow(result) == 0) {
+    stop(
+      paste0(
+        "CDEC returned a response for ",
+        station_id,
+        " sensor ",
+        sensor_number,
+        ", but no nonnegative daily flow values were found between ",
+        format(start_date, "%m/%d/%Y"),
+        " and ",
+        format(end_date, "%m/%d/%Y"),
+        "."
+      )
+    )
+  }
+
+  attr(result, "source_url") <- query_url
+  attr(result, "station_id") <- station_id
+  attr(result, "sensor_number") <- sensor_number
+
+  result
+}
+
+read_usgs_daily_values <- function(
+  site_number,
+  parameter_code,
+  end_date = Sys.Date(),
+  lookback_days = 45,
+  use_latest_available = FALSE
+) {
+  start_date <- if (isTRUE(use_latest_available)) {
+    as.Date("1900-01-01")
+  } else {
+    as.Date(end_date) - lookback_days
+  }
+
+  query_url <- paste0(
+    "https://waterservices.usgs.gov/nwis/dv/",
+    "?format=rdb",
+    "&sites=", site_number,
+    "&startDT=", format(start_date, "%Y-%m-%d"),
+    "&endDT=", format(as.Date(end_date), "%Y-%m-%d"),
+    "&parameterCd=", parameter_code,
+    "&statCd=00003",
+    "&siteStatus=all"
+  )
+
+  text_lines <- download_observed_source_file(query_url)
+
+  data_lines <- text_lines[
+    !grepl("^#", text_lines) &
+      nzchar(trimws(text_lines))
+  ]
+
+  if (length(data_lines) < 3) {
+    stop(
+      paste0(
+        "USGS site ",
+        site_number,
+        " returned no usable daily records."
+      )
+    )
+  }
+
+  usgs_data <- utils::read.delim(
+    text = paste(data_lines, collapse = "\n"),
+    header = TRUE,
+    sep = "\t",
+    stringsAsFactors = FALSE,
+    check.names = FALSE,
+    na.strings = c("", "Ice", "Eqp", "Ssn", "Rat", "Dis")
+  )
+
+  if (
+    nrow(usgs_data) > 0 &&
+    "agency_cd" %in% names(usgs_data) &&
+    grepl(
+      "^[0-9]+[a-zA-Z]$",
+      as.character(usgs_data$agency_cd[1])
+    )
+  ) {
+    usgs_data <- usgs_data[-1, , drop = FALSE]
+  }
+
+  date_index <- which(
+    toupper(names(usgs_data)) %in% c("DATETIME", "DATE")
+  )[1]
+
+  parameter_columns <- which(
+    grepl(
+      paste0("_", parameter_code, "_"),
+      names(usgs_data),
+      fixed = TRUE
+    ) &
+      !grepl("_CD$", names(usgs_data))
+  )
+
+  if (is.na(date_index) || length(parameter_columns) == 0) {
+    stop(
+      paste0(
+        "USGS response for site ",
+        site_number,
+        " did not contain the requested parameter ",
+        parameter_code,
+        "."
+      )
+    )
+  }
+
+  # Prefer the daily mean statistic column when several columns are returned.
+  mean_columns <- parameter_columns[
+    grepl("_00003$", names(usgs_data)[parameter_columns])
+  ]
+
+  value_index <- if (length(mean_columns) > 0) {
+    mean_columns[1]
+  } else {
+    parameter_columns[1]
+  }
+
+  result <- data.frame(
+    Date = parse_observed_dates(
+      usgs_data[[date_index]]
+    ),
+    Value = suppressWarnings(
+      as.numeric(
+        gsub(",", "", usgs_data[[value_index]])
+      )
+    )
+  )
+
+  result <- result[
+    !is.na(result$Date) &
+      is.finite(result$Value),
+    ,
+    drop = FALSE
+  ]
+
+  result <- result[
+    order(result$Date),
+    ,
+    drop = FALSE
+  ]
+
+  if (nrow(result) == 0) {
+    stop(
+      paste0(
+        "No usable daily USGS values were returned for site ",
+        site_number,
+        "."
+      )
+    )
+  }
+
+  result
+}
+
+trailing_seven_summary <- function(data) {
+  data <- data[
+    !is.na(data$Date) &
+      is.finite(data$Value) &
+      data$Value > -9000,
+    ,
+    drop = FALSE
+  ]
+
+  data <- data[
+    order(data$Date),
+    ,
+    drop = FALSE
+  ]
+
+  if (nrow(data) < 7) {
+    stop("Fewer than seven usable daily values were available.")
+  }
+
+  selected <- utils::tail(data, 7)
+
+  list(
+    value = mean(selected$Value, na.rm = TRUE),
+    start_date = min(selected$Date),
+    end_date = max(selected$Date),
+    dates = selected$Date,
+    values = selected$Value
+  )
+}
+
+safe_observed_summary <- function(expression) {
+  tryCatch(
+    {
+      value <- force(expression)
+      list(ok = TRUE, data = value, message = NULL)
+    },
+    error = function(e) {
+      list(
+        ok = FALSE,
+        data = NULL,
+        message = conditionMessage(e)
+      )
+    }
+  )
+}
+
+format_observed_value <- function(value) {
+  if (!is.finite(value)) {
+    return("Unavailable")
+  }
+
+  format(
+    round(value, 0),
+    big.mark = ",",
+    scientific = FALSE,
+    trim = TRUE
+  )
+}
+
+
 server <- function(input, output, session) {
+
+
+  observed_flow_state <- reactiveVal(
+    list(
+      status = "loading",
+      message = "Retrieving observed trailing 7-day average flows.",
+      updated_at = NULL
+    )
+  )
+
+  observed_note <- function(
+    label,
+    source_items,
+    special_note = NULL
+  ) {
+    state <- observed_flow_state()
+
+    if (!identical(state$status, "ready")) {
+      return(
+        tags$div(
+          class = "observed-flow-note",
+          if (identical(state$status, "loading")) {
+            "Retrieving the latest observed trailing 7-day average."
+          } else {
+            paste0(
+              "Live trailing 7-day average unavailable; the existing box value was retained. ",
+              state$message
+            )
+          }
+        )
+      )
+    }
+
+    item <- state[[label]]
+
+    if (is.null(item) || !isTRUE(item$ok)) {
+      return(
+        tags$div(
+          class = "observed-flow-note",
+          paste0(
+            "Live trailing 7-day average unavailable; the existing box value was retained. ",
+            if (!is.null(item$message)) item$message else ""
+          )
+        )
+      )
+    }
+
+    link_tags <- lapply(
+      seq_along(source_items),
+      function(index) {
+        source <- source_items[[index]]
+
+        tagList(
+          if (index > 1) ", " else NULL,
+          tags$a(
+            href = source$url,
+            target = "_blank",
+            rel = "noopener noreferrer",
+            source$text
+          )
+        )
+      }
+    )
+
+    tags$div(
+      class = "observed-flow-note",
+      tags$b(
+        paste0(
+          "Trailing 7-day average flow as of ",
+          format(item$end_date, "%m/%d/%Y"),
+          ": ",
+          format_observed_value(item$value),
+          " cfs."
+        )
+      ),
+      tags$br(),
+      "Source",
+      if (length(source_items) > 1) "s: " else ": ",
+      tagList(link_tags),
+      if (!is.null(special_note)) {
+        tagList(
+          tags$br(),
+          tags$span(special_note)
+        )
+      }
+    )
+  }
+
+  output$current_ptm_exp_note <- renderUI({
+    observed_note(
+      "EXP",
+      list(
+        list(
+          text = "CLC INFLOW CFS (sensor 76)",
+          url = observed_source_links$CLC
+        ),
+        list(
+          text = "TRP DC PUMP CFS (sensor 70)",
+          url = observed_source_links$TRP
+        )
+      )
+    )
+  })
+
+  output$current_ptm_ver_note <- renderUI({
+    observed_note(
+      "VER",
+      list(
+        list(
+          text = "VNS M FLOW CFS (sensor 41)",
+          url = observed_source_links$VNS
+        )
+      )
+    )
+  })
+
+  output$current_ptm_sac_note <- renderUI({
+    observed_note(
+      "SAC",
+      list(
+        list(
+          text = "FPT FLOW CFS (sensor 20)",
+          url = observed_source_links$FPT
+        )
+      )
+    )
+  })
+
+  output$current_ptm_east_note <- renderUI({
+    state <- observed_flow_state()
+    special_note <- NULL
+
+    if (
+      identical(state$status, "ready") &&
+      !is.null(state$EAST) &&
+      isTRUE(state$EAST$ok)
+    ) {
+      special_note <- paste0(
+        "EAST = MOK + CAL + COS. The MOK daily record used here ends ",
+        format(state$MOK$end_date, "%m/%d/%Y"),
+        "; its latest available seven daily values are combined with the ",
+        "current CAL and COS trailing averages."
+      )
+    }
+
+    observed_note(
+      "EAST",
+      list(
+        list(
+          text = "MOK (USGS 11325500)",
+          url = observed_source_links$MOK
+        ),
+        list(
+          text = "CAL: NHG OUTFLOW CFS (sensor 23)",
+          url = observed_source_links$NHG
+        ),
+        list(
+          text = "COS (USGS 11335000 discharge)",
+          url = observed_source_links$COS
+        )
+      ),
+      special_note = special_note
+    )
+  })
+
+  output$current_ptm_xgeo_note <- renderUI({
+    observed_note(
+      "XGEO",
+      list(
+        list(
+          text = "XGEO_A (USGS 11447890)",
+          url = observed_source_links$XGEO_A
+        ),
+        list(
+          text = "XGEO_C (USGS 11447905)",
+          url = observed_source_links$XGEO_C
+        )
+      ),
+      special_note = "XGEO is calculated as XGEO_A minus XGEO_C."
+    )
+  })
+
+  observeEvent(
+    input$current_input_method,
+    {
+      if (!identical(input$current_input_method, "single")) {
+        return(invisible(NULL))
+      }
+
+      observed_flow_state(
+        list(
+          status = "loading",
+          message = "Retrieving observed trailing 7-day average flows.",
+          updated_at = Sys.time()
+        )
+      )
+
+      clc <- safe_observed_summary(
+        trailing_seven_summary(
+          read_cdec_daily_values("CLC", 76)
+        )
+      )
+
+      trp <- safe_observed_summary(
+        trailing_seven_summary(
+          read_cdec_daily_values("TRP", 70)
+        )
+      )
+
+      vns <- safe_observed_summary(
+        trailing_seven_summary(
+          read_cdec_daily_values("VNS", 41)
+        )
+      )
+
+      fpt <- safe_observed_summary(
+        trailing_seven_summary(
+          read_cdec_daily_values("FPT", 20)
+        )
+      )
+
+      nhg <- safe_observed_summary(
+        trailing_seven_summary(
+          read_cdec_daily_values("NHG", 23)
+        )
+      )
+
+      mok <- safe_observed_summary(
+        trailing_seven_summary(
+          read_usgs_daily_values(
+            site_number = "11325500",
+            parameter_code = "00060",
+            end_date = as.Date("2024-09-30"),
+            lookback_days = 45
+          )
+        )
+      )
+
+      cos <- safe_observed_summary(
+        trailing_seven_summary(
+          read_usgs_daily_values(
+            site_number = "11335000",
+            parameter_code = "00060"
+          )
+        )
+      )
+
+      xgeo_a <- safe_observed_summary(
+        trailing_seven_summary(
+          read_usgs_daily_values(
+            site_number = "11447890",
+            parameter_code = "72137"
+          )
+        )
+      )
+
+      xgeo_c <- safe_observed_summary(
+        trailing_seven_summary(
+          read_usgs_daily_values(
+            site_number = "11447905",
+            parameter_code = "72137"
+          )
+        )
+      )
+
+      exp_result <- if (isTRUE(clc$ok) && isTRUE(trp$ok)) {
+        list(
+          ok = TRUE,
+          value = clc$data$value + trp$data$value,
+          start_date = max(clc$data$start_date, trp$data$start_date),
+          end_date = min(clc$data$end_date, trp$data$end_date),
+          message = NULL
+        )
+      } else {
+        list(
+          ok = FALSE,
+          message = paste(
+            c(
+              if (!isTRUE(clc$ok)) paste0("CLC: ", clc$message) else NULL,
+              if (!isTRUE(trp$ok)) paste0("TRP: ", trp$message) else NULL
+            ),
+            collapse = " "
+          )
+        )
+      }
+
+      ver_result <- if (isTRUE(vns$ok)) {
+        c(list(ok = TRUE), vns$data)
+      } else {
+        list(ok = FALSE, message = vns$message)
+      }
+
+      sac_result <- if (isTRUE(fpt$ok)) {
+        c(list(ok = TRUE), fpt$data)
+      } else {
+        list(ok = FALSE, message = fpt$message)
+      }
+
+      east_result <- if (
+        isTRUE(mok$ok) &&
+        isTRUE(nhg$ok) &&
+        isTRUE(cos$ok)
+      ) {
+        list(
+          ok = TRUE,
+          value = mok$data$value + nhg$data$value + cos$data$value,
+          start_date = min(
+            mok$data$start_date,
+            nhg$data$start_date,
+            cos$data$start_date
+          ),
+          end_date = max(
+            mok$data$end_date,
+            nhg$data$end_date,
+            cos$data$end_date
+          ),
+          message = NULL
+        )
+      } else {
+        list(
+          ok = FALSE,
+          message = paste(
+            c(
+              if (!isTRUE(mok$ok)) paste0("MOK: ", mok$message) else NULL,
+              if (!isTRUE(nhg$ok)) paste0("CAL: ", nhg$message) else NULL,
+              if (!isTRUE(cos$ok)) paste0("COS: ", cos$message) else NULL
+            ),
+            collapse = " "
+          )
+        )
+      }
+
+      xgeo_result <- if (
+        isTRUE(xgeo_a$ok) &&
+        isTRUE(xgeo_c$ok)
+      ) {
+        list(
+          ok = TRUE,
+          value = xgeo_a$data$value - xgeo_c$data$value,
+          start_date = max(
+            xgeo_a$data$start_date,
+            xgeo_c$data$start_date
+          ),
+          end_date = min(
+            xgeo_a$data$end_date,
+            xgeo_c$data$end_date
+          ),
+          message = NULL
+        )
+      } else {
+        list(
+          ok = FALSE,
+          message = paste(
+            c(
+              if (!isTRUE(xgeo_a$ok)) {
+                paste0("XGEO_A: ", xgeo_a$message)
+              } else {
+                NULL
+              },
+              if (!isTRUE(xgeo_c$ok)) {
+                paste0("XGEO_C: ", xgeo_c$message)
+              } else {
+                NULL
+              }
+            ),
+            collapse = " "
+          )
+        )
+      }
+
+      state <- list(
+        status = "ready",
+        updated_at = Sys.time(),
+        EXP = exp_result,
+        VER = ver_result,
+        SAC = sac_result,
+        EAST = east_result,
+        XGEO = xgeo_result,
+        MOK = if (isTRUE(mok$ok)) mok$data else NULL
+      )
+
+      observed_flow_state(state)
+
+      if (isTRUE(exp_result$ok)) {
+        updateNumericInput(
+          session,
+          "current_ptm_exp",
+          value = round(exp_result$value, 0)
+        )
+      }
+
+      if (isTRUE(ver_result$ok)) {
+        updateNumericInput(
+          session,
+          "current_ptm_ver",
+          value = round(ver_result$value, 0)
+        )
+      }
+
+      if (isTRUE(sac_result$ok)) {
+        updateNumericInput(
+          session,
+          "current_ptm_sac",
+          value = round(sac_result$value, 0)
+        )
+      }
+
+      if (isTRUE(east_result$ok)) {
+        updateNumericInput(
+          session,
+          "current_ptm_east",
+          value = round(east_result$value, 0)
+        )
+      }
+
+      if (isTRUE(xgeo_result$ok)) {
+        updateNumericInput(
+          session,
+          "current_ptm_xgeo",
+          value = round(xgeo_result$value, 0)
+        )
+      }
+
+      failed_labels <- c(
+        if (!isTRUE(exp_result$ok)) "EXP" else NULL,
+        if (!isTRUE(ver_result$ok)) "VER" else NULL,
+        if (!isTRUE(sac_result$ok)) "SAC" else NULL,
+        if (!isTRUE(east_result$ok)) "EAST" else NULL,
+        if (!isTRUE(xgeo_result$ok)) "XGEO" else NULL
+      )
+
+      if (length(failed_labels) > 0) {
+        showNotification(
+          paste0(
+            "Some observed inputs could not be refreshed: ",
+            paste(failed_labels, collapse = ", "),
+            ". Existing box values were retained."
+          ),
+          type = "warning",
+          duration = 10
+        )
+      }
+    },
+    ignoreInit = FALSE
+  )
+
   
   find_latest_master <- function() {
     files <- list.files(
