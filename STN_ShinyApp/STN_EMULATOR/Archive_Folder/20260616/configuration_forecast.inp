@@ -3,7 +3,7 @@ ENVVAR
 NAME                     VALUE                                 
 RUN			 A
 RUNPERIOD                21
-DSM2MODIFIER             20260203-${RUNPERIOD}${RUN}               #Study name used for DSM2 output                  
+DSM2MODIFIER             20260616-${RUNPERIOD}${RUN}               #Study name used for DSM2 output                  
 DSM2INPUTDIR             ../../common_input                                           
 DSM2AGENCY               dwr
 VERSIONDATE              200705                                                       
@@ -11,17 +11,17 @@ HISTFLOWVERSION          DWR-DMS
 HISTSTAGEVERSION         ${HISTFLOWVERSION}
 HISTQUALVERSION          DWR-DMS
 #runtime                
-START_DATE               29Dec2025
+START_DATE               20May2026
 START_TIME               0000
-FORE_START_DATE		 03Feb2026
+FORE_START_DATE		 16Jun2026
 FORE_START_TIME		 0000
-QUAL_START_DATE          01Jan2026
-EC_START_DATE            27Jan2026
+QUAL_START_DATE          23May2026
+EC_START_DATE            09Jun2026
 PTM_START_DATE           ${QUAL_START_DATE}
-END_DATE                 24Feb2026
+END_DATE                 07Jul2026
 END_TIME                 2400
-QUAL_END_DATE            24Feb2026
-WARM_END_DATE            31Jan2026
+QUAL_END_DATE            07Jul2026
+WARM_END_DATE            13Jun2026
 QUAL_END_TIME            0000
 TEMPDIR                  z:/temp                                #Spacious directory for scratch files  
 RUNID			 DSM2-${DSM2MODIFIER}
@@ -61,11 +61,11 @@ GATEOUTPUTFILE           ${DSM2OUTPUTDIR}/${OUTPUTFILE}
 #Qual                   
 QUALOUTDSSFILE           ${DSM2OUTPUTDIR}/${OUTPUTFILE}
 QUALOUTFILE              ${DSM2OUTPUTDIR}/${DSM2MODIFIER}.qof
-QUALECRSTFILE            ${DSM2OUTPUTDIR}/qual-Feb0326.qrf
+QUALECRSTFILE            ${DSM2OUTPUTDIR}/qual-Jun1626.qrf
 QUALDOCRSTFILE           ${DSM2OUTPUTDIR}/qual_DOC.qrf
 QUALALKRSTFILE           ${DSM2OUTPUTDIR}/Qual_Alk.qrf
 QUALVOLRSTFILE           ${DSM2OUTPUTDIR}/qual_VOL.qrf
-QUALTURRSTFILE           ${DSM2OUTPUTDIR}/qual-tur-Feb0326.qrf
+QUALTURRSTFILE           ${DSM2OUTPUTDIR}/qual-tur-Jun1626.qrf
 QUALTIDEFILE             ${DSM2OUTPUTDIR}/${DSM2MODIFIER}_ec.h5
 FINE_OUT                 15MIN
 FINE_OUT_DAY             1DAY                                                                                     
