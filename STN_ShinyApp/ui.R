@@ -72,21 +72,7 @@ run_page <- function(prefix, title, theme_class) {
               
               tags$p(
                 class = "figure-note",
-                if (is_current) {
-                  paste(
-                    "Observed-condition calculations use measured rows.",
-                    "The PTM Emulator 7-day and Event Horizon models use seven rolling",
-                    "7-day windows ending on the last seven measured dates.",
-                    "The PTM Emulator 30-day and ECO-PTM Emulator models use the most recent",
-                    "30-day measured average."
-                  )
-                } else {
-                  paste(
-                    "Forecast calculations use the first seven forecast days",
-                    "for the selected OMRI scenario. Forecast XGEO is held",
-                    "constant at the value from the latest measured date."
-                  )
-                }
+                "Select a run date from the box above."
               )
             )
           )
@@ -117,6 +103,8 @@ run_page <- function(prefix, title, theme_class) {
             "PTM and Event Horizon Emulators",
 
             fluidRow(
+              class = "emulator-top-row",
+
               box(
                 width = 4,
                 title = "Emulator Inputs (PTM and Event Horizon)",
@@ -142,7 +130,7 @@ run_page <- function(prefix, title, theme_class) {
                     if (is_current) {
                       "Observed Conditions Run 1"
                     } else {
-                      paste(title, "PTM Run Single Values")
+                      "Forecast Conditions Run 1"
                     }
                   ),
 
@@ -216,8 +204,12 @@ run_page <- function(prefix, title, theme_class) {
 
                   textInput(
                     paste0(prefix, "_ptm_archive_name"),
-                    "Scenario Name (Input Method: Archive Folder):",
-                    paste(title, "PTM Emulator Run: Archive Folder")
+                    "Scenario Name (User Defined):",
+                    if (is_current) {
+                      "Observed Conditions Run 1"
+                    } else {
+                      "Forecast Conditions Run 1"
+                    }
                   ),
 
                   uiOutput(paste0(prefix, "_ptm_archive_summary"))
@@ -278,7 +270,7 @@ run_page <- function(prefix, title, theme_class) {
                   tabPanel(
                     "7-Day: 15 Nodes",
 
-                    tags$h4("PTM 7-Day Entrainment and Event Horizon Map"),
+                    tags$h4("7-Day Entrainment Risk Map"),
 
                     uiOutput(
                       paste0(prefix, "_eh_summary")
@@ -296,9 +288,17 @@ run_page <- function(prefix, title, theme_class) {
                     tags$p(
                       class = "figure-note",
                       paste(
-                        "The archive-current map can be stepped through the",
-                        "seven rolling windows. Click a node for details.",
-                        "Risk-zone polygons are an approximation based on emulator node availability."
+                        "The map contains PTM emulator results from the 7-day",
+                        if (is_current) {
+                          "observed conditions"
+                        } else {
+                          "forecast conditions"
+                        },
+                        "input values. Results include PTM emulator estimated",
+                        "entrainment at each node, a contour polygon that",
+                        "interpolates a boundary between nodes based on the",
+                        "user defined entrainment risk threshold, and the",
+                        "entrainment event horizon. Click a node for details."
                       )
                     ),
 
@@ -323,7 +323,7 @@ run_page <- function(prefix, title, theme_class) {
                       ),
 
                       tags$h4(
-                        "PTM Emulator 7-Day Rolling Prediction Time Series"
+                        "7-Day Rolling Entrainment Prediction"
                       ),
 
                       uiOutput(paste0(prefix, "_ptm7_timeseries_nodes_ui")),
@@ -369,13 +369,21 @@ run_page <- function(prefix, title, theme_class) {
                         prefix
                       ),
 
-                      tags$h4("PTM Emulator 30-Day Entrainment Risk Map"),
+                      tags$h4("30-Day Entrainment Risk Map"),
 
                       tags$p(
                         class = "figure-note",
                         paste(
-                          "Archive-current results use the most recent",
-                          "30 measured days."
+                          "The map contains PTM emulator results from the 30-day",
+                          if (is_current) {
+                            "observed conditions"
+                          } else {
+                            "forecast conditions"
+                          },
+                          "input values. Results include PTM emulator estimated",
+                          "entrainment at each node and a contour polygon that",
+                          "interpolates a boundary between nodes based on the",
+                          "user defined entrainment risk threshold."
                         )
                       ),
 
@@ -393,7 +401,7 @@ run_page <- function(prefix, title, theme_class) {
                       br(), br(),
 
                       tags$h4(
-                        "PTM Emulator 30-Day Entrainment by DSM2 Node"
+                        "30-Day Estimated Entrainment Barchart by Locations (DSM2 Node)"
                       ),
 
                       plotlyOutput(
@@ -403,7 +411,7 @@ run_page <- function(prefix, title, theme_class) {
 
                       br(),
 
-                      tags$h4("PTM Emulator 30-Day Node Results"),
+                      tags$h4("30-Day Estimated Entrainment Percentage by Location (DSM2 Node)"),
 
                       div(
                         class = "wide-table-scroll",
@@ -435,11 +443,7 @@ run_page <- function(prefix, title, theme_class) {
                       tags$h4(
                         class = "emulator-figure-title",
 
-                        if (is_current) {
-                          "Observed PTM 7-Day Entrainment by DSM2 Node"
-                        } else {
-                          "Forecast PTM 7-Day Entrainment by DSM2 Node"
-                        }
+                        "7-Day Estimated Entrainment Barchart by Locations (DSM2 Node)"
                       ),
 
                       plotlyOutput(
@@ -475,13 +479,24 @@ run_page <- function(prefix, title, theme_class) {
 
               fluidRow(
                 box(
-                  width = 12,
-                  title = "PTM Emulator 7-Day Node Results",
+                  width = 8,
+                  title = "7-Day Estimated Entrainment Percentage by Location (DSM2 Node)",
                   status = status_name,
                   solidHeader = TRUE,
 
                   tableOutput(
                     paste0(prefix, "_ptm7_table")
+                  )
+                ),
+
+                box(
+                  width = 4,
+                  title = "7-Day Event Horizon Distance by Observed Date",
+                  status = status_name,
+                  solidHeader = TRUE,
+
+                  tableOutput(
+                    paste0(prefix, "_eh7_table")
                   )
                 )
               )
@@ -517,11 +532,22 @@ run_page <- function(prefix, title, theme_class) {
               ),
               
               fluidRow(
+                class = "emulator-top-row",
+
                 box(
                   width = 4,
-                  title = "ECO-PTM Emulator Inputs (30-day average flows)",
+                  title = "ECO-PTM Emulator Inputs",
                   status = status_name,
                   solidHeader = TRUE,
+
+
+                  tags$div(
+                    class = "alert alert-info",
+                    style = "padding:10px 12px; margin-bottom:12px; font-size:13px;",
+                    tags$b("Input Averaging"),
+                    tags$br(),
+                    "ECO-PTM emulator uses 30-day average flow inputs."
+                  ),
                   
                   conditionalPanel(
                     condition = sprintf(
@@ -532,12 +558,26 @@ run_page <- function(prefix, title, theme_class) {
                     textInput(
                       paste0(prefix, "_eco_name"),
                       "Scenario Name (User Defined):",
-                      paste(title, "ECO-PTM Emulator Run: Single Values")
+                      if (is_current) {
+                        "Observed Conditions Run 1"
+                      } else {
+                        "Forecast Conditions Run 1"
+                      }
+                    ),
+
+                    tags$div(
+                      class = "alert alert-info",
+                      style = "padding:10px 12px; margin-bottom:12px; font-size:13px;",
+                      paste(
+                        "Input flow values are shown in the boxes below.",
+                        "The existing values are randomly generated and should",
+                        "be replaced with the 30-day average flow at each site."
+                      )
                     ),
                     
                     numericInput(
                       paste0(prefix, "_eco_sac"),
-                      "SAC: Freeport Flow (cfs):",
+                      "SAC: Sacramento River Flow at Freeport Flow (cfs):",
                       18000
                     ),
                     numericInput(
@@ -567,8 +607,12 @@ run_page <- function(prefix, title, theme_class) {
                     
                     textInput(
                       paste0(prefix, "_eco_archive_name"),
-                      "Scenario Name (Input Method: Archive Folder):",
-                      paste(title, "ECO-PTM Emulator Run: Archive Folder")
+                      "Scenario Name (User Defined):",
+                      if (is_current) {
+                        "Observed Conditions Run 1"
+                      } else {
+                        "Forecast Conditions Run 1"
+                      }
                     ),
                     
                     tags$p(
@@ -680,6 +724,29 @@ ui <- dashboardPage(
         .observed-flow-note a{
           font-weight:600;
         }
+        /* Align the input and results panels to the height of the taller panel. */
+        .emulator-top-row{
+          display:flex;
+          flex-wrap:wrap;
+          align-items:stretch;
+        }
+        .emulator-top-row > [class*='col-']{
+          display:flex;
+        }
+        .emulator-top-row > [class*='col-'] > .box{
+          width:100%;
+          height:100%;
+          margin-bottom:15px;
+        }
+        @media (max-width:991px){
+          .emulator-top-row{
+            display:block;
+          }
+          .emulator-top-row > [class*='col-']{
+            display:block;
+          }
+        }
+
         body{font-family:Segoe UI;color:#333}
 
         .figure-note {

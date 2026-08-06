@@ -42,49 +42,49 @@ DICUFILE_ECE                        ./Data/dicu.dss
 DICUFILE_ECS                        ./Data/dicu.dss    
 DSM2AGENCY                          dwr    
 DSM2INPUTDIR                        ../../common_input    
-DSM2MODIFIER                        20260203-21A    
+DSM2MODIFIER                        20260623-21A    
 DSM2OUTPUTDIR                       ./output    
-EC_START_DATE                       27Jan2026    
-END_DATE                            24Feb2026    
+EC_START_DATE                       16Jun2026    
+END_DATE                            14Jul2026    
 END_TIME                            2400    
 FINE_OUT                            15MIN    
 FINE_OUT_DAY                        1DAY    
 FLOWPATTERN                         ./output/FLOWPATTERN.dss    
 FORECASTINPUT                       ./Data/forecast.dss    
-FORE_START_DATE                     03Feb2026    
+FORE_START_DATE                     23Jun2026    
 FORE_START_TIME                     0000    
 FREEPORTFLOW                        ./output/FREEPORTFLOW.dss    
 GATEFILE                            ./Data/gates.dss    
-GATEOUTPUTFILE                      ./output/20260203-21A.dss    
+GATEOUTPUTFILE                      ./output/20260623-21A.dss    
 HISTFLOWVERSION                     DWR-DMS    
 HISTQUALVERSION                     DWR-DMS    
 HISTSTAGEVERSION                    DWR-DMS    
-HYDROOUTDSSFILE                     ./output/20260203-21A.dss    
-HYDROOUTFILE                        ./output/20260203-21A.hof    
-HYDRORSTFILE                        ./output/20260203-21A.hrf    
-HYDROTIDEFILE                       ./output/20260203-21A.h5    
+HYDROOUTDSSFILE                     ./output/20260623-21A.dss    
+HYDROOUTFILE                        ./output/20260623-21A.hof    
+HYDRORSTFILE                        ./output/20260623-21A.hrf    
+HYDROTIDEFILE                       ./output/20260623-21A.h5    
 INPUTDIR                            ./Input    
-OUTPUTFILE                          20260203-21A.dss    
-PTMOUTFILE                          ./output/20260203-21A.pof    
+OUTPUTFILE                          20260623-21A.dss    
+PTMOUTFILE                          ./output/20260623-21A.pof    
 PTMOUTPUTFILE                       ./output/ptmout.dss    
-PTM_START_DATE                      01Jan2026    
+PTM_START_DATE                      30May2026    
 QUALALKRSTFILE                      ./output/Qual_Alk.qrf    
 QUALBNDINP                          ./Data/quality.dss    
 QUALDOCRSTFILE                      ./output/qual_DOC.qrf    
-QUALECRSTFILE                       ./output/qual-Feb0326.qrf    
-QUALOUTDSSFILE                      ./output/20260203-21A.dss    
-QUALOUTFILE                         ./output/20260203-21A.qof    
-QUALTIDEFILE                        ./output/20260203-21A_ec.h5    
-QUALTURRSTFILE                      ./output/qual-tur-Feb0326.qrf    
+QUALECRSTFILE                       ./output/qual-Jun2326.qrf    
+QUALOUTDSSFILE                      ./output/20260623-21A.dss    
+QUALOUTFILE                         ./output/20260623-21A.qof    
+QUALTIDEFILE                        ./output/20260623-21A_ec.h5    
+QUALTURRSTFILE                      ./output/qual-tur-Jun2326.qrf    
 QUALVOLRSTFILE                      ./output/qual_VOL.qrf    
-QUAL_END_DATE                       24Feb2026    
+QUAL_END_DATE                       14Jul2026    
 QUAL_END_TIME                       0000    
-QUAL_START_DATE                     01Jan2026    
+QUAL_START_DATE                     30May2026    
 RMAOUTPUT                           ./output/RMAOUTPUT.dss    
 RUN                                 A    
-RUNID                               DSM2-20260203-21A    
+RUNID                               DSM2-20260623-21A    
 RUNPERIOD                           21    
-START_DATE                          29Dec2025    
+START_DATE                          27May2026    
 START_TIME                          0000    
 STOCKTON_EFF_FLOW                   0.0    
 STOCKTON_FLOW_FILE                  constant    
@@ -94,7 +94,7 @@ TEMPDIR                             z:/temp
 TSINPUTDIR                          ./Data    
 VERSIONDATE                         200705    
 VOLTEMP                             ./output/Voltemp.dss    
-WARM_END_DATE                       31Jan2026    
+WARM_END_DATE                       20Jun2026    
 WEEKLYEC                            ./output/weeklyec.dss    
 WEEKLYSTAGE                         ./output/weeklystage.dss    
 X2OUTPUT                            ./output/X2OUTPUT.dss    
@@ -117,12 +117,12 @@ hydro_time_step                     15min
 levee_slope                         0.33    
 maxiter                             20    
 printlevel                          1    
-run_end_date                        24Feb2026    
-run_start_date                      29Dec2025    
+run_end_date                        14Jul2026    
+run_start_date                      27May2026    
 run_start_time                      0000    
 temp_dir                            c:/temp    
 theta                               0.6    
-title                               "Hydro simulation: 20260203-21A"  
+title                               "Hydro simulation: 20260623-21A"  
 toleranceq                          0.001    
 tolerancez                          0.0008    
 warn_missing                        false    
@@ -132,10 +132,10 @@ END
 
 IO_FILE
 MODEL  TYPE  IO  INTERVAL  FILE  
-hydro       echo        out         none          ./output/hydro_echo_20260203-21A.inp    
-hydro       hdf5        out         15min         ./output/20260203-21A.h5    
-hydro       output      out         none          ./output/20260203-21A.hof    
-hydro       restart     out         1mon          ./output/20260203-21A.hrf    
+hydro       echo        out         none          ./output/hydro_echo_20260623-21A.inp    
+hydro       hdf5        out         15min         ./output/20260623-21A.h5    
+hydro       output      out         none          ./output/20260623-21A.hof    
+hydro       restart     out         1mon          ./output/20260623-21A.hrf    
 END
 
 CHANNEL
@@ -11639,16 +11639,16 @@ GATE_NAME  DEVICE  NDUPLICATE  RADIUS  ELEV  CF_FROM_NODE  CF_TO_NODE  DEFAULT_O
 7_mile@3_mile       pipes               2           2.000     -4.595    0.5000        0.5000        gate_open             
 7_mile@sjr          pipes               1           2.000     -4.628    0.0000        0.0000        gate_close            
 goodyear_sl         pipes               4           2.000     -0.408    0.4000        0.4000        unidir_to_node        
-grant_line_barrier    pipes               6           2.000     -4.187    0.6000        0.6000        unidir_from_node      
+grant_line_barrier    pipes               6           2.000     -4.187    0.6000        0.6000        unidir_from_node         
 middle_r_barrier    pipes               6           2.000     -1.733    0.6000        0.6000        unidir_to_node        
 morrow_c_line_outfall    pipes               2           1.500     0.059     0.5000        0.5000        unidir_to_node        
 morrow_m_line_outfall    pipes               3           2.000     -2.321    0.5000        0.5000        unidir_to_node        
-morrow_sys_intake    pipes               3           2.000     -2.598    0.2000        0.2000        unidir_from_node      
+morrow_sys_intake    pipes               3           2.000     -2.598    0.2000        0.2000        unidir_from_node         
 old_r@head_barrier    pipes               8           2.000     -5.674    0.6000        0.6000        gate_open             
-old_r@tracy_barrier    pipes               9           2.000     -3.641    0.6000        0.6000        unidir_from_node      
-roaring_river_slough_intake    pipes               8           2.500     -2.510    0.5000        0.5000        unidir_from_node      
-sandmound_sl        pipes               2           2.750     -0.661    0.5000        0.5000        unidir_from_node      
-tom_paine_sl        pipes               6           1.880     -1.161    0.6000        0.6000        unidir_from_node      
+old_r@tracy_barrier    pipes               9           2.000     -3.641    0.6000        0.6000        unidir_from_node         
+roaring_river_slough_intake    pipes               8           2.500     -2.510    0.5000        0.5000        unidir_from_node         
+sandmound_sl        pipes               2           2.750     -0.661    0.5000        0.5000        unidir_from_node         
+tom_paine_sl        pipes               6           1.880     -1.161    0.6000        0.6000        unidir_from_node         
 END
 
 TRANSFER
@@ -12721,13 +12721,11 @@ NAME  NODE  SIGN  FILLIN  FILE  PATH
 calaveras           21    1     last            ./Data/hydro.dss                    /FILL+CHAN/RCAL009/FLOW//1HOUR/DWR-DMS/    
 cosumnes            446   1     last            ./Data/hydro.dss                    /FILL+CHAN/RCSM075/FLOW//1HOUR/DWR-DMS/    
 manteca_wwtp        6     1     last            constant                            10    
-mhc_wwtp            68    1     last            constant                            8    
-moke                447   1     last            ./Data/forecast.dss                 /FORE+CHAN/RMKL070/FLOW//1DAY/DSM2-20260203-21A/    
+moke                447   1     last            ./Data/forecast.dss                 /FORE+CHAN/RMKL070/FLOW//1DAY/DSM2-20260623-21A/    
 north_bay           273   -1    last            ./Data/hydro.dss                    /FILL+CHAN/SLBAR002/FLOW-EXPORT//1HOUR/DWR-DMS/    
 sac                 330   1     last            ./Data/hydro.dss                    /FILL+CHAN/RSAC155/FLOW//1HOUR/DWR-DMS/    
 sac_wwtp            335   1     last            constant                            160    
 stockton_wwtp       15    1     last            constant                            45    
-tracy_gw            66    1     last            constant                            2    
 tracy_wwtp          55    1     last            constant                            10    
 vernalis            17    1     last            ./Data/hydro.dss                    /FILL+CHAN/RSAN112/FLOW//1HOUR/DWR-DMS/    
 yolo                316   1     last            ./Data/hydro.dss                    /FILL+CHAN/BYOLO040/FLOW//1HOUR/DWR-DMS/    
@@ -13531,19 +13529,19 @@ END
 
 OPERATING_RULE
 NAME  ACTION  TRIGGER  
-WestFalse_River_install_in          "SET gate_install(gate=WestFalse_River) TO 1.0"     "DATETIME >= 13APR2022 AND DATETIME <= 01NOV2022"  
-WestFalse_River_install_out         "SET gate_install(gate=WestFalse_River) TO 0.0"     "DATETIME < 13APR2022 OR DATETIME >= 01NOV2022"  
-calaveras_boundary_flow             "SET ext_flow(name= calaveras) TO ts(name=calaveras_fore)"  "DATE >= 03Feb2026"  
-ccc_source_flow                     "SET ext_flow(name=ccc) TO -ts(name=ccc_fore)"      "DATE >= 03Feb2026"  
-cccmidr_source_flow                 "SET ext_flow(name=cccmidr) TO -ts(name=cccmidr_fore)"  "DATE >= 03Feb2026"  
-cccoldr_source_flow                 "SET ext_flow(name=cccoldr) TO -ts(name=cccoldr_fore)"  "DATE >= 03Feb2026"  
+WestFalse_River_install_in          "SET gate_install(gate=WestFalse_River) TO 1.0"     "DATETIME >= 18Jun2021 AND DATETIME <= 07Jan2022"  
+WestFalse_River_install_out         "SET gate_install(gate=WestFalse_River) TO 0.0"     "DATETIME < 18Jun2021 OR DATETIME >= 07Jan2022"  
+calaveras_boundary_flow             "SET ext_flow(name= calaveras) TO ts(name=calaveras_fore)"  "DATE >= 23Jun2026"  
+ccc_source_flow                     "SET ext_flow(name=ccc) TO -ts(name=ccc_fore)"      "DATE >= 23Jun2026"  
+cccmidr_source_flow                 "SET ext_flow(name=cccmidr) TO -ts(name=cccmidr_fore)"  "DATE >= 23Jun2026"  
+cccoldr_source_flow                 "SET ext_flow(name=cccoldr) TO -ts(name=cccoldr_fore)"  "DATE >= 23Jun2026"  
 clfct_allot_close                   "SET gate_height(gate=clifton_court,device=reservoir_gates) TO 0"  ccflow    
 clfct_gate_down                     "SET gate_op(gate=clifton_court,device=reservoir_gates,direction=from_node) TO MAX2(0,gate_op(gate=clifton_court,device=reservoir_gates,direction=from_node)-0.05)"  "ccflowrate2 AND ccflowrate3"  
 clfct_gate_init                     "SET gate_op(gate=clifton_court,device=reservoir_gates,direction=from_node) TO MIN2(1,ts(name=ccflowmax)/20000)"  ccflowrate4    
 clfct_gate_op                       "SET gate_height(gate=clifton_court,device=reservoir_gates) TO IFELSE(forecast,ts(name=clfct_op_fore)*9999,ts(name=clfct_op)*9999)"  ccgo    
 clfct_gate_up                       "SET gate_op(gate=clifton_court,device=reservoir_gates,direction=from_node) TO MIN2(1,gate_op(gate=clifton_court,device=reservoir_gates,direction=from_node)+0.02)"  "ccflowrate AND ccflowrate3"  
-cosumnes_boundary_flow              "SET ext_flow(name= cosumnes) TO ts(name=cosumnes_fore)"  "DATE >= 03Feb2026"  
-cvp_source_flow                     "SET ext_flow(name=cvp) TO  -ts(name=cvp_fore)"     "DATE >= 29Dec2025"  
+cosumnes_boundary_flow              "SET ext_flow(name= cosumnes) TO ts(name=cosumnes_fore)"  "DATE >= 23Jun2026"  
+cvp_source_flow                     "SET ext_flow(name=cvp) TO  -ts(name=cvp_fore)"     "DATE >= 27May2026"  
 dcc_gate_op                         "SET gate_op(gate=delta_cross_channel,device=cross_channel_gates,direction=to_from_node) TO ts(name=dcc_op)/2"  TRUE    
 glc_barrier_elev                    "SET gate_elev(gate=grant_line_barrier, device=barrier) TO ts(name=glc_elev)"  TRUE    
 glc_barrier_width                   "SET gate_width(gate=grant_line_barrier, device=barrier) TO ts(name=glc_width)"  TRUE    
@@ -13565,7 +13563,7 @@ mscs_modifiedFB_op                  "SET gate_op(gate=montezuma_salinity_control
 mscs_modifiedFB_op_to               "SET gate_op(gate=montezuma_salinity_control,device=modified_flashboard,direction=to_node) to ts(name = mtzsl_modfb_op)"  TRUE    
 mscs_open                           "SET gate_op(gate=montezuma_salinity_control,device=radial_gates,direction=from_node) TO ts(name=mscs_fract)"  "(mscs_dhopen AND mscs_calc) OR ts(name=mscs_op) == 1.0"  
 mscs_open_to                        "SET gate_op(gate=montezuma_salinity_control,device=radial_gates,direction=to_node) TO ts(name=mscs_fract)"  "(mscs_dhopen AND mscs_calc) OR ts(name=mscs_op) == 1.0"  
-north_bay_boundary_flow             "SET ext_flow(name=north_bay) TO -ts(name=north_bay_fore)"  "DATE >= 03Feb2026"  
+north_bay_boundary_flow             "SET ext_flow(name=north_bay) TO -ts(name=north_bay_fore)"  "DATE >= 23Jun2026"  
 old_r_barrier_install_in            "SET gate_install(gate=old_r@tracy_barrier) TO 1.0"  "ts(name=oldr_install) >= 1.0"  
 old_r_barrier_install_out           "SET gate_install(gate=old_r@tracy_barrier) TO 0.0"  "ts(name=oldr_install) <= 0.0"  
 old_r_pipe_op                       "SET gate_op(gate=old_r@tracy_barrier,device=pipes,direction=to_node) TO ts(name=oldr_pipeop)"  TRUE    
@@ -13580,12 +13578,12 @@ orhrb_pipe_op_to                    "SET gate_op(gate=old_r@head_barrier,device=
 orhrb_pipes_chg_elev                "SET gate_elev(gate=old_r@head_barrier,device=pipes) TO ts(name = orhrb_pipeelev)"  TRUE    
 orhrb_weir_op                       "SET gate_op(gate=old_r@head_barrier,device=fish_barrier,direction=from_node) TO ts(name=orhrb_weirop_spring)"  TRUE    
 orhrb_weir_op_to                    "SET gate_op(gate=old_r@head_barrier,device=fish_barrier,direction=to_node) TO ts(name=orhrb_weirop_spring)"  TRUE    
-sac_boundary_flow                   "SET ext_flow(name= sac) TO ts(name=sac_fore)"      "DATE >= 03Feb2026"  
+sac_boundary_flow                   "SET ext_flow(name= sac) TO ts(name=sac_fore)"      "DATE >= 23Jun2026"  
 sandmound_close                     "SET gate_op(gate=sandmound_sl,device=pipes,direction=from_node) TO 0.0"  "DATETIME >= 07APR1989 00:00"  
 sandmound_open                      "SET gate_op(gate=sandmound_sl,device=pipes,direction=from_node) TO 1.0"  "DATETIME >= 10APR1989 00:00"  
-swp_source_flow                     "SET ext_flow(name=swp) TO  -ts(name=swp_fore)"     "DATE >= 29Dec2025"  
-vernalis_boundary_flow              "SET ext_flow(name=vernalis) TO  ts(name=vernalis_fore)"  "DATE >= 03Feb2026"  
-yolo_boundary_flow                  "SET ext_flow(name=yolo) TO  ts(name=yolo_fore)"    "DATE >= 03Feb2026"  
+swp_source_flow                     "SET ext_flow(name=swp) TO  -ts(name=swp_fore)"     "DATE >= 27May2026"  
+vernalis_boundary_flow              "SET ext_flow(name=vernalis) TO  ts(name=vernalis_fore)"  "DATE >= 23Jun2026"  
+yolo_boundary_flow                  "SET ext_flow(name=yolo) TO  ts(name=yolo_fore)"    "DATE >= 23Jun2026"  
 END
 
 OPRULE_EXPRESSION
@@ -13596,7 +13594,7 @@ ccflowrate2                         "res_flow(res=clifton_court, node=72)<=(-1)*
 ccflowrate3                         "res_flow(res=clifton_court, node=72)<>0"  
 ccflowrate4                         "res_flow(res=clifton_court, node=72)==0"  
 ccgo                                "ACCUMULATE(res_flow(res=clifton_court, node=72)*DT*(-1), 0, HOUR==0 AND MIN==0) < ts(name=ccallotment)*86400"  
-forecast                            "DATE >= 03Feb2026"  
+forecast                            "DATE >= 23Jun2026"  
 mscs_calc                           "ts(name=mscs_op) < 0"  
 mscs_dhopen                         "(chan_stage(channel=512,dist=6038) - chan_stage(channel=513,dist=0)) > 0.3"  
 mscs_velclose                       "chan_vel(channel=513,dist=0) < -0.1"  
@@ -13604,16 +13602,16 @@ END
 
 OPRULE_TIME_SERIES
 NAME  FILLIN  FILE  PATH  
-calaveras_fore      last            ./Data/forecast.dss                 /FORE+CHAN/RCAL009/FLOW//1DAY/DSM2-20260203-21A/    
-ccallotment         last            ./Data/forecast.dss                 /FORE+CHAN/CHWST000/FLOW-ALLOTMENT//1DAY/DSM2-20260203-21A/    
-ccc_fore            last            ./Data/forecast.dss                 /FORE+CHAN/CHCCC006/FLOW-DIVERSION//1DAY/DSM2-20260203-21A/    
-cccmidr_fore        last            ./Data/forecast.dss                 /FORE+CHAN/CHVCT001/FLOW-EXPORT//1DAY/DSM2-20260203-21A/    
-cccoldr_fore        last            ./Data/forecast.dss                 /FORE+CHAN/ROLD034/FLOW-EXPORT//1DAY/DSM2-20260203-21A/    
-ccflowmax           last            ./Data/forecast.dss                 /FORE+CHAN/CHWST000/FLOW-MAX//1DAY/DSM2-20260203-21A/    
+calaveras_fore      last            ./Data/forecast.dss                 /FORE+CHAN/RCAL009/FLOW//1DAY/DSM2-20260623-21A/    
+ccallotment         last            ./Data/forecast.dss                 /FORE+CHAN/CHWST000/FLOW-ALLOTMENT//1DAY/DSM2-20260623-21A/    
+ccc_fore            last            ./Data/forecast.dss                 /FORE+CHAN/CHCCC006/FLOW-DIVERSION//1DAY/DSM2-20260623-21A/    
+cccmidr_fore        last            ./Data/forecast.dss                 /FORE+CHAN/CHVCT001/FLOW-EXPORT//1DAY/DSM2-20260623-21A/    
+cccoldr_fore        last            ./Data/forecast.dss                 /FORE+CHAN/ROLD034/FLOW-EXPORT//1DAY/DSM2-20260623-21A/    
+ccflowmax           last            ./Data/forecast.dss                 /FORE+CHAN/CHWST000/FLOW-MAX//1DAY/DSM2-20260623-21A/    
 clfct_op            last            ./Data/hydro.dss                    /HIST+GATE/CHWST000/POS//IR-YEAR/DWR-OM-JOC-DSM2/    
-clfct_op_fore       last            ./Data/forecast.dss                 /FORE+GATE/CHWST000/POS//IR-YEAR/DSM2-20260203-21A/    
-cosumnes_fore       last            ./Data/forecast.dss                 /FORE+CHAN/RCSM075/FLOW//1DAY/DSM2-20260203-21A/    
-cvp_fore            last            ./Data/forecast.dss                 /FORE+CHAN/CHDMC004/FLOW-EXPORT//1DAY/DSM2-20260203-21A/    
+clfct_op_fore       last            ./Data/forecast.dss                 /FORE+GATE/CHWST000/POS//IR-YEAR/DSM2-20260623-21A/    
+cosumnes_fore       last            ./Data/forecast.dss                 /FORE+CHAN/RCSM075/FLOW//1DAY/DSM2-20260623-21A/    
+cvp_fore            last            ./Data/forecast.dss                 /FORE+CHAN/CHDMC004/FLOW-EXPORT//1DAY/DSM2-20260623-21A/    
 dcc_op              last            ./Data/gates.dss                    /HIST+GATE/RSAC128/POS//IR-YEAR/DWR-DMS-DSM2/    
 glc_elev            last            ./Data/gates.dss                    /HIST+GATE/GL_CN/WEIRELEVATION//IR-DECADE/DWR-BDO/    
 glc_install         last            ./Data/gates.dss                    /HIST+GATE/GL_CN/INSTALL//IR-DECADE/DWR-BDO/    
@@ -13627,195 +13625,188 @@ mscs_op             last            ./Data/gates.dss                    /HIST+GA
 mtzsl_boatlock_op    last            ./Data/gates.dss                    /HIST+GATE/MTZSL/BOATLOCK_OP//IR-DECADE/DWR-ESO/    
 mtzsl_flashboard_op    last            ./Data/gates.dss                    /HIST+GATE/MTZSL/FLASHBOARD_OP//IR-DECADE/DWR-ESO/    
 mtzsl_modfb_op      last            ./Data/gates.dss                    /HIST+GATE/MTZSL/MOD_FLASHBOARD_OP//IR-DECADE/DWR-ESO/    
-north_bay_fore      last            ./Data/forecast.dss                 /FORE+CHAN/SLBAR002/FLOW-EXPORT//1DAY/DSM2-20260203-21A/    
+north_bay_fore      last            ./Data/forecast.dss                 /FORE+CHAN/SLBAR002/FLOW-EXPORT//1DAY/DSM2-20260623-21A/    
 oldr_install        last            ./Data/gates.dss                    /HIST+GATE/OLD_R/INSTALL//IR-DECADE/DWR-BDO/    
 oldr_pipeop         last            ./Data/gates.dss                    /HIST+GATE/OLD_R/PIPE_OP_DOWN//IR-DECADE/DWR-BDO/    
 orhrb_pipeelev      last            ./Data/gates.dss                    /HIST+GATE/ORHRB/PIPEELEV//IR-DECADE/DWR-BDO/    
 orhrb_pipeop        last            ./Data/gates.dss                    /HIST+GATE/ORHRB/PIPE_OP//IR-DECADE/DWR-BDO/    
 orhrb_weirop_fall    last            ./Data/gates.dss                    /HIST+GATE/ORHRB_FALL/WEIR_OP//IR-DECADE/DWR-BDO/    
 orhrb_weirop_spring    last            ./Data/gates.dss                    /HIST+GATE/ORHRB/WEIR_OP//IR-DECADE/DWR-BDO/    
-sac_fore            last            ./Data/forecast.dss                 /FORE+CHAN/RSAC155/FLOW//1DAY/DSM2-20260203-21A/    
-swp_fore            last            ./Data/forecast.dss                 /FORE+CHAN/CHSWP003/FLOW-EXPORT//1DAY/DSM2-20260203-21A/    
-vernalis_fore       last            ./Data/forecast.dss                 /FORE+CHAN/RSAN112/FLOW//1DAY/DSM2-20260203-21A/    
-yolo_fore           last            ./Data/forecast.dss                 /FORE+CHAN/BYOLO040/FLOW//1DAY/DSM2-20260203-21A/    
+sac_fore            last            ./Data/forecast.dss                 /FORE+CHAN/RSAC155/FLOW//1DAY/DSM2-20260623-21A/    
+swp_fore            last            ./Data/forecast.dss                 /FORE+CHAN/CHSWP003/FLOW-EXPORT//1DAY/DSM2-20260623-21A/    
+vernalis_fore       last            ./Data/forecast.dss                 /FORE+CHAN/RSAN112/FLOW//1DAY/DSM2-20260623-21A/    
+yolo_fore           last            ./Data/forecast.dss                 /FORE+CHAN/BYOLO040/FLOW//1DAY/DSM2-20260623-21A/    
 END
 
 OUTPUT_CHANNEL
 NAME  CHAN_NO  DISTANCE  VARIABLE  INTERVAL  PERIOD_OP  FILE  
 129_0               129      0               stage           15min         inst          ./output/stage.txt    
-14ml_sl             312      11385           flow            15MIN         inst          ./output/20260203-21A.dss    
-14ml_sl             312      11385           stage           15MIN         inst          ./output/20260203-21A.dss    
+14ml_sl             312      11385           flow            15MIN         inst          ./output/20260623-21A.dss    
+14ml_sl             312      11385           stage           15MIN         inst          ./output/20260623-21A.dss    
 183_0               183      0               stage           15min         inst          ./output/stage.txt    
 205_4630            205      length          stage           15min         inst          ./output/stage.txt    
 365_DCC_RMA         365      length          flow            15MIN         inst          ./output/RMAOUTPUT.dss    
 365_DCC_RMA         365      length          stage           15MIN         inst          ./output/RMAOUTPUT.dss    
-3mile_sl            309      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-3mile_sl            309      0               stage           15MIN         inst          ./output/20260203-21A.dss    
+3mile_sl            309      7593            flow            15MIN         inst          ./output/20260623-21A.dss    
+3mile_sl            309      7593            stage           15MIN         inst          ./output/20260623-21A.dss    
 512_0_RMA           512      0               flow            15MIN         inst          ./output/RMAOUTPUT.dss    
 512_0_RMA           512      0               stage           15MIN         inst          ./output/RMAOUTPUT.dss    
 513_0_RMA           513      0               flow            15MIN         inst          ./output/RMAOUTPUT.dss    
 513_0_RMA           513      0               stage           15MIN         inst          ./output/RMAOUTPUT.dss    
 71_0                71       0               stage           15min         inst          ./output/stage.txt    
-82_2609             82       2609            stage           1HOUR         inst          ./output/20260203-21A.dss    
-BDT                 10       9000            flow            1day          ave           ./output/20260203-21A.dss    
-BKS-406             406      length          flow            1day          ave           ./output/20260203-21A.dss    
-CCS-402             402      length          flow            1day          ave           ./output/20260203-21A.dss    
+82_2609             82       2609            stage           1HOUR         inst          ./output/20260623-21A.dss    
+BDT                 10       9000            flow            1day          ave           ./output/20260623-21A.dss    
 CHSWP003RMA         82       length          flow            15MIN         inst          ./output/RMAOUTPUT.dss    
 CHSWP003RMA         82       length          stage           15MIN         inst          ./output/RMAOUTPUT.dss    
 CH_513_15722        513      15722           flow            15MIN         inst          ./output/SUISUNMARSH.dss    
 CH_513_15722        513      15722           stage           15MIN         inst          ./output/SUISUNMARSH.dss    
-DWS-397             397      length          flow            1day          ave           ./output/20260203-21A.dss    
-LIB-405             405      length          flow            1day          ave           ./output/20260203-21A.dss    
-LIR-401             401      length          flow            1day          ave           ./output/20260203-21A.dss    
-MSD                 6        length          flow            1day          ave           ./output/20260203-21A.dss    
-OH1                 54       0               flow            1day          ave           ./output/20260203-21A.dss    
-OLD                 71       length          flow            1day          ave           ./output/20260203-21A.dss    
-ORM                 78       length          flow            1day          ave           ./output/20260203-21A.dss    
-PDC                 203      length          flow            1day          ave           ./output/20260203-21A.dss    
-RMID015_144         144      838             flow            15MIN         inst          ./output/20260203-21A.dss    
+MSD                 6        length          flow            1day          ave           ./output/20260623-21A.dss    
+OH1                 54       0               flow            1day          ave           ./output/20260623-21A.dss    
+OLD                 71       length          flow            1day          ave           ./output/20260623-21A.dss    
+ORM                 78       length          flow            1day          ave           ./output/20260623-21A.dss    
+PDC                 203      length          flow            1day          ave           ./output/20260623-21A.dss    
+RMID015_144         144      838             flow            15MIN         inst          ./output/20260623-21A.dss    
 RMID015_144RMA      144      838             flow            15MIN         inst          ./output/RMAOUTPUT.dss    
-RMID015_145         145      2114            flow            15MIN         inst          ./output/20260203-21A.dss    
+RMID015_145         145      2114            flow            15MIN         inst          ./output/20260623-21A.dss    
 ROLD024RMA          106      2718            flow            15MIN         inst          ./output/RMAOUTPUT.dss    
 ROLD024RMA          106      2718            stage           15MIN         inst          ./output/RMAOUTPUT.dss    
-RYI-398             398      length          flow            1day          ave           ./output/20260203-21A.dss    
-SLTMP000            194      1946            flow            1day          ave           ./output/20260203-21A.dss    
-SLTMP000            194      1946            stage           15MIN         inst          ./output/20260203-21A.dss    
-SLTMP017            185      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-SLTMP183            183      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-UCS-403             403      length          flow            1day          ave           ./output/20260203-21A.dss    
-calaveras           560      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-calaveras           560      0               stage           15MIN         inst          ./output/20260203-21A.dss    
+SLTMP000            194      1946            flow            1day          ave           ./output/20260623-21A.dss    
+SLTMP000            194      1946            stage           15MIN         inst          ./output/20260623-21A.dss    
+SLTMP017            185      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+SLTMP183            183      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+calaveras           560      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+calaveras           560      0               stage           15MIN         inst          ./output/20260623-21A.dss    
 ccfb2200            218      2200            stage           15MIN         inst          ./output/weeklystage.dss    
-cftrn000            172      727             flow            15MIN         inst          ./output/20260203-21A.dss    
-cftrn000            172      727             stage           15MIN         inst          ./output/20260203-21A.dss    
-chccc006            247      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-chccc006            247      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-chdmc004            216      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-chdmc004            216      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-chgrl009            207      36              flow            15MIN         inst          ./output/20260203-21A.dss    
-chgrl009            207      36              stage           15MIN         inst          ./output/20260203-21A.dss    
+cftrn000            172      727             flow            15MIN         inst          ./output/20260623-21A.dss    
+cftrn000            172      727             stage           15MIN         inst          ./output/20260623-21A.dss    
+chccc006            247      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+chccc006            247      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+chdmc004            216      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+chdmc004            216      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+chgrl009            207      36              flow            15MIN         inst          ./output/20260623-21A.dss    
+chgrl009            207      36              stage           15MIN         inst          ./output/20260623-21A.dss    
 chgrl012            204      1672            stage           15MIN         inst          ./output/weeklystage.dss    
 chgrl205            205      3000            stage           15MIN         inst          ./output/weeklystage.dss    
-chipps_s_442        442      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-chipps_s_442        442      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-chvct000            229      1328            flow            15MIN         inst          ./output/20260203-21A.dss    
-chvct000            229      1328            stage           15MIN         inst          ./output/20260203-21A.dss    
-chwst000            232      3084            flow            15MIN         inst          ./output/20260203-21A.dss    
-chwst000            232      3084            stage           15MIN         inst          ./output/20260203-21A.dss    
-cosumnes            549      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-cosumnes            549      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-cvp                 216      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-cvp                 216      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-dcc                 365      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-dcc                 365      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-disappointment_sl    314      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-disappointment_sl    314      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-empire_tract_sl     37       0               flow            15MIN         inst          ./output/20260203-21A.dss    
-empire_tract_sl     37       0               stage           15MIN         inst          ./output/20260203-21A.dss    
-false_r             279      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-false_r             279      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-fish_cut            280      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-fish_cut            280      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-georgianna_sl       366      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-georgianna_sl       366      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-glc_e_us_bar        206      5533            flow            15MIN         inst          ./output/20260203-21A.dss    
-glc_e_us_bar        206      5533            stage           15MIN         inst          ./output/20260203-21A.dss    
-midr_sjr            161      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-midr_sjr            161      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-mtz                 441      5398            flow            15MIN         inst          ./output/20260203-21A.dss    
-mtz                 441      5398            stage           15MIN         inst          ./output/20260203-21A.dss    
-mtzma_sl_us_scg     512      6038            flow            15MIN         inst          ./output/20260203-21A.dss    
-mtzma_sl_us_scg     512      6038            stage           15MIN         inst          ./output/20260203-21A.dss    
-oldr_midr           59       0               flow            15MIN         inst          ./output/20260203-21A.dss    
-oldr_midr           59       0               stage           15MIN         inst          ./output/20260203-21A.dss    
-oldr_mouth          124      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-oldr_mouth          124      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-potato_sl           328      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-potato_sl           328      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-rmid015             144      838             flow            15MIN         inst          ./output/20260203-21A.dss    
-rmid015             144      838             stage           15MIN         inst          ./output/20260203-21A.dss    
-rmid027             133      3641            flow            15MIN         inst          ./output/20260203-21A.dss    
-rmid027             133      3641            stage           15MIN         inst          ./output/20260203-21A.dss    
-rmid040             126      3951            flow            15MIN         inst          ./output/20260203-21A.dss    
-rmid040             126      3951            stage           15MIN         inst          ./output/20260203-21A.dss    
+chipps_s_442        442      10700           flow            15MIN         inst          ./output/20260623-21A.dss    
+chipps_s_442        442      10700           stage           15MIN         inst          ./output/20260623-21A.dss    
+chvct000            229      1328            flow            15MIN         inst          ./output/20260623-21A.dss    
+chvct000            229      1328            stage           15MIN         inst          ./output/20260623-21A.dss    
+chwst000            232      3084            flow            15MIN         inst          ./output/20260623-21A.dss    
+chwst000            232      3084            stage           15MIN         inst          ./output/20260623-21A.dss    
+cosumnes            549      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+cosumnes            549      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+cvp                 216      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+cvp                 216      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+dcc                 365      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+dcc                 365      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+disappointment_sl    314      8130            flow            15MIN         inst          ./output/20260623-21A.dss    
+disappointment_sl    314      8130            stage           15MIN         inst          ./output/20260623-21A.dss    
+empire_tract_sl     37       0               flow            15MIN         inst          ./output/20260623-21A.dss    
+empire_tract_sl     37       0               stage           15MIN         inst          ./output/20260623-21A.dss    
+false_r             279      8937            flow            15MIN         inst          ./output/20260623-21A.dss    
+false_r             279      8937            stage           15MIN         inst          ./output/20260623-21A.dss    
+fish_cut            280      11364           flow            15MIN         inst          ./output/20260623-21A.dss    
+fish_cut            280      11364           stage           15MIN         inst          ./output/20260623-21A.dss    
+georgianna_sl       366      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+georgianna_sl       366      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+glc_e_us_bar        206      5533            flow            15MIN         inst          ./output/20260623-21A.dss    
+glc_e_us_bar        206      5533            stage           15MIN         inst          ./output/20260623-21A.dss    
+midr_sjr            161      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+midr_sjr            161      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+mtz                 441      5398            flow            15MIN         inst          ./output/20260623-21A.dss    
+mtz                 441      5398            stage           15MIN         inst          ./output/20260623-21A.dss    
+mtzma_sl_us_scg     512      6038            flow            15MIN         inst          ./output/20260623-21A.dss    
+mtzma_sl_us_scg     512      6038            stage           15MIN         inst          ./output/20260623-21A.dss    
+oldr_midr           59       0               flow            15MIN         inst          ./output/20260623-21A.dss    
+oldr_midr           59       0               stage           15MIN         inst          ./output/20260623-21A.dss    
+oldr_mouth          124      7062            flow            15MIN         inst          ./output/20260623-21A.dss    
+oldr_mouth          124      7062            stage           15MIN         inst          ./output/20260623-21A.dss    
+potato_sl           328      7158            flow            15MIN         inst          ./output/20260623-21A.dss    
+potato_sl           328      7158            stage           15MIN         inst          ./output/20260623-21A.dss    
+rmid015             144      838             flow            15MIN         inst          ./output/20260623-21A.dss    
+rmid015             144      838             stage           15MIN         inst          ./output/20260623-21A.dss    
+rmid027             133      3641            flow            15MIN         inst          ./output/20260623-21A.dss    
+rmid027             133      3641            stage           15MIN         inst          ./output/20260623-21A.dss    
+rmid040             126      3951            flow            15MIN         inst          ./output/20260623-21A.dss    
+rmid040             126      3951            stage           15MIN         inst          ./output/20260623-21A.dss    
 rmid129             129      3000            stage           15MIN         inst          ./output/weeklystage.dss    
-rock_sl_pp1         247      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-rock_sl_pp1         247      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-rold024             106      2718            flow            15MIN         inst          ./output/20260203-21A.dss    
-rold024             106      2718            stage           15MIN         inst          ./output/20260203-21A.dss    
-rold034             90       3021            flow            15MIN         inst          ./output/20260203-21A.dss    
-rold034             90       3021            stage           15MIN         inst          ./output/20260203-21A.dss    
-rold040             82       2609            flow            15MIN         inst          ./output/20260203-21A.dss    
-rold040             82       2609            stage           15MIN         inst          ./output/20260203-21A.dss    
-rold046             80       1431            flow            15MIN         inst          ./output/20260203-21A.dss    
-rold046             80       1431            stage           15MIN         inst          ./output/20260203-21A.dss    
-rold047             79       2766            flow            15MIN         inst          ./output/20260203-21A.dss    
+rock_sl_pp1         247      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+rock_sl_pp1         247      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+rold024             106      2718            flow            15MIN         inst          ./output/20260623-21A.dss    
+rold024             106      2718            stage           15MIN         inst          ./output/20260623-21A.dss    
+rold034             90       3021            flow            15MIN         inst          ./output/20260623-21A.dss    
+rold034             90       3021            stage           15MIN         inst          ./output/20260623-21A.dss    
+rold040             82       2609            flow            15MIN         inst          ./output/20260623-21A.dss    
+rold040             82       2609            stage           15MIN         inst          ./output/20260623-21A.dss    
+rold046             80       1431            flow            15MIN         inst          ./output/20260623-21A.dss    
+rold046             80       1431            stage           15MIN         inst          ./output/20260623-21A.dss    
+rold047             79       2766            flow            15MIN         inst          ./output/20260623-21A.dss    
 rold047             79       2766            stage           15MIN         inst          ./output/weeklystage.dss    
-rold059             71       3116            flow            15MIN         inst          ./output/20260203-21A.dss    
+rold059             71       3116            flow            15MIN         inst          ./output/20260623-21A.dss    
 rold059             71       3116            stage           15MIN         inst          ./output/weeklystage.dss    
-rold074             54       0               flow            15MIN         inst          ./output/20260203-21A.dss    
-rold074             54       0               stage           15MIN         inst          ./output/20260203-21A.dss    
-rsac075             437      11108           flow            15MIN         inst          ./output/20260203-21A.dss    
-rsac075             437      11108           stage           15MIN         inst          ./output/20260203-21A.dss    
-rsac081             436      5733            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsac081             436      5733            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsac101             430      9684            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsac101             430      9684            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsac123             423      1358            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsac123             423      1358            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsac128             421      8585            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsac128             421      8585            stage           15MIN         inst          ./output/20260203-21A.dss    
+rold074             54       0               flow            15MIN         inst          ./output/20260623-21A.dss    
+rold074             54       0               stage           15MIN         inst          ./output/20260623-21A.dss    
+rsac075             437      11108           flow            15MIN         inst          ./output/20260623-21A.dss    
+rsac075             437      11108           stage           15MIN         inst          ./output/20260623-21A.dss    
+rsac081             436      5733            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsac081             436      5733            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsac101             430      9684            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsac101             430      9684            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsac123             423      1358            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsac123             423      1358            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsac128             421      8585            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsac128             421      8585            stage           15MIN         inst          ./output/20260623-21A.dss    
 rsac155             414      11921           flow            1HOUR         ave           ./output/FREEPORTFLOW.dss    
 rsac155             414      11921           stage           1HOUR         ave           ./output/FREEPORTFLOW.dss    
-rsan007             52       366             flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan007             52       366             stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan018             83       4213            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan018             83       4213            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan037             42       286             flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan037             42       286             stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan043             319      8571            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan043             319      8571            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan046             31       5628            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan046             31       5628            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan052             24       2643            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan052             24       2643            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan058             20       2520            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan058             20       2520            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan063             14       3281            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan063             14       3281            stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan072             10       0               flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan072             10       0               stage           15MIN         inst          ./output/20260203-21A.dss    
-rsan112             17       4744            flow            15MIN         inst          ./output/20260203-21A.dss    
-rsan112             17       4744            stage           15MIN         inst          ./output/20260203-21A.dss    
-sac                 410      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-sac                 410      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-sac_emmaton         433      12134           flow            15MIN         inst          ./output/20260203-21A.dss    
-sac_emmaton         433      12134           stage           15MIN         inst          ./output/20260203-21A.dss    
-sjr_san_andreas     45       12421           flow            15MIN         inst          ./output/20260203-21A.dss    
-sjr_san_andreas     45       12421           stage           15MIN         inst          ./output/20260203-21A.dss    
-slbar002            406      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-slbar002            406      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-sldut007            274      7351            flow            15MIN         inst          ./output/20260203-21A.dss    
-sldut007            274      7351            stage           15MIN         inst          ./output/20260203-21A.dss    
-slmzu025            513      13883           flow            15MIN         inst          ./output/20260203-21A.dss    
-slmzu025            513      13883           stage           15MIN         inst          ./output/20260203-21A.dss    
-steamboat_sl        383      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-steamboat_sl        383      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-sutter_sl           379      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-sutter_sl           379      0               stage           15MIN         inst          ./output/20260203-21A.dss    
-vernalis            17       0               flow            15MIN         inst          ./output/20260203-21A.dss    
-vernalis            17       0               stage           15MIN         inst          ./output/20260203-21A.dss    
-yolo                398      0               flow            15MIN         inst          ./output/20260203-21A.dss    
-yolo                398      0               stage           15MIN         inst          ./output/20260203-21A.dss    
+rsan007             52       366             flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan007             52       366             stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan018             83       4213            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan018             83       4213            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan037             42       286             flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan037             42       286             stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan043             319      8571            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan043             319      8571            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan046             31       5628            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan046             31       5628            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan052             24       2643            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan052             24       2643            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan058             20       2520            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan058             20       2520            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan063             14       3281            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan063             14       3281            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan072             10       9400            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan072             10       9400            stage           15MIN         inst          ./output/20260623-21A.dss    
+rsan112             17       4744            flow            15MIN         inst          ./output/20260623-21A.dss    
+rsan112             17       4744            stage           15MIN         inst          ./output/20260623-21A.dss    
+sac                 410      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+sac                 410      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+sac_emmaton         433      12134           flow            15MIN         inst          ./output/20260623-21A.dss    
+sac_emmaton         433      12134           stage           15MIN         inst          ./output/20260623-21A.dss    
+sjr_san_andreas     45       12421           flow            15MIN         inst          ./output/20260623-21A.dss    
+sjr_san_andreas     45       12421           stage           15MIN         inst          ./output/20260623-21A.dss    
+slbar002            406      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+slbar002            406      0               stage           15MIN         inst          ./output/20260623-21A.dss    
+sldut007            274      7351            flow            15MIN         inst          ./output/20260623-21A.dss    
+sldut007            274      7351            stage           15MIN         inst          ./output/20260623-21A.dss    
+slmzu025            513      13883           flow            15MIN         inst          ./output/20260623-21A.dss    
+slmzu025            513      13883           stage           15MIN         inst          ./output/20260623-21A.dss    
+steamboat_sl        383      12528           flow            15MIN         inst          ./output/20260623-21A.dss    
+steamboat_sl        383      12528           stage           15MIN         inst          ./output/20260623-21A.dss    
+sutter_sl           379      3300            flow            15MIN         inst          ./output/20260623-21A.dss    
+sutter_sl           379      3300            stage           15MIN         inst          ./output/20260623-21A.dss    
+vernalis            17       0               flow            15MIN         inst          ./output/20260623-21A.dss    
+vernalis            17       0               stage           15MIN         inst          ./output/20260623-21A.dss    
+yolo                398      0               flow            15MIN         inst          ./output/20260623-21A.dss    
+yolo                398      0               stage           15MIN         inst          ./output/20260623-21A.dss    
 END
 
 OUTPUT_RESERVOIR
 NAME  RES_NAME  NODE  VARIABLE  INTERVAL  PERIOD_OP  FILE  
-CLFCT               clifton_court       72          flow            1DAY          ave           ./output/20260203-21A.dss    
+CLFCT               clifton_court       72          flow            1DAY          ave           ./output/20260623-21A.dss    
 CLFCTRMA            clifton_court       72          flow            15MIN         inst          ./output/RMAOUTPUT.dss    
 CLFCTRMA            clifton_court       none        stage           15MIN         inst          ./output/RMAOUTPUT.dss    
-clifton_court       clifton_court       72          flow            15MIN         inst          ./output/20260203-21A.dss    
-clifton_court       clifton_court       none        stage           15MIN         inst          ./output/20260203-21A.dss    
+clifton_court       clifton_court       72          flow            15MIN         inst          ./output/20260623-21A.dss    
+clifton_court       clifton_court       none        stage           15MIN         inst          ./output/20260623-21A.dss    
 END
 
 OUTPUT_GATE
