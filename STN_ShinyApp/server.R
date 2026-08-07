@@ -4511,247 +4511,108 @@ server <- function(input, output, session) {
       )
   }
   
-  make_entrainment_zones <- function(
-    nodes,
-    threshold,
-    high_node_buffer = 7500,
-    low_node_exclusion_buffer = 6500,
-    smooth_buffer = 1800,
-    concave_ratio = 0.38
-  ) {
+  make_entrainment_zones <- function(nodes, threshold) {
     
     validate(
       need(
-        nrow(nodes) >= 1,
+        nrow(nodes) >= 3,
         "Not enough nodes to create risk zones."
-      ),
-      need(
-        "entrainment" %in% names(nodes),
-        "Node data are missing the entrainment field."
       )
     )
     
-    threshold <- suppressWarnings(as.numeric(threshold))[1]
+    #-----------------------------------------
+    # High-risk nodes
+    #-----------------------------------------
     
-    if (is.na(threshold)) {
-      threshold <- 25
-    }
-    
-    delta_valid <- delta_boundary |>
-      sf::st_make_valid()
-    
-    nodes <- nodes |>
-      dplyr::filter(
-        !is.na(entrainment),
-        is.finite(entrainment)
-      ) |>
-      sf::st_make_valid() |>
-      sf::st_transform(sf::st_crs(delta_valid))
-    
-    validate(
-      need(
-        nrow(nodes) > 0,
-        "No valid mapped nodes are available."
-      )
-    )
-    
-    high_nodes <- nodes |>
-      dplyr::filter(
+    high_nodes <- nodes %>%
+      filter(
         entrainment >= threshold
       )
     
-    low_nodes <- nodes |>
-      dplyr::filter(
-        entrainment < threshold
-      )
-    
     validate(
       need(
-        nrow(high_nodes) > 0,
-        paste0(
-          "No nodes are greater than or equal to ",
+        nrow(high_nodes) >= 3,
+        paste(
+          "Not enough nodes exceed the",
           threshold,
-          "% entrainment."
+          "% threshold."
         )
       )
     )
     
-    # ------------------------------------------------------------
-    # 1. Build the main high-risk envelope from high-risk nodes.
-    # ------------------------------------------------------------
+    #-----------------------------------------
+    # Very-low-risk nodes
+    #
+    # These create "holes" in the high-risk
+    # polygon but only if entrainment is
+    # truly low.
+    #-----------------------------------------
     
-    high_node_core <- high_nodes |>
-      sf::st_buffer(high_node_buffer) |>
-      sf::st_union() |>
-      sf::st_make_valid()
+    low_nodes <- nodes %>%
+      filter(
+        entrainment < max(
+          10,
+          threshold * 0.25
+        )
+      )
     
-    if (nrow(high_nodes) >= 3) {
+    #-----------------------------------------
+    # Build high-risk envelope
+    #-----------------------------------------
+    
+    high_zone <- high_nodes %>%
+      st_buffer(6000) %>%
+      st_union() %>%
+      st_convex_hull()
+    
+    #-----------------------------------------
+    # Build low-risk exclusion areas
+    #-----------------------------------------
+    
+    if (nrow(low_nodes) >= 3) {
       
-      high_points_union <- high_nodes |>
-        sf::st_geometry() |>
-        sf::st_union()
+      low_zone <- low_nodes %>%
+        st_union() %>%
+        st_convex_hull() %>%
+        st_buffer(4000)
       
-      high_hull <- tryCatch(
-        {
-          lwgeom::st_concave_hull(
-            high_points_union,
-            ratio = concave_ratio,
-            allow_holes = FALSE
-          )
-        },
-        error = function(e) {
-          sf::st_convex_hull(high_points_union)
-        }
+      high_zone <- st_difference(
+        high_zone,
+        low_zone
       )
       
-      high_hull_buffered <- high_hull |>
-        sf::st_buffer(high_node_buffer) |>
-        sf::st_make_valid()
-      
-      high_zone <- sf::st_union(
-        high_node_core,
-        high_hull_buffered
-      ) |>
-        sf::st_make_valid()
-      
-    } else {
-      
-      high_zone <- high_node_core
     }
     
-    # ------------------------------------------------------------
-    # 2. Carve out low-risk node neighborhoods.
-    # This prevents the broad high-risk envelope from swallowing
-    # nodes below the selected threshold.
-    # ------------------------------------------------------------
+    #-----------------------------------------
+    # Clip to Delta boundary
+    #-----------------------------------------
     
-    if (nrow(low_nodes) > 0) {
-      
-      low_exclusion_zone <- low_nodes |>
-        sf::st_buffer(low_node_exclusion_buffer) |>
-        sf::st_union() |>
-        sf::st_make_valid()
-      
-      high_zone <- suppressWarnings(
-        sf::st_difference(
-          high_zone,
-          low_exclusion_zone
-        )
-      ) |>
-        sf::st_make_valid()
-    }
-    
-    # ------------------------------------------------------------
-    # 3. Re-add a smaller required buffer around high-risk nodes.
-    # This guarantees every node >= threshold stays inside high risk,
-    # even after the low-risk carve-out.
-    # ------------------------------------------------------------
-    
-    high_node_required_zone <- high_nodes |>
-      sf::st_buffer(high_node_buffer * 0.55) |>
-      sf::st_union() |>
-      sf::st_make_valid()
-    
-    high_zone <- sf::st_union(
+    high_zone <- st_intersection(
       high_zone,
-      high_node_required_zone
-    ) |>
-      sf::st_make_valid()
-    
-    # ------------------------------------------------------------
-    # 4. Smooth the result, but not so much that it washes over
-    # the low-risk carve-outs.
-    # ------------------------------------------------------------
-    
-    high_zone <- high_zone |>
-      sf::st_buffer(smooth_buffer) |>
-      sf::st_buffer(-smooth_buffer) |>
-      sf::st_make_valid()
-    
-    # Re-apply low-risk carve-out lightly after smoothing.
-    if (nrow(low_nodes) > 0) {
-      
-      low_exclusion_zone_final <- low_nodes |>
-        sf::st_buffer(low_node_exclusion_buffer * 0.75) |>
-        sf::st_union() |>
-        sf::st_make_valid()
-      
-      high_zone <- suppressWarnings(
-        sf::st_difference(
-          high_zone,
-          low_exclusion_zone_final
-        )
-      ) |>
-        sf::st_make_valid()
-      
-      # Re-add required high-node buffer one more time.
-      high_zone <- sf::st_union(
-        high_zone,
-        high_node_required_zone
-      ) |>
-        sf::st_make_valid()
-    }
-    
-    # ------------------------------------------------------------
-    # 5. Clip to Delta boundary.
-    # ------------------------------------------------------------
-    
-    high_zone <- suppressWarnings(
-      sf::st_intersection(
-        high_zone,
-        delta_valid
-      )
-    ) |>
-      sf::st_make_valid()
-    
-    high_zone <- suppressWarnings(
-      sf::st_collection_extract(
-        high_zone,
-        "POLYGON"
-      )
+      delta_boundary
     )
     
-    validate(
-      need(
-        length(high_zone) > 0,
-        "The high-risk polygon could not be created."
-      )
-    )
+    #-----------------------------------------
+    # Everything else becomes low risk
+    #-----------------------------------------
     
-    # ------------------------------------------------------------
-    # 6. Low risk is everything in the Delta boundary outside
-    # the high-risk envelope.
-    # ------------------------------------------------------------
-    
-    low_zone <- suppressWarnings(
-      sf::st_difference(
-        delta_valid,
-        sf::st_union(high_zone)
-      )
-    ) |>
-      sf::st_make_valid()
-    
-    low_zone <- suppressWarnings(
-      sf::st_collection_extract(
-        low_zone,
-        "POLYGON"
-      )
+    low_zone <- st_difference(
+      delta_boundary,
+      high_zone
     )
     
     list(
-      high = sf::st_transform(
-        sf::st_as_sf(high_zone),
+      high = st_transform(
+        high_zone,
         4326
       ),
-      low = sf::st_transform(
-        sf::st_as_sf(low_zone),
+      low = st_transform(
+        low_zone,
         4326
       )
     )
+    
   }
-  
-  
-  
   make_ptm_spatial_comparison_map <- function(
     df,
     threshold
@@ -7969,6 +7830,20 @@ server <- function(input, output, session) {
               " - ",
               Location
             )
+          ),
+
+          Legend_Label = vapply(
+            Run_Label,
+            function(x) {
+              paste(
+                strwrap(
+                  x,
+                  width = 28
+                ),
+                collapse = "<br>"
+              )
+            },
+            character(1)
           )
         ) %>%
         arrange(
@@ -7989,7 +7864,7 @@ server <- function(input, output, session) {
         plot_df,
         x = ~Prediction_Final,
         y = ~Node_Label,
-        color = ~Run_Label,
+        color = ~Legend_Label,
         type = "bar",
         orientation = "h",
         text = ~sprintf(
@@ -8015,11 +7890,21 @@ server <- function(input, output, session) {
             ),
             automargin = TRUE
           ),
+          legend = list(
+            orientation = "h",
+            x = 0,
+            xanchor = "left",
+            y = -0.18,
+            yanchor = "top",
+            font = list(
+              size = 11
+            )
+          ),
           margin = list(
             l = 300,
             r = 60,
             t = 80,
-            b = 120
+            b = 220
           )
         )
       
@@ -8070,7 +7955,17 @@ server <- function(input, output, session) {
           size = 14,
           color = "#1F1F1F"
         ),
-        margin = list(l = 100, r = 60, t = 80, b = 120)
+        margin = if (
+          input$comparison_model %in%
+          c(
+            "PTM Emulator 7-Day Entrainment",
+            "PTM Emulator 30-Day Entrainment"
+          )
+        ) {
+          list(l = 300, r = 60, t = 80, b = 220)
+        } else {
+          list(l = 100, r = 60, t = 80, b = 120)
+        }
       ) %>%
       config(
         displaylogo = FALSE,
@@ -8345,21 +8240,33 @@ server <- function(input, output, session) {
               DSM2_Node
             )
           ),
-          
-          DSM2_Node = factor(
-            DSM2_Node,
-            levels = rev(
-              unique(
-                DSM2_Node[
-                  order(
-                    DSM2_Node_Number,
-                    DSM2_Node
-                  )
-                ]
-              )
+
+          Node_Label = ifelse(
+            is.na(Location) | Location == "",
+            as.character(DSM2_Node),
+            paste0(
+              DSM2_Node,
+              " - ",
+              Location
             )
-          ),
-          
+          )
+        ) %>%
+        arrange(
+          DSM2_Node_Number,
+          DSM2_Node
+        )
+
+      plot_data$Node_Label <- factor(
+        plot_data$Node_Label,
+        levels = rev(
+          unique(
+            plot_data$Node_Label
+          )
+        )
+      )
+
+      plot_data <- plot_data %>%
+        mutate(
           Hover_Text = paste0(
             "<b>Archive date:</b> ",
             Archive_Date,
@@ -8380,7 +8287,7 @@ server <- function(input, output, session) {
       plot_ly(
         plot_data,
         x = ~Prediction_Final,
-        y = ~DSM2_Node,
+        y = ~Node_Label,
         color = ~Comparison_Label,
         type = "bar",
         orientation = "h",
@@ -8405,7 +8312,7 @@ server <- function(input, output, session) {
           ),
           
           yaxis = list(
-            title = "<b>DSM2 Node</b>",
+            title = "<b>DSM2 Node and Location</b>",
             automargin = TRUE
           ),
           
@@ -8419,7 +8326,7 @@ server <- function(input, output, session) {
           ),
           
           margin = list(
-            l = 110,
+            l = 300,
             r = 50,
             t = 80,
             b = 80
