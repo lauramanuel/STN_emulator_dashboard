@@ -181,7 +181,100 @@ MODEL_MAP_FILES <- list(
     "Station_Location.xlsx"
   )
 )
+get_model_map_delta_layers <- local({
+  
+  cached_layers <- NULL
+  
+  function() {
+    
+    if (!is.null(cached_layers)) {
+      return(cached_layers)
+    }
+    
+    boundary_path <- file.path(
+      "STN_EMULATOR",
+      "shapefiles",
+      "Bay_Delta_Poly_New.shp"
+    )
+    
+    channels_path <- file.path(
+      "STN_EMULATOR",
+      "shapefiles",
+      "hydro_delta_marsh.shp"
+    )
+    
+    if (!file.exists(boundary_path)) {
+      warning(
+        "Delta boundary shapefile was not found: ",
+        boundary_path
+      )
+      
+      boundary <- NULL
+    } else {
+      boundary <- sf::st_read(
+        boundary_path,
+        quiet = TRUE
+      ) |>
+        sf::st_make_valid() |>
+        sf::st_transform(4326)
+    }
+    
+    if (!file.exists(channels_path)) {
+      warning(
+        "Delta channel shapefile was not found: ",
+        channels_path
+      )
+      
+      channels <- NULL
+    } else {
+      channels <- sf::st_read(
+        channels_path,
+        quiet = TRUE
+      ) |>
+        sf::st_make_valid() |>
+        sf::st_transform(4326)
+    }
+    
+    cached_layers <<- list(
+      boundary = boundary,
+      channels = channels
+    )
+    
+    cached_layers
+  }
+})
 
+
+add_delta_background_layers <- function(map) {
+  
+  delta_layers <- get_model_map_delta_layers()
+  
+  if (!is.null(delta_layers$boundary)) {
+    map <- map |>
+      leaflet::addPolygons(
+        data = delta_layers$boundary,
+        fillColor = "#00BFC4",
+        fillOpacity = 0.18,
+        color = "#00E5FF",
+        opacity = 0.95,
+        weight = 2,
+        group = "Delta Boundary"
+      )
+  }
+  
+  if (!is.null(delta_layers$channels)) {
+    map <- map |>
+      leaflet::addPolylines(
+        data = delta_layers$channels,
+        color = "#00FFFF",
+        weight = 2,
+        opacity = 0.95,
+        group = "Delta Channels"
+      )
+  }
+  
+  map
+}
 
 MODEL_MAP_COLUMNS <- list(
   required_node = c(
@@ -505,12 +598,18 @@ create_model_map <- function(
     node_color = "blue",
     station_color = "green"
 ) {
+  
   map <- leaflet::leaflet() |>
     leaflet::addProviderTiles(
-      MODEL_MAP_STYLE$provider
-    )
+      MODEL_MAP_STYLE$provider,
+      group = "Esri World Imagery"
+    ) |>
+    add_delta_background_layers()
   
-  layer_groups <- character(0)
+  layer_groups <- c(
+    "Delta Boundary",
+    "Delta Channels"
+  )
   
   has_nodes <- (
     isTRUE(include_nodes) &&
@@ -612,15 +711,16 @@ create_model_map <- function(
     )
   }
   
-  if (length(layer_groups) > 1) {
-    map <- map |>
-      leaflet::addLayersControl(
-        overlayGroups = layer_groups,
-        options = leaflet::layersControlOptions(
-          collapsed = FALSE
-        )
+  map <- map |>
+    leaflet::addLayersControl(
+      baseGroups = c(
+        "Esri World Imagery"
+      ),
+      overlayGroups = unique(layer_groups),
+      options = leaflet::layersControlOptions(
+        collapsed = FALSE
       )
-  }
+    )
   
   longitude <- if (has_stations) {
     station_points$LON
@@ -652,6 +752,7 @@ create_model_map <- function(
     latitude = latitude
   )
 }
+
 
 
 build_map_group_ui <- function(group_key) {
@@ -828,6 +929,7 @@ model_maps_server <- function(input, output, session) {
       )
     })
   }
+  
   
   for (group_key in names(MAP_UI_GROUPS)) {
     local({
