@@ -27,6 +27,7 @@ DSM2_NODE_SHP <- file.path( SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_nodes.sh
 DSM2_CHANNEL_SHP <- file.path(  SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_channels_centerlines.shp")
 DSM2_CHANNEL_DEF <- file.path(  "STN_EMULATOR",  "channel_std_delta_grid_NAVD_20121214.txt")
 DSM2_PATH_FILE <- file.path(  "STN_EMULATOR",  "Region_Location_Node_Path.csv")
+source("Server_Data_Access.R")
 
 required_model_files <- c(
   file.path(MODEL_DIR, "PTM_Entrainment7d_lightgbm.txt"),
@@ -208,13 +209,23 @@ observed_source_links <- list(
   XGEO_C = "https://waterdata.usgs.gov/monitoring-location/USGS-11447905/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true"
 )
 
-download_observed_source_file <- function(url, fileext = ".txt") {
+download_observed_source_file <- function(
+  url,
+  fileext = ".txt",
+  attempts = 3,
+  pause_seconds = 1
+) {
   destination <- tempfile(fileext = fileext)
   old_timeout <- getOption("timeout")
+  previous_user_agent <- getOption("HTTPUserAgent")
 
   on.exit(
     {
-      options(timeout = old_timeout)
+      options(
+        timeout = old_timeout,
+        HTTPUserAgent = previous_user_agent
+      )
+
       if (file.exists(destination)) {
         unlink(destination)
       }
@@ -222,16 +233,8 @@ download_observed_source_file <- function(url, fileext = ".txt") {
     add = TRUE
   )
 
-  options(timeout = max(120, old_timeout))
-
-  previous_user_agent <- getOption("HTTPUserAgent")
-
-  on.exit(
-    options(HTTPUserAgent = previous_user_agent),
-    add = TRUE
-  )
-
   options(
+    timeout = max(120, old_timeout),
     HTTPUserAgent = paste(
       "Mozilla/5.0",
       "(Windows NT 10.0; Win64; x64)",
@@ -240,21 +243,52 @@ download_observed_source_file <- function(url, fileext = ".txt") {
     )
   )
 
-  utils::download.file(
-    url = url,
-    destfile = destination,
-    mode = "wb",
-    method = "libcurl",
-    quiet = TRUE
-  )
+  last_error <- NULL
 
-  if (!file.exists(destination) || file.info(destination)$size == 0) {
-    stop("The source returned an empty response.")
+  for (attempt in seq_len(attempts)) {
+    if (file.exists(destination)) {
+      unlink(destination)
+    }
+
+    success <- tryCatch(
+      {
+        suppressWarnings(
+          utils::download.file(
+            url = url,
+            destfile = destination,
+            mode = "wb",
+            method = "libcurl",
+            quiet = TRUE
+          )
+        )
+
+        file.exists(destination) &&
+          isTRUE(file.info(destination)$size > 0)
+      },
+      error = function(error_condition) {
+        last_error <<- conditionMessage(error_condition)
+        FALSE
+      }
+    )
+
+    if (isTRUE(success)) {
+      return(readLines(destination, warn = FALSE))
+    }
+
+    if (attempt < attempts) {
+      Sys.sleep(pause_seconds * attempt)
+    }
   }
 
-  readLines(destination, warn = FALSE)
+  stop(
+    paste0(
+      "The source could not be reached after ",
+      attempts,
+      " attempts",
+      if (!is.null(last_error)) paste0(": ", last_error) else "."
+    )
+  )
 }
-
 
 parse_observed_dates <- function(values) {
   text_values <- trimws(as.character(values))
@@ -729,19 +763,45 @@ trailing_seven_summary <- function(data) {
   )
 }
 
-safe_observed_summary <- function(expression) {
-  tryCatch(
-    {
-      value <- force(expression)
-      list(ok = TRUE, data = value, message = NULL)
-    },
-    error = function(e) {
-      list(
-        ok = FALSE,
-        data = NULL,
-        message = conditionMessage(e)
-      )
+safe_observed_summary <- function(
+  expression,
+  attempts = 2,
+  pause_seconds = 1
+) {
+  expression_code <- substitute(expression)
+  evaluation_environment <- parent.frame()
+  last_error <- NULL
+
+  for (attempt in seq_len(attempts)) {
+    result <- tryCatch(
+      {
+        value <- eval(expression_code, envir = evaluation_environment)
+        list(ok = TRUE, data = value, message = NULL)
+      },
+      error = function(error_condition) {
+        last_error <<- conditionMessage(error_condition)
+        NULL
+      }
+    )
+
+    if (!is.null(result)) {
+      return(result)
     }
+
+    if (attempt < attempts) {
+      Sys.sleep(pause_seconds * attempt)
+    }
+  }
+
+  list(
+    ok = FALSE,
+    data = NULL,
+    message = paste0(
+      "The live source was temporarily unavailable after ",
+      attempts,
+      " attempts. The existing input value is being used."
+    ),
+    technical_message = last_error
   )
 }
 
@@ -785,8 +845,8 @@ server <- function(input, output, session) {
             "Retrieving the latest observed trailing 7-day average."
           } else {
             paste0(
-              "Live trailing 7-day average unavailable; the existing box value was retained. ",
-              state$message
+              "Live source refresh is temporarily unavailable. ",
+              "The existing box value is being used and the app will retry when this input method is selected again."
             )
           }
         )
@@ -800,8 +860,8 @@ server <- function(input, output, session) {
         tags$div(
           class = "observed-flow-note",
           paste0(
-            "Live trailing 7-day average unavailable; the existing box value was retained. ",
-            if (!is.null(item$message)) item$message else ""
+            "Live source refresh is temporarily unavailable. ",
+            "The existing box value is being used. Re-select Enter a Single Set of Values to retry."
           )
         )
       )
@@ -1194,9 +1254,9 @@ server <- function(input, output, session) {
       if (length(failed_labels) > 0) {
         showNotification(
           paste0(
-            "Some observed inputs could not be refreshed: ",
+            "Live values are temporarily unavailable for: ",
             paste(failed_labels, collapse = ", "),
-            ". Existing box values were retained."
+            ". Existing input values are being used; re-select the input method to retry."
           ),
           type = "warning",
           duration = 10
@@ -1278,6 +1338,35 @@ server <- function(input, output, session) {
     file.path(SHAPE_DIR, "hydro_delta_marsh.shp"),
     quiet = TRUE
   ) %>% st_transform(26910)
+  delta_boundary_wgs84 <- st_transform(
+    delta_boundary,
+    4326
+  )
+  
+  delta_channels_wgs84 <- st_transform(
+    delta_channels,
+    4326
+  )
+  
+  add_delta_background_layers <- function(map) {
+    map %>%
+      leaflet::addPolygons(
+        data = delta_boundary_wgs84,
+        fillColor = "#eef7f9",
+        fillOpacity = 0.12,
+        color = "#ffffff",
+        opacity = 0.85,
+        weight = 1,
+        group = "Delta Boundary"
+      ) %>%
+      leaflet::addPolylines(
+        data = delta_channels_wgs84,
+        color = "#67C1D4",
+        weight = 1.2,
+        opacity = 0.85,
+        group = "Delta Channels"
+      )
+  }
   
   dsm2_nodes_raw <- st_read(
     DSM2_NODE_SHP,
@@ -2167,225 +2256,164 @@ server <- function(input, output, session) {
   download_usgs_daily_flow <- function(
     site_number,
     start_date,
-    end_date
+    end_date,
+    search_buffer_days = 14
   ) {
-    
+
     start_date <- as.Date(start_date)
     end_date <- as.Date(end_date)
-    
+
+    query_start <- start_date - search_buffer_days
+    query_end <- end_date + search_buffer_days
+
     query_url <- paste0(
       "https://waterservices.usgs.gov/nwis/iv/",
-      "?format=rdb",
+      "?format=json",
       "&sites=", site_number,
-      "&startDT=", format(start_date, "%Y-%m-%d"),
-      "&endDT=", format(end_date + 1, "%Y-%m-%d"),
+      "&startDT=", format(query_start, "%Y-%m-%d"),
+      "&endDT=", format(query_end + 1, "%Y-%m-%d"),
       "&parameterCd=00060",
       "&siteStatus=all"
     )
     
-    temporary_file <- tempfile(
-      fileext = ".txt"
+
+    response_lines <- download_observed_source_file(
+      url = query_url,
+      fileext = ".json",
+      attempts = 3,
+      pause_seconds = 1
     )
-    
-    old_timeout <- getOption("timeout")
-    
-    on.exit(
-      {
-        options(timeout = old_timeout)
-        
-        if (file.exists(temporary_file)) {
-          unlink(temporary_file)
-        }
-      },
-      add = TRUE
+
+    response_text <- paste(
+      response_lines,
+      collapse = "\n"
     )
-    
-    options(
-      timeout = max(
-        120,
-        old_timeout
-      )
-    )
-    
-    download_status <- tryCatch(
-      {
-        utils::download.file(
-          url = query_url,
-          destfile = temporary_file,
-          mode = "wb",
-          method = "libcurl",
-          quiet = TRUE
-        )
-        
-        TRUE
-      },
-      error = function(e) {
-        FALSE
-      },
-      warning = function(w) {
-        invokeRestart("muffleWarning")
-      }
-    )
-    
-    if (
-      !isTRUE(download_status) ||
-      !file.exists(temporary_file) ||
-      file.info(temporary_file)$size == 0
-    ) {
-      stop(
-        paste0(
-          "Could not download XGEO source data from USGS site ",
-          site_number,
-          ". Check the internet connection and try again."
-        )
-      )
-    }
-    
-    text_lines <- readLines(
-      temporary_file,
-      warn = FALSE
-    )
-    
-    data_lines <- text_lines[
-      !grepl(
-        "^#",
-        text_lines
-      ) &
-        nzchar(
-          trimws(
-            text_lines
+
+    response_json <- tryCatch(
+      jsonlite::fromJSON(
+        response_text,
+        simplifyVector = FALSE
+      ),
+      error = function(error_condition) {
+        stop(
+          paste0(
+            "USGS JSON response for site ",
+            site_number,
+            " could not be parsed: ",
+            conditionMessage(error_condition)
           )
         )
-    ]
-    
-    if (length(data_lines) < 3) {
+      }
+    )
+
+    time_series <- response_json$value$timeSeries
+
+    if (
+      is.null(time_series) ||
+      length(time_series) == 0
+    ) {
       stop(
         paste0(
           "USGS site ",
           site_number,
-          " returned no usable discharge records for ",
-          format(start_date),
-          " through ",
-          format(end_date),
-          "."
+          " returned no discharge time series near the requested dates."
         )
       )
     }
-    
-    usgs_data <- utils::read.delim(
-      text = paste(
-        data_lines,
-        collapse = "\n"
-      ),
-      header = TRUE,
-      sep = "\t",
-      stringsAsFactors = FALSE,
-      check.names = FALSE,
-      na.strings = c(
-        "",
-        "Ice",
-        "Eqp",
-        "Ssn",
-        "Rat",
-        "Dis"
-      )
-    )
-    
-    # The second non-comment RDB row contains field-width/type codes.
-    if (
-      nrow(usgs_data) > 0 &&
-      grepl(
-        "^[0-9]+[a-zA-Z]$",
-        as.character(
-          usgs_data$agency_cd[1]
-        )
-      )
-    ) {
-      usgs_data <- usgs_data[
-        -1,
-        ,
-        drop = FALSE
-      ]
+
+    observation_rows <- list()
+    row_index <- 1L
+
+    for (series_item in time_series) {
+
+      value_groups <- series_item$values
+
+      if (
+        is.null(value_groups) ||
+        length(value_groups) == 0
+      ) {
+        next
+      }
+
+      for (value_group in value_groups) {
+
+        observations <- value_group$value
+
+        if (
+          is.null(observations) ||
+          length(observations) == 0
+        ) {
+          next
+        }
+
+        for (observation in observations) {
+
+          observation_rows[[row_index]] <- data.frame(
+            DATE_TIME = as.character(
+              observation$dateTime
+            ),
+            FLOW = suppressWarnings(
+              as.numeric(
+                observation$value
+              )
+            ),
+            stringsAsFactors = FALSE
+          )
+
+          row_index <- row_index + 1L
+        }
+      }
     }
-    
-    date_time_column <- names(usgs_data)[
-      normalize_archive_name(
-        names(usgs_data)
-      ) %in% c(
-        "DATETIME",
-        "DATE"
-      )
-    ][1]
-    
-    discharge_columns <- names(usgs_data)[
-      grepl(
-        "00060",
-        names(usgs_data),
-        fixed = TRUE
-      ) &
-        !grepl(
-          "_cd$",
-          names(usgs_data),
-          ignore.case = TRUE
-        )
-    ]
-    
-    if (
-      is.na(date_time_column) ||
-      length(discharge_columns) == 0
-    ) {
+
+    if (length(observation_rows) == 0) {
       stop(
         paste0(
-          "USGS response for site ",
+          "USGS site ",
           site_number,
-          " did not contain the expected date-time and discharge fields."
+          " returned no usable discharge observations."
         )
       )
     }
-    
-    discharge_column <- discharge_columns[1]
-    
+
+    usgs_values <- bind_rows(
+      observation_rows
+    )
+
     parsed_date_time <- suppressWarnings(
       as.POSIXct(
-        usgs_data[[date_time_column]],
+        usgs_values$DATE_TIME,
         tz = "America/Los_Angeles"
       )
     )
-    
-    # A second parser is useful when timestamps include an explicit
-    # UTC offset that the local R installation handles differently.
+
     missing_date_time <- is.na(
       parsed_date_time
     )
-    
+
     if (any(missing_date_time)) {
       parsed_date_time[missing_date_time] <- suppressWarnings(
         as.POSIXct(
-          usgs_data[[date_time_column]][missing_date_time],
-          format = "%Y-%m-%d %H:%M",
+          usgs_values$DATE_TIME[missing_date_time],
+          format = "%Y-%m-%dT%H:%M:%S%z",
           tz = "America/Los_Angeles"
         )
       )
     }
-    
-    flow_values <- suppressWarnings(
-      as.numeric(
-        usgs_data[[discharge_column]]
-      )
-    )
-    
+
     daily_data <- data.frame(
       DATE = as.Date(
         parsed_date_time,
         tz = "America/Los_Angeles"
       ),
-      FLOW = flow_values
+      FLOW = usgs_values$FLOW
     ) %>%
       filter(
         !is.na(DATE),
-        !is.na(FLOW)
+        is.finite(FLOW)
       ) %>%
-      group_by(DATE) %>%
+      group_by(
+        DATE
+      ) %>%
       summarise(
         FLOW = mean(
           FLOW,
@@ -2393,31 +2421,32 @@ server <- function(input, output, session) {
         ),
         .groups = "drop"
       ) %>%
-      filter(
-        DATE >= start_date,
-        DATE <= end_date
+      arrange(
+        DATE
       )
-    
-    validate(
-      need(
-        nrow(daily_data) > 0,
+
+    if (nrow(daily_data) == 0) {
+      stop(
         paste0(
-          "No daily discharge values were available from USGS site ",
+          "No usable daily discharge values were available from USGS site ",
           site_number,
-          " for the required dates."
+          " within ",
+          search_buffer_days,
+          " days of the requested period."
         )
       )
-    )
-    
+    }
+
     daily_data
   }
-  
-  
-  get_archive_xgeo <- function(
-    file_path,
-    required_dates
+
+
+  fill_with_nearest_available_date <- function(
+    available_data,
+    required_dates,
+    value_columns
   ) {
-    
+
     required_dates <- sort(
       unique(
         as.Date(
@@ -2425,38 +2454,132 @@ server <- function(input, output, session) {
         )
       )
     )
-    
+
+    available_data <- available_data %>%
+      mutate(
+        DATE = as.Date(
+          DATE
+        )
+      ) %>%
+      filter(
+        !is.na(DATE)
+      ) %>%
+      arrange(
+        DATE
+      )
+
+    if (
+      nrow(available_data) == 0 ||
+      length(required_dates) == 0
+    ) {
+      return(
+        tibble::tibble()
+      )
+    }
+
+    nearest_rows <- lapply(
+      required_dates,
+      function(required_date) {
+
+        usable_rows <- available_data %>%
+          filter(
+            if_all(
+              all_of(
+                value_columns
+              ),
+              ~ !is.na(.x)
+            )
+          )
+
+        if (nrow(usable_rows) == 0) {
+          return(NULL)
+        }
+
+        nearest_index <- which.min(
+          abs(
+            as.numeric(
+              usable_rows$DATE - required_date
+            )
+          )
+        )
+
+        selected_row <- usable_rows[
+          nearest_index,
+          ,
+          drop = FALSE
+        ]
+
+        selected_row$SOURCE_DATE <- selected_row$DATE
+        selected_row$DATE <- required_date
+
+        selected_row
+      }
+    )
+
+    nearest_rows <- nearest_rows[
+      !vapply(
+        nearest_rows,
+        is.null,
+        logical(1)
+      )
+    ]
+
+    if (length(nearest_rows) == 0) {
+      return(
+        tibble::tibble()
+      )
+    }
+
+    bind_rows(
+      nearest_rows
+    )
+  }
+
+
+  get_archive_xgeo <- function(
+    file_path,
+    required_dates
+  ) {
+
+    required_dates <- sort(
+      unique(
+        as.Date(
+          required_dates
+        )
+      )
+    )
+
     required_dates <- required_dates[
       !is.na(
         required_dates
       )
     ]
-    
+
     validate(
       need(
         length(required_dates) > 0,
-        "No valid archive dates were available for downloading XGEO."
+        "No valid archive dates were available for calculating XGEO."
       )
     )
-    
+
     archive_date_folder <- dirname(
       file_path
     )
-    
+
     cache_file <- file.path(
       archive_date_folder,
       "XGEO_USGS_daily.csv"
     )
-    
+
     cached_xgeo <- tibble::tibble(
       DATE = as.Date(character()),
       XGEO_A = numeric(),
       XGEO_C = numeric(),
       XGEO = numeric()
     )
-    
+
     if (file.exists(cache_file)) {
-      
+
       cached_xgeo <- tryCatch(
         {
           readr::read_csv(
@@ -2485,56 +2608,89 @@ server <- function(input, output, session) {
         }
       )
     }
-    
+
+    complete_cached_dates <- cached_xgeo$DATE[
+      !is.na(cached_xgeo$XGEO_A) &
+        !is.na(cached_xgeo$XGEO_C) &
+        !is.na(cached_xgeo$XGEO)
+    ]
+
     missing_dates <- setdiff(
       required_dates,
-      cached_xgeo$DATE
+      complete_cached_dates
     )
-    
+
     if (length(missing_dates) > 0) {
-      
+
       download_start <- min(
         missing_dates
       )
-      
+
       download_end <- max(
         missing_dates
       )
-      
-      xgeo_a <- download_usgs_daily_flow(
-        site_number = "11447890",
-        start_date = download_start,
-        end_date = download_end
-      ) %>%
-        rename(
-          XGEO_A = FLOW
-        )
-      
-      xgeo_c <- download_usgs_daily_flow(
-        site_number = "11447905",
-        start_date = download_start,
-        end_date = download_end
-      ) %>%
-        rename(
-          XGEO_C = FLOW
-        )
-      
-      downloaded_xgeo <- full_join(
-        xgeo_a,
-        xgeo_c,
+
+      xgeo_a_download <- tryCatch(
+        {
+          download_usgs_daily_flow(
+            site_number = "11447890",
+            start_date = download_start,
+            end_date = download_end,
+            search_buffer_days = 14
+          ) %>%
+            rename(
+              XGEO_A = FLOW
+            )
+        },
+        error = function(error_condition) {
+          NULL
+        }
+      )
+
+      xgeo_c_download <- tryCatch(
+        {
+          download_usgs_daily_flow(
+            site_number = "11447905",
+            start_date = download_start,
+            end_date = download_end,
+            search_buffer_days = 14
+          ) %>%
+            rename(
+              XGEO_C = FLOW
+            )
+        },
+        error = function(error_condition) {
+          NULL
+        }
+      )
+
+      available_xgeo <- full_join(
+        if (is.null(xgeo_a_download)) {
+          tibble::tibble(
+            DATE = as.Date(character()),
+            XGEO_A = numeric()
+          )
+        } else {
+          xgeo_a_download
+        },
+        if (is.null(xgeo_c_download)) {
+          tibble::tibble(
+            DATE = as.Date(character()),
+            XGEO_C = numeric()
+          )
+        } else {
+          xgeo_c_download
+        },
         by = "DATE"
       ) %>%
-        arrange(
-          DATE
+        bind_rows(
+          cached_xgeo %>%
+            select(
+              DATE,
+              XGEO_A,
+              XGEO_C
+            )
         ) %>%
-        mutate(
-          XGEO = XGEO_A - XGEO_C
-        )
-      
-      cached_xgeo <- bind_rows(
-        cached_xgeo,
-        downloaded_xgeo
-      ) %>%
         arrange(
           DATE
         ) %>%
@@ -2542,16 +2698,43 @@ server <- function(input, output, session) {
           DATE,
           .keep_all = TRUE
         )
-      
-      try(
-        readr::write_csv(
-          cached_xgeo,
-          cache_file
-        ),
-        silent = TRUE
+
+      filled_xgeo <- fill_with_nearest_available_date(
+        available_data = available_xgeo,
+        required_dates = missing_dates,
+        value_columns = c(
+          "XGEO_A",
+          "XGEO_C"
+        )
       )
+
+      if (nrow(filled_xgeo) > 0) {
+
+        filled_xgeo <- filled_xgeo %>%
+          mutate(
+            XGEO = XGEO_A - XGEO_C
+          ) %>%
+          select(
+            DATE,
+            XGEO_A,
+            XGEO_C,
+            XGEO
+          )
+
+        cached_xgeo <- bind_rows(
+          cached_xgeo,
+          filled_xgeo
+        ) %>%
+          arrange(
+            DATE
+          ) %>%
+          distinct(
+            DATE,
+            .keep_all = TRUE
+          )
+      }
     }
-    
+
     result <- cached_xgeo %>%
       filter(
         DATE %in% required_dates
@@ -2559,7 +2742,7 @@ server <- function(input, output, session) {
       arrange(
         DATE
       )
-    
+
     missing_after_download <- setdiff(
       required_dates,
       result$DATE[
@@ -2568,25 +2751,124 @@ server <- function(input, output, session) {
         )
       ]
     )
-    
-    validate(
-      need(
-        length(missing_after_download) == 0,
+
+    if (length(missing_after_download) > 0) {
+
+      nearest_cached <- fill_with_nearest_available_date(
+        available_data = cached_xgeo %>%
+          filter(
+            !is.na(XGEO_A),
+            !is.na(XGEO_C),
+            !is.na(XGEO)
+          ),
+        required_dates = missing_after_download,
+        value_columns = c(
+          "XGEO_A",
+          "XGEO_C",
+          "XGEO"
+        )
+      )
+
+      if (nrow(nearest_cached) > 0) {
+
+        result <- bind_rows(
+          result,
+          nearest_cached %>%
+            select(
+              DATE,
+              XGEO_A,
+              XGEO_C,
+              XGEO
+            )
+        ) %>%
+          arrange(
+            DATE
+          ) %>%
+          distinct(
+            DATE,
+            .keep_all = TRUE
+          )
+      }
+    }
+
+    still_missing <- setdiff(
+      required_dates,
+      result$DATE[
+        !is.na(
+          result$XGEO
+        )
+      ]
+    )
+
+    if (length(still_missing) > 0) {
+
+      # Final non-stopping safeguard. This is used only when neither the
+      # USGS service nor the local cache contains a nearby complete record.
+      fallback_rows <- tibble::tibble(
+        DATE = as.Date(
+          still_missing
+        ),
+        XGEO_A = 0,
+        XGEO_C = 0,
+        XGEO = 0
+      )
+
+      result <- bind_rows(
+        result,
+        fallback_rows
+      ) %>%
+        arrange(
+          DATE
+        ) %>%
+        distinct(
+          DATE,
+          .keep_all = TRUE
+        )
+
+      warning(
         paste0(
-          "XGEO could not be calculated for these date(s): ",
+          "No nearby USGS XGEO records were available for ",
           paste(
             format(
-              missing_after_download
+              still_missing
             ),
             collapse = ", "
           ),
-          "."
-        )
+          ". XGEO was set to 0 so the emulator could continue."
+        ),
+        call. = FALSE
       )
+    }
+
+    cached_xgeo <- bind_rows(
+      cached_xgeo,
+      result
+    ) %>%
+      arrange(
+        DATE
+      ) %>%
+      distinct(
+        DATE,
+        .keep_all = TRUE
+      )
+
+    try(
+      readr::write_csv(
+        cached_xgeo,
+        cache_file
+      ),
+      silent = TRUE
     )
-    
-    result
+
+    result %>%
+      filter(
+        DATE %in% required_dates
+      ) %>%
+      arrange(
+        DATE
+      )
   }
+
   
   
   read_archive_csv <- function(file_path) {
@@ -3303,10 +3585,30 @@ server <- function(input, output, session) {
       )
     )
     
+    latest_dcc <- measured %>%
+      filter(
+        !is.na(DCC)
+      ) %>%
+      slice_tail(
+        n = 1
+      ) %>%
+      pull(
+        DCC
+      )
+
+    if (length(latest_dcc) == 0) {
+      latest_dcc <- 0
+    }
+
     mean_archive_inputs(
       measured
     ) %>%
       mutate(
+        # DCC is a daily status: 0 = closed and 1 = open.
+        # Use the status recorded on the latest measured date.
+        DCC = as.numeric(
+          latest_dcc[1]
+        ),
         Window_Start_Date = min(
           measured$DATE
         ),
@@ -4209,108 +4511,247 @@ server <- function(input, output, session) {
       )
   }
   
-  make_entrainment_zones <- function(nodes, threshold) {
+  make_entrainment_zones <- function(
+    nodes,
+    threshold,
+    high_node_buffer = 7500,
+    low_node_exclusion_buffer = 6500,
+    smooth_buffer = 1800,
+    concave_ratio = 0.38
+  ) {
     
     validate(
       need(
-        nrow(nodes) >= 3,
+        nrow(nodes) >= 1,
         "Not enough nodes to create risk zones."
+      ),
+      need(
+        "entrainment" %in% names(nodes),
+        "Node data are missing the entrainment field."
       )
     )
     
-    #-----------------------------------------
-    # High-risk nodes
-    #-----------------------------------------
+    threshold <- suppressWarnings(as.numeric(threshold))[1]
     
-    high_nodes <- nodes %>%
-      filter(
+    if (is.na(threshold)) {
+      threshold <- 25
+    }
+    
+    delta_valid <- delta_boundary |>
+      sf::st_make_valid()
+    
+    nodes <- nodes |>
+      dplyr::filter(
+        !is.na(entrainment),
+        is.finite(entrainment)
+      ) |>
+      sf::st_make_valid() |>
+      sf::st_transform(sf::st_crs(delta_valid))
+    
+    validate(
+      need(
+        nrow(nodes) > 0,
+        "No valid mapped nodes are available."
+      )
+    )
+    
+    high_nodes <- nodes |>
+      dplyr::filter(
         entrainment >= threshold
       )
     
+    low_nodes <- nodes |>
+      dplyr::filter(
+        entrainment < threshold
+      )
+    
     validate(
       need(
-        nrow(high_nodes) >= 3,
-        paste(
-          "Not enough nodes exceed the",
+        nrow(high_nodes) > 0,
+        paste0(
+          "No nodes are greater than or equal to ",
           threshold,
-          "% threshold."
+          "% entrainment."
         )
       )
     )
     
-    #-----------------------------------------
-    # Very-low-risk nodes
-    #
-    # These create "holes" in the high-risk
-    # polygon but only if entrainment is
-    # truly low.
-    #-----------------------------------------
+    # ------------------------------------------------------------
+    # 1. Build the main high-risk envelope from high-risk nodes.
+    # ------------------------------------------------------------
     
-    low_nodes <- nodes %>%
-      filter(
-        entrainment < max(
-          10,
-          threshold * 0.25
-        )
-      )
+    high_node_core <- high_nodes |>
+      sf::st_buffer(high_node_buffer) |>
+      sf::st_union() |>
+      sf::st_make_valid()
     
-    #-----------------------------------------
-    # Build high-risk envelope
-    #-----------------------------------------
-    
-    high_zone <- high_nodes %>%
-      st_buffer(6000) %>%
-      st_union() %>%
-      st_convex_hull()
-    
-    #-----------------------------------------
-    # Build low-risk exclusion areas
-    #-----------------------------------------
-    
-    if (nrow(low_nodes) >= 3) {
+    if (nrow(high_nodes) >= 3) {
       
-      low_zone <- low_nodes %>%
-        st_union() %>%
-        st_convex_hull() %>%
-        st_buffer(4000)
+      high_points_union <- high_nodes |>
+        sf::st_geometry() |>
+        sf::st_union()
       
-      high_zone <- st_difference(
-        high_zone,
-        low_zone
+      high_hull <- tryCatch(
+        {
+          lwgeom::st_concave_hull(
+            high_points_union,
+            ratio = concave_ratio,
+            allow_holes = FALSE
+          )
+        },
+        error = function(e) {
+          sf::st_convex_hull(high_points_union)
+        }
       )
       
+      high_hull_buffered <- high_hull |>
+        sf::st_buffer(high_node_buffer) |>
+        sf::st_make_valid()
+      
+      high_zone <- sf::st_union(
+        high_node_core,
+        high_hull_buffered
+      ) |>
+        sf::st_make_valid()
+      
+    } else {
+      
+      high_zone <- high_node_core
     }
     
-    #-----------------------------------------
-    # Clip to Delta boundary
-    #-----------------------------------------
+    # ------------------------------------------------------------
+    # 2. Carve out low-risk node neighborhoods.
+    # This prevents the broad high-risk envelope from swallowing
+    # nodes below the selected threshold.
+    # ------------------------------------------------------------
     
-    high_zone <- st_intersection(
+    if (nrow(low_nodes) > 0) {
+      
+      low_exclusion_zone <- low_nodes |>
+        sf::st_buffer(low_node_exclusion_buffer) |>
+        sf::st_union() |>
+        sf::st_make_valid()
+      
+      high_zone <- suppressWarnings(
+        sf::st_difference(
+          high_zone,
+          low_exclusion_zone
+        )
+      ) |>
+        sf::st_make_valid()
+    }
+    
+    # ------------------------------------------------------------
+    # 3. Re-add a smaller required buffer around high-risk nodes.
+    # This guarantees every node >= threshold stays inside high risk,
+    # even after the low-risk carve-out.
+    # ------------------------------------------------------------
+    
+    high_node_required_zone <- high_nodes |>
+      sf::st_buffer(high_node_buffer * 0.55) |>
+      sf::st_union() |>
+      sf::st_make_valid()
+    
+    high_zone <- sf::st_union(
       high_zone,
-      delta_boundary
+      high_node_required_zone
+    ) |>
+      sf::st_make_valid()
+    
+    # ------------------------------------------------------------
+    # 4. Smooth the result, but not so much that it washes over
+    # the low-risk carve-outs.
+    # ------------------------------------------------------------
+    
+    high_zone <- high_zone |>
+      sf::st_buffer(smooth_buffer) |>
+      sf::st_buffer(-smooth_buffer) |>
+      sf::st_make_valid()
+    
+    # Re-apply low-risk carve-out lightly after smoothing.
+    if (nrow(low_nodes) > 0) {
+      
+      low_exclusion_zone_final <- low_nodes |>
+        sf::st_buffer(low_node_exclusion_buffer * 0.75) |>
+        sf::st_union() |>
+        sf::st_make_valid()
+      
+      high_zone <- suppressWarnings(
+        sf::st_difference(
+          high_zone,
+          low_exclusion_zone_final
+        )
+      ) |>
+        sf::st_make_valid()
+      
+      # Re-add required high-node buffer one more time.
+      high_zone <- sf::st_union(
+        high_zone,
+        high_node_required_zone
+      ) |>
+        sf::st_make_valid()
+    }
+    
+    # ------------------------------------------------------------
+    # 5. Clip to Delta boundary.
+    # ------------------------------------------------------------
+    
+    high_zone <- suppressWarnings(
+      sf::st_intersection(
+        high_zone,
+        delta_valid
+      )
+    ) |>
+      sf::st_make_valid()
+    
+    high_zone <- suppressWarnings(
+      sf::st_collection_extract(
+        high_zone,
+        "POLYGON"
+      )
     )
     
-    #-----------------------------------------
-    # Everything else becomes low risk
-    #-----------------------------------------
+    validate(
+      need(
+        length(high_zone) > 0,
+        "The high-risk polygon could not be created."
+      )
+    )
     
-    low_zone <- st_difference(
-      delta_boundary,
-      high_zone
+    # ------------------------------------------------------------
+    # 6. Low risk is everything in the Delta boundary outside
+    # the high-risk envelope.
+    # ------------------------------------------------------------
+    
+    low_zone <- suppressWarnings(
+      sf::st_difference(
+        delta_valid,
+        sf::st_union(high_zone)
+      )
+    ) |>
+      sf::st_make_valid()
+    
+    low_zone <- suppressWarnings(
+      sf::st_collection_extract(
+        low_zone,
+        "POLYGON"
+      )
     )
     
     list(
-      high = st_transform(
-        high_zone,
+      high = sf::st_transform(
+        sf::st_as_sf(high_zone),
         4326
       ),
-      low = st_transform(
-        low_zone,
+      low = sf::st_transform(
+        sf::st_as_sf(low_zone),
         4326
       )
     )
-    
   }
+  
+  
+  
   make_ptm_spatial_comparison_map <- function(
     df,
     threshold
@@ -5565,6 +6006,22 @@ server <- function(input, output, session) {
             Scenario_Name,
             "<br>Condition: ",
             Condition,
+            if (
+              "Window_End_Date" %in% names(scenario_point)
+            ) {
+              paste0(
+                "<br>Observed date: ",
+                format(
+                  as.Date(
+                    Window_End_Date,
+                    origin = "1970-01-01"
+                  ),
+                  "%m/%d/%Y"
+                )
+              )
+            } else {
+              ""
+            },
             "<br>Export: ",
             fmt_int(EXP),
             " cfs",
@@ -5623,7 +6080,7 @@ server <- function(input, output, session) {
           "% Risk"
         ),
         subtitle =
-          "The selected model run is highlighted in red.",
+          "The selected emulator result(s) are highlighted in red.",
         x = "Combined Export, EXP (cfs)",
         y = "Vernalis Flow, VER (cfs)"
       ) +
@@ -6516,7 +6973,7 @@ server <- function(input, output, session) {
         )]],
         paste(
           condition_label,
-          ": PTM 7-Day Rolling Predictions"
+          ": 7-Day Rolling Entrainment Prediction"
         )
       )
     })
@@ -6737,9 +7194,15 @@ server <- function(input, output, session) {
           Window_End_Date = if (
             "Window_End_Date" %in% names(.)
           ) {
-            Window_End_Date
+            format(
+              as.Date(
+                Window_End_Date,
+                origin = "1970-01-01"
+              ),
+              "%m/%d/%Y"
+            )
           } else {
-            as.Date(NA)
+            NA_character_
           },
           
           DSM2_Node,
@@ -6774,9 +7237,15 @@ server <- function(input, output, session) {
           Window_End_Date = if (
             "Window_End_Date" %in% names(.)
           ) {
-            Window_End_Date
+            format(
+              as.Date(
+                Window_End_Date,
+                origin = "1970-01-01"
+              ),
+              "%m/%d/%Y"
+            )
           } else {
-            as.Date(NA)
+            NA_character_
           },
           
           DSM2_Node,
@@ -6826,9 +7295,21 @@ server <- function(input, output, session) {
             )
           ) {
             paste(
-              Window_Start_Date,
+              format(
+                as.Date(
+                  Window_Start_Date,
+                  origin = "1970-01-01"
+                ),
+                "%m/%d/%Y"
+              ),
               "to",
-              Window_End_Date
+              format(
+                as.Date(
+                  Window_End_Date,
+                  origin = "1970-01-01"
+                ),
+                "%m/%d/%Y"
+              )
             )
           } else {
             NA_character_
@@ -7034,9 +7515,15 @@ server <- function(input, output, session) {
           Window_End_Date = if (
             "Window_End_Date" %in% names(.)
           ) {
-            Window_End_Date
+            format(
+              as.Date(
+                Window_End_Date,
+                origin = "1970-01-01"
+              ),
+              "%m/%d/%Y"
+            )
           } else {
-            as.Date(NA)
+            NA_character_
           },
           
           Scenario_Name,
@@ -7065,6 +7552,66 @@ server <- function(input, output, session) {
     })
     
     
+    output[[paste0(
+      prefix,
+      "_eh7_table"
+    )]] <- renderTable({
+
+      result <- eh_result()
+
+      req(
+        nrow(result) > 0
+      )
+
+      if (
+        "Window_End_Date" %in% names(result) &&
+        any(
+          !is.na(
+            result$Window_End_Date
+          )
+        )
+      ) {
+        result <- result %>%
+          mutate(
+            Observed_Date = as.Date(
+              Window_End_Date,
+              origin = "1970-01-01"
+            )
+          ) %>%
+          arrange(
+            Observed_Date
+          ) %>%
+          slice_tail(
+            n = 7
+          )
+      } else {
+        result <- result %>%
+          mutate(
+            Observed_Date = as.Date(NA)
+          )
+      }
+
+      result %>%
+        transmute(
+          Observed_Date = ifelse(
+            is.na(Observed_Date),
+            NA_character_,
+            format(
+              Observed_Date,
+              "%m/%d/%Y"
+            )
+          ),
+
+          Event_Horizon_Miles = sprintf(
+            "%.1f",
+            as.numeric(
+              Prediction_Final
+            )
+          )
+        )
+    })
+
+
     output[[paste0(
       prefix,
       "_eh_map"
@@ -7122,9 +7669,26 @@ server <- function(input, output, session) {
       prefix,
       "_eh_scatter"
     )]] <- renderPlotly({
-      
-      make_eh_scatter(
+
+      input_method <- input[[paste0(
+        prefix,
+        "_input_method"
+      )]]
+
+      scatter_data <- if (
+        is_current &&
+        identical(
+          input_method,
+          "folder"
+        )
+      ) {
+        eh_result()
+      } else {
         selected_eh_result()
+      }
+
+      make_eh_scatter(
+        scatter_data
       )
     })
     
@@ -7953,7 +8517,79 @@ server <- function(input, output, session) {
         )
     }
   })
-  
+  output$omri_comparison_spatial_map <- renderLeaflet({
+    
+    if (
+      is.null(input$build_omri_comparison) ||
+      input$build_omri_comparison == 0
+    ) {
+      return(
+        make_empty_comparison_map(
+          paste(
+            "<b>OMRI spatial comparison map is ready.</b>",
+            "<br>",
+            "Select one or more archive dates, choose a forecast model,",
+            "and click Run All Available OMRI Scenarios."
+          )
+        )
+      )
+    }
+    
+    data <- omri_comparison_results()
+    
+    validate(
+      need(
+        nrow(data) > 0,
+        "No OMRI comparison results are available for the spatial map."
+      )
+    )
+    
+    map_data <- data %>%
+      mutate(
+        Saved_Run_ID = paste0(
+          Archive_Date,
+          " | OMRI ",
+          OMRI_Scenario
+        )
+      )
+    
+    selected_model <- input$omri_comparison_model
+    
+    if (identical(selected_model, "PTM Emulator 7-Day Entrainment")) {
+      
+      threshold <- suppressWarnings(
+        as.numeric(input$omri_comparison_map_threshold)
+      )
+      
+      threshold <- threshold[1]
+      
+      if (is.na(threshold)) {
+        threshold <- 25
+      }
+      
+      make_ptm_spatial_comparison_map(
+        df = map_data,
+        threshold = threshold
+      )
+      
+    } else if (identical(selected_model, "Event Horizon")) {
+      
+      make_eh_spatial_comparison_map(
+        df = map_data
+      )
+      
+    } else {
+      
+      make_empty_comparison_map(
+        paste(
+          "<b>Spatial comparison is not available for this OMRI model.</b>",
+          "<br>",
+          "PTM Emulator supports spatial risk-zone overlays.",
+          "Event Horizon supports pathway-line overlays."
+        )
+      )
+    }
+  })
   
   output$download_omri_comparison <- downloadHandler(
     
@@ -7988,19 +8624,40 @@ server <- function(input, output, session) {
   
   output$about_info_table <- render_gt({
     data <- data.frame(
-      Name = c("Adam Witt", "Puneet Khatavkar", "Jo Anna Beck", "Josh Israel"),
-      Role = c("Activity Lead","Quality review", "Contracting Officers Representative", "Reclamation Activity Oversight"),
-      Email = c("adam.witt@stantec.com", "", "jbeck@usbr.gov", "jaisrael@usbr.gov")
+      Name = c(
+        "Adam Witt",
+        "Puneet Khatavkar",
+        "Laura Manuel",
+        "Roja Kaveh Garna",
+        "Jo Anna Beck",
+        "Josh Israel"
+      ),
+      Role = c(
+        "Activity Lead",
+        "Quality review",
+        "App Developer",
+        "App Developer",
+        "Contracting Officers Representative",
+        "Reclamation Activity Oversight"
+      ),
+      Email = c(
+        "adam.witt@stantec.com",
+        "Puneet.Khatavkar@stantec.com",
+        "Laura.Manuel@stantec.com",
+        "Roja.KavehGarna@stantec.com",
+        "jbeck@usbr.gov",
+        "jaisrael@usbr.gov"
+      )
     )
     about_info_table <- gt(data)
     about_info_table |>
       tab_row_group(
         label = html("<strong><em>Bureau of Reclamation,</strong><br>Bay-Delta Office</em>"), 
-        rows = 3:4
+        rows = 5:6
       )|>
       tab_row_group(
         label = html("<strong><em>Stantec Inc.,</strong><br>Sacramento C St. Office</em>"), 
-        rows = 1:2
+        rows = 1:4
       )|>
       cols_align(
         align = "center",
@@ -8584,8 +9241,14 @@ server <- function(input, output, session) {
   ]
   
   create_node_map <- function(data, marker_color) {
-    leaflet::leaflet(data) |>
-      leaflet::addProviderTiles(leaflet::providers$Esri.WorldImagery) |>
+    
+    leaflet::leaflet(data) %>%
+      leaflet::addProviderTiles(
+        leaflet::providers$Esri.WorldImagery,
+        group = "Esri World Imagery"
+      ) %>%
+      add_delta_background_layers() %>%
+      
       leaflet::addAwesomeMarkers(
         lng = ~X,
         lat = ~Y,
@@ -8599,8 +9262,10 @@ server <- function(input, output, session) {
           "<strong>Node: </strong>", DSM2_Node,
           "<br><strong>Location: </strong>", Location,
           "<br><strong>Region: </strong>", Region
-        )
-      ) |>
+        ),
+        group = "DSM2 Nodes"
+      ) %>%
+      
       leaflet::addLabelOnlyMarkers(
         lng = ~X,
         lat = ~Y,
@@ -8616,12 +9281,29 @@ server <- function(input, output, session) {
             "font-weight" = "bold",
             "text-shadow" = "0 0 2px black"
           )
+        ),
+        group = "Node Labels"
+      ) %>%
+      
+      leaflet::addLayersControl(
+        baseGroups = c(
+          "Esri World Imagery"
+        ),
+        overlayGroups = c(
+          "Delta Boundary",
+          "Delta Channels",
+          "DSM2 Nodes",
+          "Node Labels"
+        ),
+        options = leaflet::layersControlOptions(
+          collapsed = FALSE
         )
-      ) |>
+      ) %>%
+      
       leaflet::setView(
         lng = -121.60,
         lat = 38.05,
-        zoom = 15
+        zoom = 9
       )
   }
   
@@ -8937,5 +9619,6 @@ server <- function(input, output, session) {
         data_row.padding = px(8)
       )
   })
+  ptm_maps_server(input = input,output = output,session = session)
   
 }
