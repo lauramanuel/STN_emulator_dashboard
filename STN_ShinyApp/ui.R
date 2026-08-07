@@ -933,7 +933,16 @@ ui <- dashboardPage(
                         tags$hr(),
                         
                         
-                        h5(style = "text-align: justify;", "Data Refresh Schedule: Some available datasets will be uploaded weekly provided by our client (DWR? CCWD? USBR?). Other data will be retrieved through API from certain USGS gauges upon request from users within the App. For the specific data information, please go to Chapter XX (link to the chapter) on the Data Access page."),
+                        h5(
+                          style = "text-align: justify;",
+                          tags$b("Data Refresh Schedule: "),
+                          "Default flow values for observed conditions will be retrieved daily through API from public sources and updated daily based on the trailing 7-day average flow. Data within the archive folder on the observed conditions and forecast conditions pages will be uploaded weekly during the OMR entrainment management season. For additional information on data sources please go to the ",
+                          tags$a(
+                            "Data Access page",
+                            href = "#shiny-tab-data"
+                          ),
+                          "."
+                        ),
                         h5("GitHub Application Repository:",
                            tags$a("PTM Emulator Dashboard", style = "font-style: italic;",
                                   href = "https://github.com/lauramanuel/STN_emulator_dashboard")
@@ -953,29 +962,43 @@ ui <- dashboardPage(
                     height = 2000,
                     div(style = "margin-left: 60px;margin-right:120px",
                         h2("Overview"),
-                        h5(style = "text-align: justify;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)???s",
-                           tags$a("hydraulic footprint project",
-                                  href = "https://github.com/cchang-ccwater/CCWD_Hydraulic_Footprints"),
-                           tags$b("."),
-                           "Further details on the model development, the original training datasets, and the comparative evaluation of model results are available in the CCWD report ",
-                           tags$sup(
-                             tags$a(
-                               "(1)",
-                               href = "#reference",
-                               rel = "noopener noreferrer"
-                             ),
-                             style = "font-size:0.75em;"
-                           ),
-                           " and other related studies that are currently underway or have been published ",
-                           tags$sup(
-                             tags$a(
-                               "(2, 3)",
-                               href = "#reference",
-                               rel = "noopener noreferrer"
-                             ),
-                             style = "font-size:0.75em;"
-                           ),
-                           "."
+                        h5(
+                          style = "text-align: justify;",
+                          "This ShinyApp makes forecast and/or presents hindcast results of particle entrainment and hydraulic footprint metrics within the Sacramento-San Joaquin Delta based on either 7-day or 30-day average flows. The observed conditions simulations and predictions are used for estimating entrainment and hydraulic footprint metrics based on actual conditions, with the option for users to modify flow variables to user-defined values. The forecast conditions simulations are used for estimating entrainment and hydraulic footprint metrics based on previously forecasted conditions during the OMR entrainment management season. The scenario comparison allows users to compare particle entrainment and hydraulic footprint metrics for different scenarios generated using either observed conditions or forecast conditions.",
+                          tags$br(),
+                          tags$br(),
+                          "This interactive application is designed based on machine learning models developed by the Contra Costa Water District's (CCWD) ",
+                          tags$a(
+                            "hydraulic footprint project",
+                            href = "https://github.com/cchang-ccwater/CCWD_Hydraulic_Footprints",
+                            target = "_blank",
+                            rel = "noopener noreferrer"
+                          ),
+                          ". Further details on the model development, the original training datasets, and the comparative evaluation of model results are available in the CCWD report ",
+                          tags$sup(
+                            tags$a(
+                              "(1)",
+                              href = "#ref-1"
+                            ),
+                            style = "font-size:0.75em;"
+                          ),
+                          " and other related studies that are currently being prepared for publication ",
+                          tags$sup(
+                            tags$a(
+                              "(2)",
+                              href = "#ref-2"
+                            ),
+                            style = "font-size:0.75em;"
+                          ),
+                          ", ",
+                          tags$sup(
+                            tags$a(
+                              "(3)",
+                              href = "#ref-3"
+                            ),
+                            style = "font-size:0.75em;"
+                          ),
+                          "."
                         ),
                         
                         h3("Author & Contact Information"),
@@ -1029,17 +1052,17 @@ ui <- dashboardPage(
                         ),
                         h3(id = "reference",  "References"),                
                         div(style = "margin-left: 60px;",
-                            h5(style = "text-align: justify;", "Contra Costa Water District.(2026) Intuitive Quantitative Metrics for Rapid Assessment of Entrainment Risks and Salmonid Responses in The Delta.",
+                            h5(id = "ref-1", style = "text-align: justify;", "Contra Costa Water District.(2026) Intuitive Quantitative Metrics for Rapid Assessment of Entrainment Risks and Salmonid Responses in The Delta.",
                                tags$a(
                                  "[Link]",
                                  href = "https://stantec.sharepoint.com/:w:/r/teams/LTOTechnicalSupport2025-2030/Shared%20Documents/CCWD%20Entrainment%20TM/20260419_CCWD_Entrainment_memo.docx?d=wa6ce67b163e341bd9a8e2767a75736e9&csf=1&web=1&e=b9mjqJ"
                                )),
-                            h5(style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
+                            h5(id = "ref-2", style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
                                tags$a(
                                  "[Link]",
                                  href = ""
                                )),
-                            h5(style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
+                            h5(id = "ref-3", style = "text-align: justify;", "Chang, C.-F., et. al., (2026). XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. Journal of XXXXX: XX-XXXXXXXXXX.",
                                tags$a(
                                  "[Link]",
                                  href = ""
