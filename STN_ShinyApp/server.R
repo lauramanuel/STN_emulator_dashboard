@@ -4511,108 +4511,247 @@ server <- function(input, output, session) {
       )
   }
   
-  make_entrainment_zones <- function(nodes, threshold) {
+  make_entrainment_zones <- function(
+    nodes,
+    threshold,
+    high_node_buffer = 7500,
+    low_node_exclusion_buffer = 6500,
+    smooth_buffer = 1800,
+    concave_ratio = 0.38
+  ) {
     
     validate(
       need(
-        nrow(nodes) >= 3,
+        nrow(nodes) >= 1,
         "Not enough nodes to create risk zones."
+      ),
+      need(
+        "entrainment" %in% names(nodes),
+        "Node data are missing the entrainment field."
       )
     )
     
-    #-----------------------------------------
-    # High-risk nodes
-    #-----------------------------------------
+    threshold <- suppressWarnings(as.numeric(threshold))[1]
     
-    high_nodes <- nodes %>%
-      filter(
+    if (is.na(threshold)) {
+      threshold <- 25
+    }
+    
+    delta_valid <- delta_boundary |>
+      sf::st_make_valid()
+    
+    nodes <- nodes |>
+      dplyr::filter(
+        !is.na(entrainment),
+        is.finite(entrainment)
+      ) |>
+      sf::st_make_valid() |>
+      sf::st_transform(sf::st_crs(delta_valid))
+    
+    validate(
+      need(
+        nrow(nodes) > 0,
+        "No valid mapped nodes are available."
+      )
+    )
+    
+    high_nodes <- nodes |>
+      dplyr::filter(
         entrainment >= threshold
       )
     
+    low_nodes <- nodes |>
+      dplyr::filter(
+        entrainment < threshold
+      )
+    
     validate(
       need(
-        nrow(high_nodes) >= 3,
-        paste(
-          "Not enough nodes exceed the",
+        nrow(high_nodes) > 0,
+        paste0(
+          "No nodes are greater than or equal to ",
           threshold,
-          "% threshold."
+          "% entrainment."
         )
       )
     )
     
-    #-----------------------------------------
-    # Very-low-risk nodes
-    #
-    # These create "holes" in the high-risk
-    # polygon but only if entrainment is
-    # truly low.
-    #-----------------------------------------
+    # ------------------------------------------------------------
+    # 1. Build the main high-risk envelope from high-risk nodes.
+    # ------------------------------------------------------------
     
-    low_nodes <- nodes %>%
-      filter(
-        entrainment < max(
-          10,
-          threshold * 0.25
-        )
-      )
+    high_node_core <- high_nodes |>
+      sf::st_buffer(high_node_buffer) |>
+      sf::st_union() |>
+      sf::st_make_valid()
     
-    #-----------------------------------------
-    # Build high-risk envelope
-    #-----------------------------------------
-    
-    high_zone <- high_nodes %>%
-      st_buffer(6000) %>%
-      st_union() %>%
-      st_convex_hull()
-    
-    #-----------------------------------------
-    # Build low-risk exclusion areas
-    #-----------------------------------------
-    
-    if (nrow(low_nodes) >= 3) {
+    if (nrow(high_nodes) >= 3) {
       
-      low_zone <- low_nodes %>%
-        st_union() %>%
-        st_convex_hull() %>%
-        st_buffer(4000)
+      high_points_union <- high_nodes |>
+        sf::st_geometry() |>
+        sf::st_union()
       
-      high_zone <- st_difference(
-        high_zone,
-        low_zone
+      high_hull <- tryCatch(
+        {
+          lwgeom::st_concave_hull(
+            high_points_union,
+            ratio = concave_ratio,
+            allow_holes = FALSE
+          )
+        },
+        error = function(e) {
+          sf::st_convex_hull(high_points_union)
+        }
       )
       
+      high_hull_buffered <- high_hull |>
+        sf::st_buffer(high_node_buffer) |>
+        sf::st_make_valid()
+      
+      high_zone <- sf::st_union(
+        high_node_core,
+        high_hull_buffered
+      ) |>
+        sf::st_make_valid()
+      
+    } else {
+      
+      high_zone <- high_node_core
     }
     
-    #-----------------------------------------
-    # Clip to Delta boundary
-    #-----------------------------------------
+    # ------------------------------------------------------------
+    # 2. Carve out low-risk node neighborhoods.
+    # This prevents the broad high-risk envelope from swallowing
+    # nodes below the selected threshold.
+    # ------------------------------------------------------------
     
-    high_zone <- st_intersection(
+    if (nrow(low_nodes) > 0) {
+      
+      low_exclusion_zone <- low_nodes |>
+        sf::st_buffer(low_node_exclusion_buffer) |>
+        sf::st_union() |>
+        sf::st_make_valid()
+      
+      high_zone <- suppressWarnings(
+        sf::st_difference(
+          high_zone,
+          low_exclusion_zone
+        )
+      ) |>
+        sf::st_make_valid()
+    }
+    
+    # ------------------------------------------------------------
+    # 3. Re-add a smaller required buffer around high-risk nodes.
+    # This guarantees every node >= threshold stays inside high risk,
+    # even after the low-risk carve-out.
+    # ------------------------------------------------------------
+    
+    high_node_required_zone <- high_nodes |>
+      sf::st_buffer(high_node_buffer * 0.55) |>
+      sf::st_union() |>
+      sf::st_make_valid()
+    
+    high_zone <- sf::st_union(
       high_zone,
-      delta_boundary
+      high_node_required_zone
+    ) |>
+      sf::st_make_valid()
+    
+    # ------------------------------------------------------------
+    # 4. Smooth the result, but not so much that it washes over
+    # the low-risk carve-outs.
+    # ------------------------------------------------------------
+    
+    high_zone <- high_zone |>
+      sf::st_buffer(smooth_buffer) |>
+      sf::st_buffer(-smooth_buffer) |>
+      sf::st_make_valid()
+    
+    # Re-apply low-risk carve-out lightly after smoothing.
+    if (nrow(low_nodes) > 0) {
+      
+      low_exclusion_zone_final <- low_nodes |>
+        sf::st_buffer(low_node_exclusion_buffer * 0.75) |>
+        sf::st_union() |>
+        sf::st_make_valid()
+      
+      high_zone <- suppressWarnings(
+        sf::st_difference(
+          high_zone,
+          low_exclusion_zone_final
+        )
+      ) |>
+        sf::st_make_valid()
+      
+      # Re-add required high-node buffer one more time.
+      high_zone <- sf::st_union(
+        high_zone,
+        high_node_required_zone
+      ) |>
+        sf::st_make_valid()
+    }
+    
+    # ------------------------------------------------------------
+    # 5. Clip to Delta boundary.
+    # ------------------------------------------------------------
+    
+    high_zone <- suppressWarnings(
+      sf::st_intersection(
+        high_zone,
+        delta_valid
+      )
+    ) |>
+      sf::st_make_valid()
+    
+    high_zone <- suppressWarnings(
+      sf::st_collection_extract(
+        high_zone,
+        "POLYGON"
+      )
     )
     
-    #-----------------------------------------
-    # Everything else becomes low risk
-    #-----------------------------------------
+    validate(
+      need(
+        length(high_zone) > 0,
+        "The high-risk polygon could not be created."
+      )
+    )
     
-    low_zone <- st_difference(
-      delta_boundary,
-      high_zone
+    # ------------------------------------------------------------
+    # 6. Low risk is everything in the Delta boundary outside
+    # the high-risk envelope.
+    # ------------------------------------------------------------
+    
+    low_zone <- suppressWarnings(
+      sf::st_difference(
+        delta_valid,
+        sf::st_union(high_zone)
+      )
+    ) |>
+      sf::st_make_valid()
+    
+    low_zone <- suppressWarnings(
+      sf::st_collection_extract(
+        low_zone,
+        "POLYGON"
+      )
     )
     
     list(
-      high = st_transform(
-        high_zone,
+      high = sf::st_transform(
+        sf::st_as_sf(high_zone),
         4326
       ),
-      low = st_transform(
-        low_zone,
+      low = sf::st_transform(
+        sf::st_as_sf(low_zone),
         4326
       )
     )
-    
   }
+  
+  
+  
   make_ptm_spatial_comparison_map <- function(
     df,
     threshold
