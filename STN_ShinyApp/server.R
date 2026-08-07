@@ -7989,7 +7989,7 @@ server <- function(input, output, session) {
         plot_df,
         x = ~Prediction_Final,
         y = ~Node_Label,
-        color = ~Run_Label,
+        color = ~Legend_Label,
         type = "bar",
         orientation = "h",
         text = ~sprintf(
@@ -8015,11 +8015,21 @@ server <- function(input, output, session) {
             ),
             automargin = TRUE
           ),
+          legend = list(
+            orientation = "h",
+            x = 0,
+            xanchor = "left",
+            y = -0.18,
+            yanchor = "top",
+            font = list(
+              size = 11
+            )
+          ),
           margin = list(
             l = 300,
             r = 60,
             t = 80,
-            b = 120
+            b = 220
           )
         )
       
@@ -8070,7 +8080,17 @@ server <- function(input, output, session) {
           size = 14,
           color = "#1F1F1F"
         ),
-        margin = list(l = 100, r = 60, t = 80, b = 120)
+        margin = if (
+          input$comparison_model %in%
+          c(
+            "PTM Emulator 7-Day Entrainment",
+            "PTM Emulator 30-Day Entrainment"
+          )
+        ) {
+          list(l = 300, r = 60, t = 80, b = 220)
+        } else {
+          list(l = 100, r = 60, t = 80, b = 120)
+        }
       ) %>%
       config(
         displaylogo = FALSE,
@@ -8345,21 +8365,33 @@ server <- function(input, output, session) {
               DSM2_Node
             )
           ),
-          
-          DSM2_Node = factor(
-            DSM2_Node,
-            levels = rev(
-              unique(
-                DSM2_Node[
-                  order(
-                    DSM2_Node_Number,
-                    DSM2_Node
-                  )
-                ]
-              )
+
+          Node_Label = ifelse(
+            is.na(Location) | Location == "",
+            as.character(DSM2_Node),
+            paste0(
+              DSM2_Node,
+              " - ",
+              Location
             )
-          ),
-          
+          )
+        ) %>%
+        arrange(
+          DSM2_Node_Number,
+          DSM2_Node
+        )
+
+      plot_data$Node_Label <- factor(
+        plot_data$Node_Label,
+        levels = rev(
+          unique(
+            plot_data$Node_Label
+          )
+        )
+      )
+
+      plot_data <- plot_data %>%
+        mutate(
           Hover_Text = paste0(
             "<b>Archive date:</b> ",
             Archive_Date,
@@ -8380,7 +8412,7 @@ server <- function(input, output, session) {
       plot_ly(
         plot_data,
         x = ~Prediction_Final,
-        y = ~DSM2_Node,
+        y = ~Node_Label,
         color = ~Comparison_Label,
         type = "bar",
         orientation = "h",
@@ -8405,7 +8437,7 @@ server <- function(input, output, session) {
           ),
           
           yaxis = list(
-            title = "<b>DSM2 Node</b>",
+            title = "<b>DSM2 Node and Location</b>",
             automargin = TRUE
           ),
           
@@ -8419,7 +8451,7 @@ server <- function(input, output, session) {
           ),
           
           margin = list(
-            l = 110,
+            l = 300,
             r = 50,
             t = 80,
             b = 80
