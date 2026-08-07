@@ -1338,6 +1338,35 @@ server <- function(input, output, session) {
     file.path(SHAPE_DIR, "hydro_delta_marsh.shp"),
     quiet = TRUE
   ) %>% st_transform(26910)
+  delta_boundary_wgs84 <- st_transform(
+    delta_boundary,
+    4326
+  )
+  
+  delta_channels_wgs84 <- st_transform(
+    delta_channels,
+    4326
+  )
+  
+  add_delta_background_layers <- function(map) {
+    map %>%
+      leaflet::addPolygons(
+        data = delta_boundary_wgs84,
+        fillColor = "#eef7f9",
+        fillOpacity = 0.12,
+        color = "#ffffff",
+        opacity = 0.85,
+        weight = 1,
+        group = "Delta Boundary"
+      ) %>%
+      leaflet::addPolylines(
+        data = delta_channels_wgs84,
+        color = "#67C1D4",
+        weight = 1.2,
+        opacity = 0.85,
+        group = "Delta Channels"
+      )
+  }
   
   dsm2_nodes_raw <- st_read(
     DSM2_NODE_SHP,
@@ -8349,7 +8378,79 @@ server <- function(input, output, session) {
         )
     }
   })
-  
+  output$omri_comparison_spatial_map <- renderLeaflet({
+    
+    if (
+      is.null(input$build_omri_comparison) ||
+      input$build_omri_comparison == 0
+    ) {
+      return(
+        make_empty_comparison_map(
+          paste(
+            "<b>OMRI spatial comparison map is ready.</b>",
+            "<br>",
+            "Select one or more archive dates, choose a forecast model,",
+            "and click Run All Available OMRI Scenarios."
+          )
+        )
+      )
+    }
+    
+    data <- omri_comparison_results()
+    
+    validate(
+      need(
+        nrow(data) > 0,
+        "No OMRI comparison results are available for the spatial map."
+      )
+    )
+    
+    map_data <- data %>%
+      mutate(
+        Saved_Run_ID = paste0(
+          Archive_Date,
+          " | OMRI ",
+          OMRI_Scenario
+        )
+      )
+    
+    selected_model <- input$omri_comparison_model
+    
+    if (identical(selected_model, "PTM Emulator 7-Day Entrainment")) {
+      
+      threshold <- suppressWarnings(
+        as.numeric(input$omri_comparison_map_threshold)
+      )
+      
+      threshold <- threshold[1]
+      
+      if (is.na(threshold)) {
+        threshold <- 25
+      }
+      
+      make_ptm_spatial_comparison_map(
+        df = map_data,
+        threshold = threshold
+      )
+      
+    } else if (identical(selected_model, "Event Horizon")) {
+      
+      make_eh_spatial_comparison_map(
+        df = map_data
+      )
+      
+    } else {
+      
+      make_empty_comparison_map(
+        paste(
+          "<b>Spatial comparison is not available for this OMRI model.</b>",
+          "<br>",
+          "PTM Emulator supports spatial risk-zone overlays.",
+          "Event Horizon supports pathway-line overlays."
+        )
+      )
+    }
+  })
   
   output$download_omri_comparison <- downloadHandler(
     
@@ -8980,8 +9081,14 @@ server <- function(input, output, session) {
   ]
   
   create_node_map <- function(data, marker_color) {
-    leaflet::leaflet(data) |>
-      leaflet::addProviderTiles(leaflet::providers$Esri.WorldImagery) |>
+    
+    leaflet::leaflet(data) %>%
+      leaflet::addProviderTiles(
+        leaflet::providers$Esri.WorldImagery,
+        group = "Esri World Imagery"
+      ) %>%
+      add_delta_background_layers() %>%
+      
       leaflet::addAwesomeMarkers(
         lng = ~X,
         lat = ~Y,
@@ -8995,8 +9102,10 @@ server <- function(input, output, session) {
           "<strong>Node: </strong>", DSM2_Node,
           "<br><strong>Location: </strong>", Location,
           "<br><strong>Region: </strong>", Region
-        )
-      ) |>
+        ),
+        group = "DSM2 Nodes"
+      ) %>%
+      
       leaflet::addLabelOnlyMarkers(
         lng = ~X,
         lat = ~Y,
@@ -9012,12 +9121,29 @@ server <- function(input, output, session) {
             "font-weight" = "bold",
             "text-shadow" = "0 0 2px black"
           )
+        ),
+        group = "Node Labels"
+      ) %>%
+      
+      leaflet::addLayersControl(
+        baseGroups = c(
+          "Esri World Imagery"
+        ),
+        overlayGroups = c(
+          "Delta Boundary",
+          "Delta Channels",
+          "DSM2 Nodes",
+          "Node Labels"
+        ),
+        options = leaflet::layersControlOptions(
+          collapsed = FALSE
         )
-      ) |>
+      ) %>%
+      
       leaflet::setView(
         lng = -121.60,
         lat = 38.05,
-        zoom = 15
+        zoom = 9
       )
   }
   
