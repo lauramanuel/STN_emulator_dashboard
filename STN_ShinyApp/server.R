@@ -4420,109 +4420,608 @@ server <- function(input, output, session) {
       )
   }
   
-  make_entrainment_zones <- function(nodes, threshold) {
+  make_entrainment_zones <- function(
+    nodes,
+    threshold,
+    high_node_buffer = 7500,
+    low_node_exclusion_buffer = 6500,
+    smooth_buffer = 1800,
+    concave_ratio = 0.38
+  ) {
     
     validate(
       need(
-        nrow(nodes) >= 3,
+        nrow(nodes) >= 1,
         "Not enough nodes to create risk zones."
+      ),
+      need(
+        "entrainment" %in% names(nodes),
+        "Node data are missing the entrainment field."
       )
     )
     
-    #-----------------------------------------
-    # High-risk nodes
-    #-----------------------------------------
+    threshold <- suppressWarnings(as.numeric(threshold))[1]
     
-    high_nodes <- nodes %>%
-      filter(
+    if (is.na(threshold)) {
+      threshold <- 25
+    }
+    
+    delta_valid <- delta_boundary |>
+      sf::st_make_valid()
+    
+    nodes <- nodes |>
+      dplyr::filter(
+        !is.na(entrainment),
+        is.finite(entrainment)
+      ) |>
+      sf::st_make_valid() |>
+      sf::st_transform(sf::st_crs(delta_valid))
+    
+    validate(
+      need(
+        nrow(nodes) > 0,
+        "No valid mapped nodes are available."
+      )
+    )
+    
+    high_nodes <- nodes |>
+      dplyr::filter(
         entrainment >= threshold
       )
     
+    low_nodes <- nodes |>
+      dplyr::filter(
+        entrainment < threshold
+      )
+    
     validate(
       need(
-        nrow(high_nodes) >= 3,
-        paste(
-          "Not enough nodes exceed the",
+        nrow(high_nodes) > 0,
+        paste0(
+          "No nodes are greater than or equal to ",
           threshold,
-          "% threshold."
+          "% entrainment."
         )
       )
     )
     
-    #-----------------------------------------
-    # Very-low-risk nodes
-    #
-    # These create "holes" in the high-risk
-    # polygon but only if entrainment is
-    # truly low.
-    #-----------------------------------------
+    # ------------------------------------------------------------
+    # 1. Build the main high-risk envelope from high-risk nodes.
+    # ------------------------------------------------------------
     
-    low_nodes <- nodes %>%
-      filter(
-        entrainment < max(
-          10,
-          threshold * 0.25
-        )
-      )
+    high_node_core <- high_nodes |>
+      sf::st_buffer(high_node_buffer) |>
+      sf::st_union() |>
+      sf::st_make_valid()
     
-    #-----------------------------------------
-    # Build high-risk envelope
-    #-----------------------------------------
-    
-    high_zone <- high_nodes %>%
-      st_buffer(6000) %>%
-      st_union() %>%
-      st_convex_hull()
-    
-    #-----------------------------------------
-    # Build low-risk exclusion areas
-    #-----------------------------------------
-    
-    if (nrow(low_nodes) >= 3) {
+    if (nrow(high_nodes) >= 3) {
       
-      low_zone <- low_nodes %>%
-        st_union() %>%
-        st_convex_hull() %>%
-        st_buffer(4000)
+      high_points_union <- high_nodes |>
+        sf::st_geometry() |>
+        sf::st_union()
       
-      high_zone <- st_difference(
-        high_zone,
-        low_zone
+      high_hull <- tryCatch(
+        {
+          lwgeom::st_concave_hull(
+            high_points_union,
+            ratio = concave_ratio,
+            allow_holes = FALSE
+          )
+        },
+        error = function(e) {
+          sf::st_convex_hull(high_points_union)
+        }
       )
       
+      high_hull_buffered <- high_hull |>
+        sf::st_buffer(high_node_buffer) |>
+        sf::st_make_valid()
+      
+      high_zone <- sf::st_union(
+        high_node_core,
+        high_hull_buffered
+      ) |>
+        sf::st_make_valid()
+      
+    } else {
+      
+      high_zone <- high_node_core
     }
     
-    #-----------------------------------------
-    # Clip to Delta boundary
-    #-----------------------------------------
+    # ------------------------------------------------------------
+    # 2. Carve out low-risk node neighborhoods.
+    # This prevents the broad high-risk envelope from swallowing
+    # nodes below the selected threshold.
+    # ------------------------------------------------------------
     
-    high_zone <- st_intersection(
+    if (nrow(low_nodes) > 0) {
+      
+      low_exclusion_zone <- low_nodes |>
+        sf::st_buffer(low_node_exclusion_buffer) |>
+        sf::st_union() |>
+        sf::st_make_valid()
+      
+      high_zone <- suppressWarnings(
+        sf::st_difference(
+          high_zone,
+          low_exclusion_zone
+        )
+      ) |>
+        sf::st_make_valid()
+    }
+    
+    # ------------------------------------------------------------
+    # 3. Re-add a smaller required buffer around high-risk nodes.
+    # This guarantees every node >= threshold stays inside high risk,
+    # even after the low-risk carve-out.
+    # ------------------------------------------------------------
+    
+    high_node_required_zone <- high_nodes |>
+      sf::st_buffer(high_node_buffer * 0.55) |>
+      sf::st_union() |>
+      sf::st_make_valid()
+    
+    high_zone <- sf::st_union(
       high_zone,
-      delta_boundary
+      high_node_required_zone
+    ) |>
+      sf::st_make_valid()
+    
+    # ------------------------------------------------------------
+    # 4. Smooth the result, but not so much that it washes over
+    # the low-risk carve-outs.
+    # ------------------------------------------------------------
+    
+    high_zone <- high_zone |>
+      sf::st_buffer(smooth_buffer) |>
+      sf::st_buffer(-smooth_buffer) |>
+      sf::st_make_valid()
+    
+    # Re-apply low-risk carve-out lightly after smoothing.
+    if (nrow(low_nodes) > 0) {
+      
+      low_exclusion_zone_final <- low_nodes |>
+        sf::st_buffer(low_node_exclusion_buffer * 0.75) |>
+        sf::st_union() |>
+        sf::st_make_valid()
+      
+      high_zone <- suppressWarnings(
+        sf::st_difference(
+          high_zone,
+          low_exclusion_zone_final
+        )
+      ) |>
+        sf::st_make_valid()
+      
+      # Re-add required high-node buffer one more time.
+      high_zone <- sf::st_union(
+        high_zone,
+        high_node_required_zone
+      ) |>
+        sf::st_make_valid()
+    }
+    
+    # ------------------------------------------------------------
+    # 5. Clip to Delta boundary.
+    # ------------------------------------------------------------
+    
+    high_zone <- suppressWarnings(
+      sf::st_intersection(
+        high_zone,
+        delta_valid
+      )
+    ) |>
+      sf::st_make_valid()
+    
+    high_zone <- suppressWarnings(
+      sf::st_collection_extract(
+        high_zone,
+        "POLYGON"
+      )
     )
     
-    #-----------------------------------------
-    # Everything else becomes low risk
-    #-----------------------------------------
+    validate(
+      need(
+        length(high_zone) > 0,
+        "The high-risk polygon could not be created."
+      )
+    )
     
-    low_zone <- st_difference(
-      delta_boundary,
-      high_zone
+    # ------------------------------------------------------------
+    # 6. Low risk is everything in the Delta boundary outside
+    # the high-risk envelope.
+    # ------------------------------------------------------------
+    
+    low_zone <- suppressWarnings(
+      sf::st_difference(
+        delta_valid,
+        sf::st_union(high_zone)
+      )
+    ) |>
+      sf::st_make_valid()
+    
+    low_zone <- suppressWarnings(
+      sf::st_collection_extract(
+        low_zone,
+        "POLYGON"
+      )
     )
     
     list(
-      high = st_transform(
-        high_zone,
+      high = sf::st_transform(
+        sf::st_as_sf(high_zone),
         4326
       ),
-      low = st_transform(
-        low_zone,
+      low = sf::st_transform(
+        sf::st_as_sf(low_zone),
         4326
       )
     )
-    
   }
   
+  
+  
+  make_ptm_spatial_comparison_map <- function(
+    df,
+    threshold
+  ) {
+    
+    validate(
+      need(
+        nrow(df) > 0,
+        "Select compatible PTM runs to compare."
+      ),
+      need(
+        "Saved_Run_ID" %in% names(df),
+        "PTM comparison data are missing Saved_Run_ID."
+      ),
+      need(
+        "DSM2_Node" %in% names(df),
+        "PTM comparison data are missing DSM2_Node."
+      ),
+      need(
+        "Prediction_Final" %in% names(df),
+        "PTM comparison data are missing Prediction_Final."
+      )
+    )
+    
+    threshold <- suppressWarnings(
+      as.numeric(
+        threshold
+      )
+    )
+    
+    threshold <- threshold[1]
+    
+    if (is.na(threshold)) {
+      threshold <- 25
+    }
+    
+    map_df <- df
+    
+    if (!"Location" %in% names(map_df)) {
+      map_df$Location <- NA_character_
+    }
+    
+    if (!"Region" %in% names(map_df)) {
+      map_df$Region <- NA_character_
+    }
+    
+    if (!"X" %in% names(map_df)) {
+      map_df$X <- NA_real_
+    }
+    
+    if (!"Y" %in% names(map_df)) {
+      map_df$Y <- NA_real_
+    }
+    
+    # For archive-current rolling results, keep the latest window per saved run.
+    if (
+      "Window_End_Date" %in% names(map_df) &&
+      any(!is.na(map_df$Window_End_Date))
+    ) {
+      
+      map_df <- map_df %>%
+        mutate(
+          Window_End_Date_Map = as.Date(
+            Window_End_Date,
+            origin = "1970-01-01"
+          )
+        ) %>%
+        group_by(
+          Saved_Run_ID
+        ) %>%
+        filter(
+          is.na(Window_End_Date_Map) |
+            Window_End_Date_Map == max(
+              Window_End_Date_Map,
+              na.rm = TRUE
+            )
+        ) %>%
+        ungroup() %>%
+        select(
+          -Window_End_Date_Map
+        )
+    }
+    
+    run_ids <- unique(
+      map_df$Saved_Run_ID
+    )
+    
+    validate(
+      need(
+        length(run_ids) >= 1,
+        "No selected PTM runs are available for spatial comparison."
+      )
+    )
+    
+    run_colors <- viridisLite::viridis(
+      length(run_ids),
+      option = "D",
+      end = 0.9
+    )
+    
+    names(run_colors) <- run_ids
+    
+    m <- leaflet() %>%
+      addProviderTiles(
+        providers$CartoDB.Positron
+      ) %>%
+      addPolygons(
+        data = st_transform(
+          delta_boundary,
+          4326
+        ),
+        fillColor = "#eef7f9",
+        fillOpacity = 0.2,
+        color = "#0a7e8c",
+        weight = 1,
+        group = "Delta Boundary"
+      ) %>%
+      addPolylines(
+        data = st_transform(
+          delta_channels,
+          4326
+        ),
+        color = "#2b8cbe",
+        weight = 1,
+        opacity = 0.55,
+        group = "Channels"
+      )
+    
+    overlay_groups <- c(
+      "Delta Boundary",
+      "Channels"
+    )
+    
+    skipped_messages <- character(0)
+    
+    for (run_id in run_ids) {
+      
+      scenario_df <- map_df %>%
+        filter(
+          Saved_Run_ID == run_id
+        )
+      
+      scenario_color <- run_colors[[run_id]]
+      
+      sf_nodes <- scenario_df %>%
+        filter(
+          !is.na(X),
+          !is.na(Y),
+          !is.na(Prediction_Final)
+        ) %>%
+        transmute(
+          Saved_Run_ID,
+          DSM2_Node,
+          Location,
+          Region,
+          entrainment = Prediction_Final,
+          X,
+          Y
+        )
+      
+      if (nrow(sf_nodes) < 3) {
+        
+        skipped_messages <- c(
+          skipped_messages,
+          paste0(
+            run_id,
+            ": fewer than 3 mapped PTM nodes were available."
+          )
+        )
+        
+        next
+      }
+      
+      sf_nodes <- sf_nodes %>%
+        st_as_sf(
+          coords = c("X", "Y"),
+          crs = 4326,
+          remove = FALSE
+        ) %>%
+        st_transform(
+          26910
+        )
+      
+      display_nodes <- st_transform(
+        sf_nodes,
+        4326
+      )
+      
+      node_group <- paste0(
+        "Nodes - ",
+        run_id
+      )
+      
+      overlay_groups <- c(
+        overlay_groups,
+        node_group
+      )
+      
+      # Add nodes even if polygons fail.
+      m <- m %>%
+        addCircleMarkers(
+          data = display_nodes,
+          radius = ~4 + entrainment / 100 * 8,
+          color = scenario_color,
+          fillColor = scenario_color,
+          fillOpacity = 0.75,
+          stroke = TRUE,
+          weight = 1,
+          popup = ~paste0(
+            "<div style='font-size:15px;line-height:1.45;min-width:280px;'>",
+            "<b>Scenario:</b> ",
+            Saved_Run_ID,
+            "<br><b>DSM2 Node:</b> ",
+            DSM2_Node,
+            "<br><b>Location:</b> ",
+            Location,
+            "<br><b>Region:</b> ",
+            Region,
+            "<br><b>Entrainment:</b> ",
+            sprintf(
+              "%.0f",
+              entrainment
+            ),
+            "%",
+            "</div>"
+          ),
+          group = node_group
+        )
+      
+      zones <- tryCatch(
+        make_entrainment_zones(
+          sf_nodes,
+          threshold
+        ),
+        error = function(e) {
+          
+          skipped_messages <<- c(
+            skipped_messages,
+            paste0(
+              run_id,
+              ": risk-zone polygons could not be created. ",
+              conditionMessage(e)
+            )
+          )
+          
+          NULL
+        },
+        shiny.silent.error = function(e) {
+          
+          skipped_messages <<- c(
+            skipped_messages,
+            paste0(
+              run_id,
+              ": risk-zone polygons could not be created."
+            )
+          )
+          
+          NULL
+        }
+      )
+      
+      if (is.null(zones)) {
+        next
+      }
+      
+      high_group <- paste0(
+        "High Risk - ",
+        run_id
+      )
+      
+      low_group <- paste0(
+        "Low Risk - ",
+        run_id
+      )
+      
+      overlay_groups <- c(
+        overlay_groups,
+        low_group,
+        high_group
+      )
+      
+      m <- m %>%
+        addPolygons(
+          data = zones$low,
+          fillColor = scenario_color,
+          fillOpacity = 0.08,
+          color = scenario_color,
+          opacity = 0.45,
+          weight = 1,
+          dashArray = "4,4",
+          popup = paste0(
+            "<b>Scenario:</b> ",
+            run_id,
+            "<br><b>Zone:</b> Low Risk",
+            "<br><b>Threshold:</b> < ",
+            threshold,
+            "%"
+          ),
+          group = low_group
+        ) %>%
+        addPolygons(
+          data = zones$high,
+          fillColor = scenario_color,
+          fillOpacity = 0.30,
+          color = scenario_color,
+          opacity = 0.95,
+          weight = 2,
+          popup = paste0(
+            "<b>Scenario:</b> ",
+            run_id,
+            "<br><b>Zone:</b> High Risk",
+            "<br><b>Threshold:</b> >= ",
+            threshold,
+            "%"
+          ),
+          group = high_group
+        )
+    }
+    
+    if (length(skipped_messages) > 0) {
+      
+      m <- m %>%
+        addControl(
+          html = paste0(
+            "<div style='background:white;padding:10px 12px;",
+            "border-radius:6px;border:1px solid #bbb;",
+            "box-shadow:0 2px 6px rgba(0,0,0,0.2);",
+            "font-size:13px;max-width:420px;'>",
+            "<b>PTM spatial comparison note</b><br>",
+            paste(
+              skipped_messages,
+              collapse = "<br>"
+            ),
+            "</div>"
+          ),
+          position = "topleft"
+        )
+    }
+    
+    m %>%
+      addLegend(
+        position = "bottomright",
+        colors = run_colors,
+        labels = names(run_colors),
+        title = "Compared Scenarios",
+        opacity = 0.85
+      ) %>%
+      addLayersControl(
+        overlayGroups = unique(
+          overlay_groups
+        ),
+        options = layersControlOptions(
+          collapsed = FALSE
+        )
+      ) %>%
+      leaflet::setView(
+        lng = -121.60,
+        lat = 38.05,
+        zoom = 9
+      )
+  }
   make_ptm_map <- function(df, threshold) {
     validate(need(nrow(df) > 0, "Run the model to display results."))
     
@@ -7130,13 +7629,8 @@ server <- function(input, output, session) {
       p <- plot_ly(
         plot_df,
         x = ~Prediction_Final,
-<<<<<<< Updated upstream
-        y = ~DSM2_Node,
-        color = ~Run_Label,
-=======
         y = ~Node_Label,
         color = ~Legend_Label,
->>>>>>> Stashed changes
         type = "bar",
         orientation = "h",
         text = ~sprintf("%.0f", Prediction_Final),
@@ -7154,8 +7648,6 @@ server <- function(input, output, session) {
             title = "<b>DSM2 Node</b>",
             tickfont = list(size = 13),
             automargin = TRUE
-<<<<<<< Updated upstream
-=======
           ),
           legend = list(
             orientation = "h",
@@ -7172,7 +7664,6 @@ server <- function(input, output, session) {
             r = 60,
             t = 80,
             b = 220
->>>>>>> Stashed changes
           )
         )
     } else {
