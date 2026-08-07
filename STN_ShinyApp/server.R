@@ -27,7 +27,6 @@ DSM2_NODE_SHP <- file.path( SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_nodes.sh
 DSM2_CHANNEL_SHP <- file.path(  SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_channels_centerlines.shp")
 DSM2_CHANNEL_DEF <- file.path(  "STN_EMULATOR",  "channel_std_delta_grid_NAVD_20121214.txt")
 DSM2_PATH_FILE <- file.path(  "STN_EMULATOR",  "Region_Location_Node_Path.csv")
-source("Server_Data_Access.R")
 
 required_model_files <- c(
   file.path(MODEL_DIR, "PTM_Entrainment7d_lightgbm.txt"),
@@ -1290,30 +1289,14 @@ server <- function(input, output, session) {
       distinct(DSM2_Node, .keep_all = TRUE) %>%
       select(DSM2_Node, Location, Region, X, Y)
     
-    ptm7_model_names <- c(
-      "PTM Emulator 7-Day Entrainment",
-      "PTM 7-Day Entrainment"
-    )
-    
-    ptm30_model_names <- c(
-      "PTM Emulator 30-Day Entrainment",
-      "PTM 30-Day Entrainment"
-    )
-    
     nodes_7d <- combined %>%
-      filter(
-        Model %in% ptm7_model_names,
-        !is.na(DSM2_Node)
-      ) %>%
+      filter(Model == "PTM 7-Day Entrainment", !is.na(DSM2_Node)) %>%
       distinct(DSM2_Node) %>%
       arrange(as.numeric(DSM2_Node)) %>%
       pull(DSM2_Node)
     
     nodes_30d <- combined %>%
-      filter(
-        Model %in% ptm30_model_names,
-        !is.na(DSM2_Node)
-      ) %>%
+      filter(Model == "PTM 30-Day Entrainment", !is.na(DSM2_Node)) %>%
       distinct(DSM2_Node) %>%
       arrange(as.numeric(DSM2_Node)) %>%
       pull(DSM2_Node)
@@ -1338,35 +1321,6 @@ server <- function(input, output, session) {
     file.path(SHAPE_DIR, "hydro_delta_marsh.shp"),
     quiet = TRUE
   ) %>% st_transform(26910)
-  delta_boundary_wgs84 <- st_transform(
-    delta_boundary,
-    4326
-  )
-  
-  delta_channels_wgs84 <- st_transform(
-    delta_channels,
-    4326
-  )
-  
-  add_delta_background_layers <- function(map) {
-    map %>%
-      leaflet::addPolygons(
-        data = delta_boundary_wgs84,
-        fillColor = "#eef7f9",
-        fillOpacity = 0.12,
-        color = "#ffffff",
-        opacity = 0.85,
-        weight = 1,
-        group = "Delta Boundary"
-      ) %>%
-      leaflet::addPolylines(
-        data = delta_channels_wgs84,
-        color = "#67C1D4",
-        weight = 1.2,
-        opacity = 0.85,
-        group = "Delta Channels"
-      )
-  }
   
   dsm2_nodes_raw <- st_read(
     DSM2_NODE_SHP,
@@ -1849,50 +1803,6 @@ server <- function(input, output, session) {
     
     dplyr::bind_rows(all_path_lines)
   }
-  make_empty_comparison_map <- function(message) {
-    
-    leaflet() %>%
-      addProviderTiles(
-        providers$CartoDB.Positron
-      ) %>%
-      addPolygons(
-        data = st_transform(
-          delta_boundary,
-          4326
-        ),
-        fillColor = "#eef7f9",
-        fillOpacity = 0.2,
-        color = "#0a7e8c",
-        weight = 1,
-        group = "Delta Boundary"
-      ) %>%
-      addPolylines(
-        data = st_transform(
-          delta_channels,
-          4326
-        ),
-        color = "#2b8cbe",
-        weight = 1,
-        opacity = 0.6,
-        group = "Channels"
-      ) %>%
-      addControl(
-        html = paste0(
-          "<div style='background:white;padding:12px 14px;",
-          "border-radius:6px;border:1px solid #bbb;",
-          "box-shadow:0 2px 6px rgba(0,0,0,0.2);",
-          "font-size:14px;max-width:360px;'>",
-          message,
-          "</div>"
-        ),
-        position = "topright"
-      ) %>%
-      leaflet::setView(
-        lng = -121.60,
-        lat = 38.05,
-        zoom = 9
-      )
-  }
   make_ptm_results <- function(condition, scenario_name, exp, ver, sac, east, xgeo) {
     ref <- reference_data()
     
@@ -1928,8 +1838,8 @@ server <- function(input, output, session) {
     }
     
     bind_rows(
-      make_one(ptm7_model, "PTM Emulator 7-Day Entrainment", ref$nodes_7d),
-      make_one(ptm30_model, "PTM Emulator 30-Day Entrainment", ref$nodes_30d)
+      make_one(ptm7_model, "PTM 7-Day Entrainment", ref$nodes_7d),
+      make_one(ptm30_model, "PTM 30-Day Entrainment", ref$nodes_30d)
     )
   }
   
@@ -1972,7 +1882,7 @@ server <- function(input, output, session) {
       Condition = condition,
       Input_Method = "single",
       Scenario_Name = scenario_name,
-      Model = c("ECO-PTM Emulator Survival", "ECO-PTM Emulator Interior Routing"),
+      Model = c("ECO-PTM Survival", "ECO-PTM Interior Routing"),
       Prediction_Raw = c(survival_raw, interior_raw),
       Prediction_Final = bound_percent(c(survival_raw, interior_raw)),
       Output_Unit = "Percent",
@@ -2275,7 +2185,6 @@ server <- function(input, output, session) {
       "&parameterCd=00060",
       "&siteStatus=all"
     )
-    
 
     response_lines <- download_observed_source_file(
       url = query_url,
@@ -3774,7 +3683,7 @@ server <- function(input, output, session) {
       predict_ptm_from_windows(
         rolling_7,
         ptm7_model,
-        "PTM Emulator 7-Day Entrainment",
+        "PTM 7-Day Entrainment",
         ref$nodes_7d,
         "Observed Conditions",
         scenario_name,
@@ -3785,7 +3694,7 @@ server <- function(input, output, session) {
       predict_ptm_from_windows(
         measured_30,
         ptm30_model,
-        "PTM Emulator 30-Day Entrainment",
+        "PTM 30-Day Entrainment",
         ref$nodes_30d,
         "Observed Conditions",
         scenario_name,
@@ -3820,7 +3729,7 @@ server <- function(input, output, session) {
     predict_ptm_from_windows(
       forecast_7,
       ptm7_model,
-      "PTM Emulator 7-Day Entrainment",
+      "PTM 7-Day Entrainment",
       ref$nodes_7d,
       "Forecast Conditions",
       scenario_name,
@@ -4100,7 +4009,7 @@ server <- function(input, output, session) {
     
     plot_data <- data %>%
       filter(
-        Model == "PTM Emulator 7-Day Entrainment",
+        Model == "PTM 7-Day Entrainment",
         !is.na(Window_End_Date)
       )
     
@@ -5486,201 +5395,7 @@ server <- function(input, output, session) {
       point = lwgeom::st_linesubstring(river_centerline, fraction, fraction)
     )
   }
-  make_eh_spatial_comparison_map <- function(df) {
-    
-    validate(
-      need(
-        nrow(df) > 0,
-        "Select compatible Event Horizon runs to compare."
-      ),
-      need(
-        all(
-          c(
-            "Saved_Run_ID",
-            "Prediction_Final"
-          ) %in% names(df)
-        ),
-        "Event Horizon comparison data are missing required fields."
-      )
-    )
-    
-    # If archive-current results include multiple rolling windows,
-    # keep the latest window per saved run.
-    map_df <- df
-    
-    if (
-      "Window_End_Date" %in% names(map_df) &&
-      any(!is.na(map_df$Window_End_Date))
-    ) {
-      
-      map_df <- map_df %>%
-        mutate(
-          Window_End_Date_Map = as.Date(
-            Window_End_Date,
-            origin = "1970-01-01"
-          )
-        ) %>%
-        group_by(
-          Saved_Run_ID
-        ) %>%
-        filter(
-          is.na(Window_End_Date_Map) |
-            Window_End_Date_Map == max(
-              Window_End_Date_Map,
-              na.rm = TRUE
-            )
-        ) %>%
-        ungroup() %>%
-        select(
-          -Window_End_Date_Map
-        )
-    }
-    
-    run_ids <- unique(
-      map_df$Saved_Run_ID
-    )
-    
-    run_colors <- viridisLite::viridis(
-      length(run_ids),
-      option = "D",
-      end = 0.9
-    )
-    
-    names(run_colors) <- run_ids
-    
-    channels_display <- st_transform(
-      dsm2_channels,
-      4326
-    )
-    
-    nodes_display <- st_transform(
-      dsm2_nodes,
-      4326
-    )
-    
-    m <- leaflet() %>%
-      addProviderTiles(
-        providers$CartoDB.Positron
-      ) %>%
-      addPolylines(
-        data = channels_display,
-        color = "#9ECAE1",
-        weight = 1,
-        opacity = 0.65,
-        group = "DSM2 Channels"
-      ) %>%
-      addCircleMarkers(
-        data = nodes_display %>%
-          dplyr::filter(
-            DSM2_Node == 72
-          ),
-        radius = 7,
-        color = "#1F1F1F",
-        fillColor = "#FFD34E",
-        fillOpacity = 1,
-        weight = 2,
-        label = "Start node 72: Clifton Court Forebay",
-        group = "Start Node"
-      )
-    
-    overlay_groups <- c(
-      "DSM2 Channels",
-      "Start Node"
-    )
-    
-    for (run_id in run_ids) {
-      
-      scenario_df <- map_df %>%
-        filter(
-          Saved_Run_ID == run_id
-        ) %>%
-        slice(1)
-      
-      scenario_color <- run_colors[[run_id]]
-      
-      eh_lines <- tryCatch(
-        make_event_horizon_path_geometry(
-          distance_miles = scenario_df$Prediction_Final[1],
-          regions = c("OMR")
-        ),
-        error = function(e) NULL,
-        shiny.silent.error = function(e) NULL
-      )
-      
-      if (is.null(eh_lines)) {
-        next
-      }
-      
-      eh_lines_display <- st_transform(
-        eh_lines,
-        4326
-      )
-      
-      line_group <- paste0(
-        "Event Horizon - ",
-        run_id
-      )
-      
-      overlay_groups <- c(
-        overlay_groups,
-        line_group
-      )
-      
-      m <- m %>%
-        addPolylines(
-          data = eh_lines_display,
-          color = scenario_color,
-          weight = 5,
-          opacity = 0.90,
-          popup = paste0(
-            "<div style='font-size:15px;line-height:1.45;min-width:280px;'>",
-            "<b>Scenario:</b> ",
-            run_id,
-            "<br><b>Event Horizon:</b> ",
-            sprintf(
-              "%.0f",
-              scenario_df$Prediction_Final[1]
-            ),
-            " river miles",
-            if (
-              "Risk_Level_Percent" %in% names(scenario_df)
-            ) {
-              paste0(
-                "<br><b>Risk level:</b> ",
-                scenario_df$Risk_Level_Percent[1],
-                "%"
-              )
-            } else {
-              ""
-            },
-            "</div>"
-          ),
-          group = line_group
-        )
-    }
-    
-    m %>%
-      addLegend(
-        position = "bottomright",
-        colors = run_colors,
-        labels = names(run_colors),
-        title = "Compared Scenarios",
-        opacity = 0.85
-      ) %>%
-      addLayersControl(
-        overlayGroups = unique(
-          overlay_groups
-        ),
-        options = layersControlOptions(
-          collapsed = FALSE
-        )
-      ) %>%
-      leaflet::setView(
-        lng = -121.60,
-        lat = 38.05,
-        zoom = 10
-      )
-  }
+  
   make_eh_map <- function(df) {
     
     validate(
@@ -6815,7 +6530,7 @@ server <- function(input, output, session) {
       
       dates <- result_data %>%
         filter(
-          Model == "PTM Emulator 7-Day Entrainment",
+          Model == "PTM 7-Day Entrainment",
           !is.na(Window_End_Date)
         ) %>%
         pull(
@@ -6861,7 +6576,7 @@ server <- function(input, output, session) {
       
       data <- ptm_result() %>%
         filter(
-          Model == "PTM Emulator 7-Day Entrainment"
+          Model == "PTM 7-Day Entrainment"
         ) %>%
         distinct(
           DSM2_Node,
@@ -6986,14 +6701,14 @@ server <- function(input, output, session) {
       
       data <- latest_result_window(
         ptm_result(),
-        "PTM Emulator 7-Day Entrainment"
+        "PTM 7-Day Entrainment"
       )
       
       make_ptm_bar(
         data,
         paste(
           condition_label,
-          ": PTM Emulator 7-Day Entrainment"
+          ": PTM 7-Day Entrainment"
         )
       )
     })
@@ -7006,14 +6721,14 @@ server <- function(input, output, session) {
       
       data <- latest_result_window(
         ptm_result(),
-        "PTM Emulator 30-Day Entrainment"
+        "PTM 30-Day Entrainment"
       )
       
       make_ptm_bar(
         data,
         paste(
           condition_label,
-          ": PTM Emulator 30-Day Entrainment"
+          ": PTM 30-Day Entrainment"
         )
       )
     })
@@ -7026,7 +6741,7 @@ server <- function(input, output, session) {
       
       ptm_data <- selected_result_window(
         ptm_result(),
-        "PTM Emulator 7-Day Entrainment",
+        "PTM 7-Day Entrainment",
         input[[paste0(
           prefix,
           "_ptm7_map_date"
@@ -7054,7 +6769,7 @@ server <- function(input, output, session) {
       
       data <- latest_result_window(
         ptm_result(),
-        "PTM Emulator 30-Day Entrainment"
+        "PTM 30-Day Entrainment"
       )
       
       make_ptm_map(
@@ -7094,7 +6809,7 @@ server <- function(input, output, session) {
         
         data <- selected_result_window(
           ptm_result(),
-          "PTM Emulator 7-Day Entrainment",
+          "PTM 7-Day Entrainment",
           input[[paste0(
             prefix,
             "_ptm7_map_date"
@@ -7109,7 +6824,7 @@ server <- function(input, output, session) {
           )]],
           title = paste(
             condition_label,
-            ": PTM Emulator 7-Day Entrainment Risk Map"
+            ": PTM 7-Day Entrainment Risk Map"
           )
         )
         
@@ -7152,7 +6867,7 @@ server <- function(input, output, session) {
         
         data <- latest_result_window(
           ptm_result(),
-          "PTM Emulator 30-Day Entrainment"
+          "PTM 30-Day Entrainment"
         )
         
         plot <- make_ptm_png_plot(
@@ -7163,7 +6878,7 @@ server <- function(input, output, session) {
           )]],
           title = paste(
             condition_label,
-            ": PTM Emulator 30-Day Entrainment Risk Map"
+            ": PTM 30-Day Entrainment Risk Map"
           )
         )
         
@@ -7188,7 +6903,7 @@ server <- function(input, output, session) {
       
       latest_result_window(
         ptm_result(),
-        "PTM Emulator 7-Day Entrainment"
+        "PTM 7-Day Entrainment"
       ) %>%
         transmute(
           Window_End_Date = if (
@@ -7231,7 +6946,7 @@ server <- function(input, output, session) {
       
       latest_result_window(
         ptm_result(),
-        "PTM Emulator 30-Day Entrainment"
+        "PTM 30-Day Entrainment"
       ) %>%
         transmute(
           Window_End_Date = if (
@@ -7815,69 +7530,6 @@ server <- function(input, output, session) {
     "forecast",
     "Forecast Conditions"
   )
-  output$comparison_spatial_map <- renderLeaflet({
-    
-    df <- comparison_data()
-    
-    validate(
-      need(
-        nrow(df) > 0,
-        "Select compatible runs to compare on the map."
-      )
-    )
-    
-    selected_model <- input$comparison_model
-    
-    threshold <- suppressWarnings(
-      as.numeric(
-        input$comparison_map_threshold
-      )
-    )
-    
-    threshold <- threshold[1]
-    
-    if (is.na(threshold)) {
-      threshold <- 25
-    }
-    
-    if (
-      selected_model %in%
-      c(
-        "PTM Emulator 7-Day Entrainment",
-        "PTM Emulator 30-Day Entrainment"
-      )
-    ) {
-      
-      make_ptm_spatial_comparison_map(
-        df = df,
-        threshold = threshold
-      )
-      
-    } else if (
-      identical(
-        selected_model,
-        "Event Horizon"
-      )
-    ) {
-      
-      make_eh_spatial_comparison_map(
-        df = df
-      )
-      
-    } else {
-      
-      make_empty_comparison_map(
-        paste(
-          "<b>Spatial comparison is not available for this model.</b>",
-          "<br>",
-          "PTM Emulator models support spatial risk-zone overlays.",
-          "Event Horizon supports pathway-line overlays.",
-          "ECO-PTM currently returns model-level outputs without map geometry."
-        )
-      )
-      
-    }
-  })
   
   output$comparison_run_selector <- renderUI({
     
@@ -7943,59 +7595,45 @@ server <- function(input, output, session) {
     
     if (
       input$comparison_model %in%
-      c(
-        "PTM Emulator 7-Day Entrainment",
-        "PTM Emulator 30-Day Entrainment"
-      )
+      c("PTM 7-Day Entrainment", "PTM 30-Day Entrainment")
     ) {
-      
-      if (!"Location" %in% names(plot_df)) {
-        plot_df$Location <- NA_character_
-      }
-      
       plot_df <- plot_df %>%
         mutate(
-          DSM2_Node_Num = suppressWarnings(
-            as.numeric(
-              DSM2_Node
+          DSM2_Node_Num = suppressWarnings(as.numeric(DSM2_Node)),
+          DSM2_Node = factor(
+            DSM2_Node,
+            levels = rev(
+              unique(
+                DSM2_Node[
+                  order(DSM2_Node_Num, DSM2_Node)
+                ]
+              )
             )
           ),
-          
-          Node_Label = ifelse(
-            is.na(Location) | Location == "",
-            as.character(DSM2_Node),
-            paste0(
-              DSM2_Node,
-              " - ",
-              Location
-            )
-          )
-        ) %>%
-        arrange(
-          DSM2_Node_Num,
-          DSM2_Node
-        )
-      
-      plot_df$Node_Label <- factor(
-        plot_df$Node_Label,
-        levels = rev(
-          unique(
-            plot_df$Node_Label
+
+          Legend_Label = vapply(
+            Run_Label,
+            function(x) {
+              paste(
+                strwrap(
+                  x,
+                  width = 28
+                ),
+                collapse = "<br>"
+              )
+            },
+            character(1)
           )
         )
-      )
       
       p <- plot_ly(
         plot_df,
         x = ~Prediction_Final,
         y = ~Node_Label,
-        color = ~Run_Label,
+        color = ~Legend_Label,
         type = "bar",
         orientation = "h",
-        text = ~sprintf(
-          "%.0f",
-          Prediction_Final
-        ),
+        text = ~sprintf("%.0f", Prediction_Final),
         textposition = "auto",
         hovertext = ~hover_text,
         hoverinfo = "text"
@@ -8004,25 +7642,30 @@ server <- function(input, output, session) {
           barmode = "group",
           xaxis = list(
             title = "<b>Predicted Entrainment (%)</b>",
-            tickfont = list(
-              size = 13
-            )
+            tickfont = list(size = 13)
           ),
           yaxis = list(
-            title = "<b>DSM2 Node and Location</b>",
-            tickfont = list(
-              size = 12
-            ),
+            title = "<b>DSM2 Node</b>",
+            tickfont = list(size = 13),
             automargin = TRUE
+          ),
+          legend = list(
+            orientation = "h",
+            x = 0,
+            xanchor = "left",
+            y = -0.18,
+            yanchor = "top",
+            font = list(
+              size = 11
+            )
           ),
           margin = list(
             l = 300,
             r = 60,
             t = 80,
-            b = 120
+            b = 220
           )
         )
-      
     } else {
       p <- plot_ly(
         plot_df,
@@ -8070,7 +7713,17 @@ server <- function(input, output, session) {
           size = 14,
           color = "#1F1F1F"
         ),
-        margin = list(l = 100, r = 60, t = 80, b = 120)
+        margin = if (
+          input$comparison_model %in%
+          c(
+            "PTM Emulator 7-Day Entrainment",
+            "PTM Emulator 30-Day Entrainment"
+          )
+        ) {
+          list(l = 300, r = 60, t = 80, b = 220)
+        } else {
+          list(l = 100, r = 60, t = 80, b = 120)
+        }
       ) %>%
       config(
         displaylogo = FALSE,
@@ -8163,7 +7816,7 @@ server <- function(input, output, session) {
                   if (
                     identical(
                       model_name,
-                      "PTM Emulator 7-Day Entrainment"
+                      "PTM 7-Day Entrainment"
                     )
                   ) {
                     
@@ -8244,7 +7897,7 @@ server <- function(input, output, session) {
     if (
       identical(
         input$omri_comparison_model,
-        "PTM Emulator 7-Day Entrainment"
+        "PTM 7-Day Entrainment"
       )
     ) {
       
@@ -8334,7 +7987,7 @@ server <- function(input, output, session) {
     if (
       identical(
         input$omri_comparison_model,
-        "PTM Emulator 7-Day Entrainment"
+        "PTM 7-Day Entrainment"
       )
     ) {
       
@@ -8345,21 +7998,33 @@ server <- function(input, output, session) {
               DSM2_Node
             )
           ),
-          
-          DSM2_Node = factor(
-            DSM2_Node,
-            levels = rev(
-              unique(
-                DSM2_Node[
-                  order(
-                    DSM2_Node_Number,
-                    DSM2_Node
-                  )
-                ]
-              )
+
+          Node_Label = ifelse(
+            is.na(Location) | Location == "",
+            as.character(DSM2_Node),
+            paste0(
+              DSM2_Node,
+              " - ",
+              Location
             )
-          ),
-          
+          )
+        ) %>%
+        arrange(
+          DSM2_Node_Number,
+          DSM2_Node
+        )
+
+      plot_data$Node_Label <- factor(
+        plot_data$Node_Label,
+        levels = rev(
+          unique(
+            plot_data$Node_Label
+          )
+        )
+      )
+
+      plot_data <- plot_data %>%
+        mutate(
           Hover_Text = paste0(
             "<b>Archive date:</b> ",
             Archive_Date,
@@ -8380,7 +8045,7 @@ server <- function(input, output, session) {
       plot_ly(
         plot_data,
         x = ~Prediction_Final,
-        y = ~DSM2_Node,
+        y = ~Node_Label,
         color = ~Comparison_Label,
         type = "bar",
         orientation = "h",
@@ -8405,7 +8070,7 @@ server <- function(input, output, session) {
           ),
           
           yaxis = list(
-            title = "<b>DSM2 Node</b>",
+            title = "<b>DSM2 Node and Location</b>",
             automargin = TRUE
           ),
           
@@ -8419,7 +8084,7 @@ server <- function(input, output, session) {
           ),
           
           margin = list(
-            l = 110,
+            l = 300,
             r = 50,
             t = 80,
             b = 80
@@ -8517,79 +8182,7 @@ server <- function(input, output, session) {
         )
     }
   })
-  output$omri_comparison_spatial_map <- renderLeaflet({
-    
-    if (
-      is.null(input$build_omri_comparison) ||
-      input$build_omri_comparison == 0
-    ) {
-      return(
-        make_empty_comparison_map(
-          paste(
-            "<b>OMRI spatial comparison map is ready.</b>",
-            "<br>",
-            "Select one or more archive dates, choose a forecast model,",
-            "and click Run All Available OMRI Scenarios."
-          )
-        )
-      )
-    }
-    
-    data <- omri_comparison_results()
-    
-    validate(
-      need(
-        nrow(data) > 0,
-        "No OMRI comparison results are available for the spatial map."
-      )
-    )
-    
-    map_data <- data %>%
-      mutate(
-        Saved_Run_ID = paste0(
-          Archive_Date,
-          " | OMRI ",
-          OMRI_Scenario
-        )
-      )
-    
-    selected_model <- input$omri_comparison_model
-    
-    if (identical(selected_model, "PTM Emulator 7-Day Entrainment")) {
-      
-      threshold <- suppressWarnings(
-        as.numeric(input$omri_comparison_map_threshold)
-      )
-      
-      threshold <- threshold[1]
-      
-      if (is.na(threshold)) {
-        threshold <- 25
-      }
-      
-      make_ptm_spatial_comparison_map(
-        df = map_data,
-        threshold = threshold
-      )
-      
-    } else if (identical(selected_model, "Event Horizon")) {
-      
-      make_eh_spatial_comparison_map(
-        df = map_data
-      )
-      
-    } else {
-      
-      make_empty_comparison_map(
-        paste(
-          "<b>Spatial comparison is not available for this OMRI model.</b>",
-          "<br>",
-          "PTM Emulator supports spatial risk-zone overlays.",
-          "Event Horizon supports pathway-line overlays."
-        )
-      )
-    }
-  })
+  
   
   output$download_omri_comparison <- downloadHandler(
     
@@ -9241,14 +8834,8 @@ server <- function(input, output, session) {
   ]
   
   create_node_map <- function(data, marker_color) {
-    
-    leaflet::leaflet(data) %>%
-      leaflet::addProviderTiles(
-        leaflet::providers$Esri.WorldImagery,
-        group = "Esri World Imagery"
-      ) %>%
-      add_delta_background_layers() %>%
-      
+    leaflet::leaflet(data) |>
+      leaflet::addProviderTiles(leaflet::providers$Esri.WorldImagery) |>
       leaflet::addAwesomeMarkers(
         lng = ~X,
         lat = ~Y,
@@ -9262,10 +8849,8 @@ server <- function(input, output, session) {
           "<strong>Node: </strong>", DSM2_Node,
           "<br><strong>Location: </strong>", Location,
           "<br><strong>Region: </strong>", Region
-        ),
-        group = "DSM2 Nodes"
-      ) %>%
-      
+        )
+      ) |>
       leaflet::addLabelOnlyMarkers(
         lng = ~X,
         lat = ~Y,
@@ -9281,29 +8866,12 @@ server <- function(input, output, session) {
             "font-weight" = "bold",
             "text-shadow" = "0 0 2px black"
           )
-        ),
-        group = "Node Labels"
-      ) %>%
-      
-      leaflet::addLayersControl(
-        baseGroups = c(
-          "Esri World Imagery"
-        ),
-        overlayGroups = c(
-          "Delta Boundary",
-          "Delta Channels",
-          "DSM2 Nodes",
-          "Node Labels"
-        ),
-        options = leaflet::layersControlOptions(
-          collapsed = FALSE
         )
-      ) %>%
-      
+      ) |>
       leaflet::setView(
         lng = -121.60,
         lat = 38.05,
-        zoom = 9
+        zoom = 15
       )
   }
   
@@ -9619,6 +9187,5 @@ server <- function(input, output, session) {
         data_row.padding = px(8)
       )
   })
-  ptm_maps_server(input = input,output = output,session = session)
   
 }
