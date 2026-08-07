@@ -27,6 +27,7 @@ DSM2_NODE_SHP <- file.path( SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_nodes.sh
 DSM2_CHANNEL_SHP <- file.path(  SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_channels_centerlines.shp")
 DSM2_CHANNEL_DEF <- file.path(  "STN_EMULATOR",  "channel_std_delta_grid_NAVD_20121214.txt")
 DSM2_PATH_FILE <- file.path(  "STN_EMULATOR",  "Region_Location_Node_Path.csv")
+source("Server_Data_Access.R")
 
 required_model_files <- c(
   file.path(MODEL_DIR, "PTM_Entrainment7d_lightgbm.txt"),
@@ -2245,6 +2246,7 @@ server <- function(input, output, session) {
       "&parameterCd=00060",
       "&siteStatus=all"
     )
+    
 
     response_lines <- download_observed_source_file(
       url = query_url,
@@ -9331,5 +9333,6 @@ server <- function(input, output, session) {
         data_row.padding = px(8)
       )
   })
+  ptm_maps_server(input = input,output = output,session = session)
   
 }

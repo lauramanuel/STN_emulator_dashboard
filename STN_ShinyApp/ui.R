@@ -1268,7 +1268,7 @@ ui <- dashboardPage(
                     solidHeader = FALSE,
                     h3("Quick Overview", style = "margin-left: 10px;"),
                     style = "text-align: Justify;margin-left: 10px;margin-right:60px;",
-                    p(style = "margin-left: 10px;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)???s hydraulic footprint project."),
+                    p(style = "margin-left: 10px;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)'s hydraulic footprint project."),
                     h5("Here are three types of models:", style = "margin-left: 10px;"),
                     div(style = "margin-left:60px",
                         h5("- DSM2 ECO-PTM emulator models",
@@ -1281,6 +1281,9 @@ ui <- dashboardPage(
                            tags$a(" (part 3)", href = "#intro-event-horizon")
                         )
                     ),
+                    h5(style = "margin-left:10px;",
+                       tags$a("Model Visualization Tools",href = "#vis-tool"),
+                       " are also provided for the ECO-PTM and PTM entrainment models to help users interpret LightGBM decision logic, trace the hydrologic conditions and sample support associated with specific nodes and leaves, compare decision pathways across trees and time horizons, and interactively investigate model structure, thresholds, and outputs."),
                     h3("Data Availability", style = "margin-left: 10px;"),
                     
                     p(style = "margin-left: 10px;",
@@ -1349,7 +1352,7 @@ ui <- dashboardPage(
                       fluidRow(
                         column(width = 7,
                                box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                                   tags$iframe(src = "ECOPTM_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                                   leaflet::leafletOutput("eco_ptm_map", width = "100%", height = "650px")
                                )
                         ),
                         column(width = 5,
@@ -1365,34 +1368,101 @@ ui <- dashboardPage(
                       tags$hr(),
                       fluidRow(
                         column(width = 7,
-                               box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                                   tags$iframe(src = "PTM_Entrainment_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                               box(title = "DSM2 Nodes and Model Input Stations",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                                   tabsetPanel(id = "ptm_map_tabs",type = "tabs",
+                                               tabPanel(title = "7-Day",leaflet::leafletOutput("node_station_map_7day",width = "100%",height = "620px")),
+                                               tabPanel(title = "30-Day",leaflet::leafletOutput("node_station_map_30day",width = "100%",height = "620px"))
+                                   )
                                )
                         ),
                         column(width = 5,
                                box(title = "Model Parameters",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("ptm_parameters_table"))
+                                   div(style = "height:650px;overflow-y:auto;",
+                                       gt::gt_output("ptm_parameters_table")
+                                   )
                                )
                         )
                       )
-                  ),         
+                  ),        
                   box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
                       h3(id = "intro-event-horizon","P3 Model for the Entrainment Event Horizon",style = "margin-left:10px;"),
                       gt::gt_output("horizon_inputs_table"),
                       tags$hr(),
                       fluidRow(
-                        column(width = 6,
-                               box(title = "Inputs Data Range",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
-                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_datarange_table"))
+                        column(width = 7,
+                               box(title = "Model Input Locations",width = 12,height = "740px",status = "primary",solidHeader = TRUE,
+                                   leaflet::leafletOutput("horizon_map",width = "100%",height = "670px")
                                )
                         ),
-                        column(width = 6,
-                               box(title = "Model Parameters",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
-                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_parameter_table"))
+                        
+                        column(width = 5,
+                               box(title = "Inputs Data Range",width = 12,height = "320px",status = "primary",solidHeader = TRUE,
+                                   div(style = "height:350px;overflow-y:auto;",
+                                       gt::gt_output("horizon_datarange_table")
+                                   )
+                               ),
+                               
+                               box(title = "Model Parameters",width = 12,height = "400px",status = "primary",solidHeader = TRUE,
+                                   div(style = "height:350px;overflow-y:auto;",
+                                       gt::gt_output("horizon_parameter_table")
+                                   )
                                )
                         )
                       )
-                  ),         
+                  ),  
+                  box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
+                      h3(id = "vis-tool","Model Visualization Tools",style = "margin-left:10px;"),
+                      h5("This tool visualizes the model structure and helps users:",style = "margin-left:30px;"),
+                      tags$ul(
+                        class = "vis-bullet-list",
+                        tags$li("Understand how the LightGBM models make internal decisions."),
+                        tags$li("Identify the combination of hydrologic conditions associated with a particular leaf."),
+                        tags$li("Compare decision logic across trees, model outcomes, and time horizons."),
+                        tags$li("Number of training samples at the node"),
+                        tags$li("Investigate unusual thresholds, feature usage, or leaf outputs."),
+                        tags$li("Communicate and review model structure through an interactive visualization."),
+                        style = "margin-left:60px;"
+                      ),
+                      h5("Important limitations:",style = "margin-left:30px;"),
+                      tags$ul(
+                        class = "vis-bullet-list",
+                        tags$li("Each diagram represents only one tree and one selected leaf, not the complete ensemble prediction."),
+                        tags$li("The displayed leaf value is the output or contribution of that individual tree. It should not be interpreted as the final model prediction, which requires combining contributions from all trees."),
+                        tags$li("Users enter Tree and Leaf indices rather than actual hydrologic inputs. These pages are therefore model-explanation tools, not scenario-prediction calculators."),
+                        tags$li("The gray “Other condition” nodes are conceptual context only and are not full representations of the actual alternative subtrees."),
+                        tags$li("The model data are embedded in the HTML files, but the network-visualization library is loaded from an external CDN."),
+                        style = "margin-left:60px;"
+                      ),                      
+                      h5("Clicking a node or edge displays information such as:",style = "margin-left:30px;"),
+                      tags$ul(
+                        class = "vis-bullet-list",
+                        tags$li("Feature used at the split"),
+                        tags$li("Numeric split threshold"),
+                        tags$li("Direction taken by missing values"),
+                        tags$li("Number of training samples at the node"),
+                        tags$li("Leaf depth"),
+                        tags$li("Output value of the selected tree leaf"),
+                        style = "margin-left:60px;"
+                      ),                      
+                      tags$style(HTML(".vis-bullet-list {padding-left: 25px;}.vis-bullet-list li {margin-bottom: 5px;padding-left: 5px;}.vis-bullet-list li::marker {font-size: 1.2em;}")),
+                      
+                      tags$hr(),
+                      
+                      fluidRow(
+                        column(width = 6,
+                               box(title = "ECO-PTM Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                                   h5("This tool visualizes the internal decision path of an individual tree within the ECO-PTM LightGBM models. DSM2 ECO-PTM emulator models for end-of-150-day combined through-Delta survival and routing into the inteior Delta (Georgiana Slough and Delta Cross Channel) of salmon particles.",style = "margin-left:10px;"),  
+                                   tags$iframe(src = "ECOPTM_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                               )
+                        ),
+                        column(width = 6,
+                               box(title = "PTM entrainment Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                                   h5("This tool visualizes decision paths within the PTM entrainment emulator models. DSM2 PTM emulator models for end-of-7-day and 30-day percent entainment of surface-oriented particles into the CVP and SWP export facilities (Cliftonr Court Forebay and Jones Pumping Plant).",style = "margin-left:10px;"),
+                                   tags$iframe(src = "PTM_Entrainment_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                               )
+                        )
+                      )
+                  ),
                 )
             )
         )
@@ -1400,3 +1470,4 @@ ui <- dashboardPage(
     )
   )
 )
+
