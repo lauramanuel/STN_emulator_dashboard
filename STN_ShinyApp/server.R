@@ -27,6 +27,7 @@ DSM2_NODE_SHP <- file.path( SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_nodes.sh
 DSM2_CHANNEL_SHP <- file.path(  SHAPE_DIR,  "i12_DSM2_Grid_V2025-05-28_Hist_channels_centerlines.shp")
 DSM2_CHANNEL_DEF <- file.path(  "STN_EMULATOR",  "channel_std_delta_grid_NAVD_20121214.txt")
 DSM2_PATH_FILE <- file.path(  "STN_EMULATOR",  "Region_Location_Node_Path.csv")
+source("Server_Data_Access.R")
 
 required_model_files <- c(
   file.path(MODEL_DIR, "PTM_Entrainment7d_lightgbm.txt"),
@@ -182,1089 +183,7 @@ eco_interior_features <- read_lgb_features(
   file.path(MODEL_DIR, "ECOPTM_interior_lightgbm.txt")
 )
 
-
-# ------------------------------------------------------------------
-# Observed-condition trailing 7-day flow retrieval
-# ------------------------------------------------------------------
-
-cdec_daily_link <- function(station_id, end_date = Sys.Date()) {
-  paste0(
-    "https://cdec.water.ca.gov/dynamicapp/QueryDaily?s=",
-    station_id,
-    "&end=",
-    format(as.Date(end_date), "%Y-%m-%d")
-  )
-}
-
-observed_source_links <- list(
-  CLC = cdec_daily_link("CLC"),
-  TRP = cdec_daily_link("TRP"),
-  VNS = cdec_daily_link("VNS"),
-  FPT = cdec_daily_link("FPT"),
-  NHG = cdec_daily_link("NHG"),
-  MOK = "https://waterdata.usgs.gov/monitoring-location/USGS-11325500/#dataTypeId=daily-00060-0&period=P1Y&showFieldMeasurements=true",
-  COS = "https://waterdata.usgs.gov/monitoring-location/USGS-11335000/#dataTypeId=daily-00060-0&period=P1Y&showFieldMeasurements=true",
-  XGEO_A = "https://waterdata.usgs.gov/monitoring-location/USGS-11447890/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true",
-  XGEO_C = "https://waterdata.usgs.gov/monitoring-location/USGS-11447905/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true"
-)
-
-download_observed_source_file <- function(
-  url,
-  fileext = ".txt",
-  attempts = 3,
-  pause_seconds = 1
-) {
-  destination <- tempfile(fileext = fileext)
-  old_timeout <- getOption("timeout")
-  previous_user_agent <- getOption("HTTPUserAgent")
-
-  on.exit(
-    {
-      options(
-        timeout = old_timeout,
-        HTTPUserAgent = previous_user_agent
-      )
-
-      if (file.exists(destination)) {
-        unlink(destination)
-      }
-    },
-    add = TRUE
-  )
-
-  options(
-    timeout = max(120, old_timeout),
-    HTTPUserAgent = paste(
-      "Mozilla/5.0",
-      "(Windows NT 10.0; Win64; x64)",
-      "AppleWebKit/537.36",
-      "Chrome/126.0 Safari/537.36"
-    )
-  )
-
-  last_error <- NULL
-
-  for (attempt in seq_len(attempts)) {
-    if (file.exists(destination)) {
-      unlink(destination)
-    }
-
-    success <- tryCatch(
-      {
-        suppressWarnings(
-          utils::download.file(
-            url = url,
-            destfile = destination,
-            mode = "wb",
-            method = "libcurl",
-            quiet = TRUE
-          )
-        )
-
-        file.exists(destination) &&
-          isTRUE(file.info(destination)$size > 0)
-      },
-      error = function(error_condition) {
-        last_error <<- conditionMessage(error_condition)
-        FALSE
-      }
-    )
-
-    if (isTRUE(success)) {
-      return(readLines(destination, warn = FALSE))
-    }
-
-    if (attempt < attempts) {
-      Sys.sleep(pause_seconds * attempt)
-    }
-  }
-
-  stop(
-    paste0(
-      "The source could not be reached after ",
-      attempts,
-      " attempts",
-      if (!is.null(last_error)) paste0(": ", last_error) else "."
-    )
-  )
-}
-
-parse_observed_dates <- function(values) {
-  text_values <- trimws(as.character(values))
-
-  parsed <- suppressWarnings(
-    as.Date(
-      substr(text_values, 1, 10),
-      format = "%Y-%m-%d"
-    )
-  )
-
-  missing <- is.na(parsed)
-
-  if (any(missing)) {
-    parsed[missing] <- suppressWarnings(
-      as.Date(
-        substr(text_values[missing], 1, 10),
-        format = "%m/%d/%Y"
-      )
-    )
-  }
-
-  parsed
-}
-
-decode_cdec_html_text <- function(value) {
-  value <- gsub("(?is)<br\\s*/?>", " ", value, perl = TRUE)
-  value <- gsub("(?is)<[^>]+>", " ", value, perl = TRUE)
-  value <- gsub("&nbsp;|&#160;", " ", value, ignore.case = TRUE)
-  value <- gsub("&amp;", "&", value, ignore.case = TRUE)
-  value <- gsub("&lt;", "<", value, ignore.case = TRUE)
-  value <- gsub("&gt;", ">", value, ignore.case = TRUE)
-  value <- gsub("&quot;", "\"", value, ignore.case = TRUE)
-  value <- gsub("&#39;|&apos;", "'", value, ignore.case = TRUE)
-  trimws(gsub("\\s+", " ", value))
-}
-
-
-extract_cdec_query_daily_rows <- function(html_lines) {
-  html_text <- paste(html_lines, collapse = "\n")
-
-  row_matches <- regmatches(
-    html_text,
-    gregexpr(
-      "(?is)<tr\\b[^>]*>.*?</tr>",
-      html_text,
-      perl = TRUE
-    )
-  )[[1]]
-
-  if (length(row_matches) == 0) {
-    stop("The CDEC daily page did not contain a readable data table.")
-  }
-
-  rows <- lapply(
-    row_matches,
-    function(row_text) {
-      cells <- regmatches(
-        row_text,
-        gregexpr(
-          "(?is)<t[dh]\\b[^>]*>.*?</t[dh]>",
-          row_text,
-          perl = TRUE
-        )
-      )[[1]]
-
-      if (length(cells) == 0) {
-        return(character())
-      }
-
-      vapply(
-        cells,
-        decode_cdec_html_text,
-        character(1)
-      )
-    }
-  )
-
-  rows[lengths(rows) > 0]
-}
-
-
-parse_cdec_numeric_value <- function(value) {
-  cleaned <- trimws(as.character(value)[1])
-
-  if (
-    length(cleaned) == 0 ||
-    is.na(cleaned) ||
-    cleaned %in% c("", "---", "--", "M", "m", "BRT")
-  ) {
-    return(NA_real_)
-  }
-
-  cleaned <- gsub(",", "", cleaned, fixed = TRUE)
-
-  match_position <- regexpr(
-    "-?[0-9]+(?:\\.[0-9]+)?",
-    cleaned,
-    perl = TRUE
-  )
-
-  if (length(match_position) == 0 || match_position[1] < 0) {
-    return(NA_real_)
-  }
-
-  numeric_text <- regmatches(
-    cleaned,
-    match_position
-  )
-
-  suppressWarnings(as.numeric(numeric_text)[1])
-}
-
-
-read_cdec_daily_values <- function(
-  station_id,
-  sensor_number,
-  end_date = Sys.Date(),
-  lookback_days = 30
-) {
-  station_id <- toupper(trimws(station_id))
-  end_date <- as.Date(end_date)
-  start_date <- end_date - lookback_days
-
-  query_url <- paste0(
-    "https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet?",
-    "Stations=", utils::URLencode(station_id, reserved = TRUE),
-    "&SensorNums=", utils::URLencode(as.character(sensor_number), reserved = TRUE),
-    "&dur_code=D",
-    "&Start=", format(start_date, "%Y-%m-%d"),
-    "&End=", format(end_date, "%Y-%m-%d")
-  )
-
-  response_text <- paste(
-    download_observed_source_file(
-      query_url,
-      fileext = ".json"
-    ),
-    collapse = "\n"
-  )
-
-  if (!nzchar(trimws(response_text))) {
-    stop(
-      paste0(
-        "CDEC returned an empty response for ",
-        station_id,
-        " sensor ",
-        sensor_number,
-        "."
-      )
-    )
-  }
-
-  cdec_data <- tryCatch(
-    jsonlite::fromJSON(
-      response_text,
-      simplifyDataFrame = TRUE
-    ),
-    error = function(error_condition) {
-      stop(
-        paste0(
-          "The CDEC JSON response could not be parsed for ",
-          station_id,
-          " sensor ",
-          sensor_number,
-          ": ",
-          conditionMessage(error_condition)
-        )
-      )
-    }
-  )
-
-  if (is.null(cdec_data) || length(cdec_data) == 0) {
-    stop(
-      paste0(
-        "CDEC returned no daily records for ",
-        station_id,
-        " sensor ",
-        sensor_number,
-        "."
-      )
-    )
-  }
-
-  cdec_data <- as.data.frame(
-    cdec_data,
-    stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
-
-  normalized_names <- tolower(
-    gsub(
-      "[^a-z0-9]",
-      "",
-      names(cdec_data)
-    )
-  )
-
-  date_candidates <- c(
-    "obsdate",
-    "date",
-    "datetime"
-  )
-
-  value_candidates <- c(
-    "value",
-    "obsvalue"
-  )
-
-  date_index <- match(
-    date_candidates,
-    normalized_names,
-    nomatch = 0
-  )
-
-  date_index <- date_index[date_index > 0][1]
-
-  value_index <- match(
-    value_candidates,
-    normalized_names,
-    nomatch = 0
-  )
-
-  value_index <- value_index[value_index > 0][1]
-
-  if (
-    length(date_index) == 0 ||
-    is.na(date_index) ||
-    length(value_index) == 0 ||
-    is.na(value_index)
-  ) {
-    stop(
-      paste0(
-        "The CDEC response for ",
-        station_id,
-        " sensor ",
-        sensor_number,
-        " did not contain recognizable date and value fields. ",
-        "Returned fields: ",
-        paste(names(cdec_data), collapse = ", "),
-        "."
-      )
-    )
-  }
-
-  result <- data.frame(
-    Date = parse_observed_dates(
-      cdec_data[[date_index]]
-    ),
-    Value = suppressWarnings(
-      as.numeric(
-        gsub(
-          ",",
-          "",
-          as.character(cdec_data[[value_index]]),
-          fixed = TRUE
-        )
-      )
-    ),
-    stringsAsFactors = FALSE
-  )
-
-  # All CDEC series used here are flows in cfs and should not be
-  # negative. CDEC can return negative missing-value sentinels such as
-  # -9999; exclude those before calculating the trailing average.
-  result <- result[
-    !is.na(result$Date) &
-      is.finite(result$Value) &
-      result$Value >= 0 &
-      result$Date >= start_date &
-      result$Date <= end_date,
-    ,
-    drop = FALSE
-  ]
-
-  result <- result[
-    !duplicated(result$Date, fromLast = TRUE),
-    ,
-    drop = FALSE
-  ]
-
-  result <- result[
-    order(result$Date),
-    ,
-    drop = FALSE
-  ]
-
-  if (nrow(result) == 0) {
-    stop(
-      paste0(
-        "CDEC returned a response for ",
-        station_id,
-        " sensor ",
-        sensor_number,
-        ", but no nonnegative daily flow values were found between ",
-        format(start_date, "%m/%d/%Y"),
-        " and ",
-        format(end_date, "%m/%d/%Y"),
-        "."
-      )
-    )
-  }
-
-  attr(result, "source_url") <- query_url
-  attr(result, "station_id") <- station_id
-  attr(result, "sensor_number") <- sensor_number
-
-  result
-}
-
-read_usgs_daily_values <- function(
-  site_number,
-  parameter_code,
-  end_date = Sys.Date(),
-  lookback_days = 45,
-  use_latest_available = FALSE
-) {
-  start_date <- if (isTRUE(use_latest_available)) {
-    as.Date("1900-01-01")
-  } else {
-    as.Date(end_date) - lookback_days
-  }
-
-  query_url <- paste0(
-    "https://waterservices.usgs.gov/nwis/dv/",
-    "?format=rdb",
-    "&sites=", site_number,
-    "&startDT=", format(start_date, "%Y-%m-%d"),
-    "&endDT=", format(as.Date(end_date), "%Y-%m-%d"),
-    "&parameterCd=", parameter_code,
-    "&statCd=00003",
-    "&siteStatus=all"
-  )
-
-  text_lines <- download_observed_source_file(query_url)
-
-  data_lines <- text_lines[
-    !grepl("^#", text_lines) &
-      nzchar(trimws(text_lines))
-  ]
-
-  if (length(data_lines) < 3) {
-    stop(
-      paste0(
-        "USGS site ",
-        site_number,
-        " returned no usable daily records."
-      )
-    )
-  }
-
-  usgs_data <- utils::read.delim(
-    text = paste(data_lines, collapse = "\n"),
-    header = TRUE,
-    sep = "\t",
-    stringsAsFactors = FALSE,
-    check.names = FALSE,
-    na.strings = c("", "Ice", "Eqp", "Ssn", "Rat", "Dis")
-  )
-
-  if (
-    nrow(usgs_data) > 0 &&
-    "agency_cd" %in% names(usgs_data) &&
-    grepl(
-      "^[0-9]+[a-zA-Z]$",
-      as.character(usgs_data$agency_cd[1])
-    )
-  ) {
-    usgs_data <- usgs_data[-1, , drop = FALSE]
-  }
-
-  date_index <- which(
-    toupper(names(usgs_data)) %in% c("DATETIME", "DATE")
-  )[1]
-
-  parameter_columns <- which(
-    grepl(
-      paste0("_", parameter_code, "_"),
-      names(usgs_data),
-      fixed = TRUE
-    ) &
-      !grepl("_CD$", names(usgs_data))
-  )
-
-  if (is.na(date_index) || length(parameter_columns) == 0) {
-    stop(
-      paste0(
-        "USGS response for site ",
-        site_number,
-        " did not contain the requested parameter ",
-        parameter_code,
-        "."
-      )
-    )
-  }
-
-  # Prefer the daily mean statistic column when several columns are returned.
-  mean_columns <- parameter_columns[
-    grepl("_00003$", names(usgs_data)[parameter_columns])
-  ]
-
-  value_index <- if (length(mean_columns) > 0) {
-    mean_columns[1]
-  } else {
-    parameter_columns[1]
-  }
-
-  result <- data.frame(
-    Date = parse_observed_dates(
-      usgs_data[[date_index]]
-    ),
-    Value = suppressWarnings(
-      as.numeric(
-        gsub(",", "", usgs_data[[value_index]])
-      )
-    )
-  )
-
-  result <- result[
-    !is.na(result$Date) &
-      is.finite(result$Value),
-    ,
-    drop = FALSE
-  ]
-
-  result <- result[
-    order(result$Date),
-    ,
-    drop = FALSE
-  ]
-
-  if (nrow(result) == 0) {
-    stop(
-      paste0(
-        "No usable daily USGS values were returned for site ",
-        site_number,
-        "."
-      )
-    )
-  }
-
-  result
-}
-
-trailing_seven_summary <- function(data) {
-  data <- data[
-    !is.na(data$Date) &
-      is.finite(data$Value) &
-      data$Value > -9000,
-    ,
-    drop = FALSE
-  ]
-
-  data <- data[
-    order(data$Date),
-    ,
-    drop = FALSE
-  ]
-
-  if (nrow(data) < 7) {
-    stop("Fewer than seven usable daily values were available.")
-  }
-
-  selected <- utils::tail(data, 7)
-
-  list(
-    value = mean(selected$Value, na.rm = TRUE),
-    start_date = min(selected$Date),
-    end_date = max(selected$Date),
-    dates = selected$Date,
-    values = selected$Value
-  )
-}
-
-safe_observed_summary <- function(
-  expression,
-  attempts = 2,
-  pause_seconds = 1
-) {
-  expression_code <- substitute(expression)
-  evaluation_environment <- parent.frame()
-  last_error <- NULL
-
-  for (attempt in seq_len(attempts)) {
-    result <- tryCatch(
-      {
-        value <- eval(expression_code, envir = evaluation_environment)
-        list(ok = TRUE, data = value, message = NULL)
-      },
-      error = function(error_condition) {
-        last_error <<- conditionMessage(error_condition)
-        NULL
-      }
-    )
-
-    if (!is.null(result)) {
-      return(result)
-    }
-
-    if (attempt < attempts) {
-      Sys.sleep(pause_seconds * attempt)
-    }
-  }
-
-  list(
-    ok = FALSE,
-    data = NULL,
-    message = paste0(
-      "The live source was temporarily unavailable after ",
-      attempts,
-      " attempts. The existing input value is being used."
-    ),
-    technical_message = last_error
-  )
-}
-
-format_observed_value <- function(value) {
-  if (!is.finite(value)) {
-    return("Unavailable")
-  }
-
-  format(
-    round(value, 0),
-    big.mark = ",",
-    scientific = FALSE,
-    trim = TRUE
-  )
-}
-
-
 server <- function(input, output, session) {
-
-
-  observed_flow_state <- reactiveVal(
-    list(
-      status = "loading",
-      message = "Retrieving observed trailing 7-day average flows.",
-      updated_at = NULL
-    )
-  )
-
-  observed_note <- function(
-    label,
-    source_items,
-    special_note = NULL
-  ) {
-    state <- observed_flow_state()
-
-    if (!identical(state$status, "ready")) {
-      return(
-        tags$div(
-          class = "observed-flow-note",
-          if (identical(state$status, "loading")) {
-            "Retrieving the latest observed trailing 7-day average."
-          } else {
-            paste0(
-              "Live source refresh is temporarily unavailable. ",
-              "The existing box value is being used and the app will retry when this input method is selected again."
-            )
-          }
-        )
-      )
-    }
-
-    item <- state[[label]]
-
-    if (is.null(item) || !isTRUE(item$ok)) {
-      return(
-        tags$div(
-          class = "observed-flow-note",
-          paste0(
-            "Live source refresh is temporarily unavailable. ",
-            "The existing box value is being used. Re-select Enter a Single Set of Values to retry."
-          )
-        )
-      )
-    }
-
-    link_tags <- lapply(
-      seq_along(source_items),
-      function(index) {
-        source <- source_items[[index]]
-
-        tagList(
-          if (index > 1) ", " else NULL,
-          tags$a(
-            href = source$url,
-            target = "_blank",
-            rel = "noopener noreferrer",
-            source$text
-          )
-        )
-      }
-    )
-
-    tags$div(
-      class = "observed-flow-note",
-      tags$b(
-        paste0(
-          "Trailing 7-day average flow as of ",
-          format(item$end_date, "%m/%d/%Y"),
-          ": ",
-          format_observed_value(item$value),
-          " cfs."
-        )
-      ),
-      tags$br(),
-      "Source",
-      if (length(source_items) > 1) "s: " else ": ",
-      tagList(link_tags),
-      if (!is.null(special_note)) {
-        tagList(
-          tags$br(),
-          tags$span(special_note)
-        )
-      }
-    )
-  }
-
-  output$current_ptm_exp_note <- renderUI({
-    observed_note(
-      "EXP",
-      list(
-        list(
-          text = "CLC INFLOW CFS (sensor 76)",
-          url = observed_source_links$CLC
-        ),
-        list(
-          text = "TRP DC PUMP CFS (sensor 70)",
-          url = observed_source_links$TRP
-        )
-      )
-    )
-  })
-
-  output$current_ptm_ver_note <- renderUI({
-    observed_note(
-      "VER",
-      list(
-        list(
-          text = "VNS M FLOW CFS (sensor 41)",
-          url = observed_source_links$VNS
-        )
-      )
-    )
-  })
-
-  output$current_ptm_sac_note <- renderUI({
-    observed_note(
-      "SAC",
-      list(
-        list(
-          text = "FPT FLOW CFS (sensor 20)",
-          url = observed_source_links$FPT
-        )
-      )
-    )
-  })
-
-  output$current_ptm_east_note <- renderUI({
-    state <- observed_flow_state()
-    special_note <- NULL
-
-    if (
-      identical(state$status, "ready") &&
-      !is.null(state$EAST) &&
-      isTRUE(state$EAST$ok)
-    ) {
-      special_note <- paste0(
-        "EAST = MOK + CAL + COS. The MOK daily record used here ends ",
-        format(state$MOK$end_date, "%m/%d/%Y"),
-        "; its latest available seven daily values are combined with the ",
-        "current CAL and COS trailing averages."
-      )
-    }
-
-    observed_note(
-      "EAST",
-      list(
-        list(
-          text = "MOK (USGS 11325500)",
-          url = observed_source_links$MOK
-        ),
-        list(
-          text = "CAL: NHG OUTFLOW CFS (sensor 23)",
-          url = observed_source_links$NHG
-        ),
-        list(
-          text = "COS (USGS 11335000 discharge)",
-          url = observed_source_links$COS
-        )
-      ),
-      special_note = special_note
-    )
-  })
-
-  output$current_ptm_xgeo_note <- renderUI({
-    observed_note(
-      "XGEO",
-      list(
-        list(
-          text = "XGEO_A (USGS 11447890)",
-          url = observed_source_links$XGEO_A
-        ),
-        list(
-          text = "XGEO_C (USGS 11447905)",
-          url = observed_source_links$XGEO_C
-        )
-      ),
-      special_note = "XGEO is calculated as XGEO_A minus XGEO_C."
-    )
-  })
-
-  observeEvent(
-    input$current_input_method,
-    {
-      if (!identical(input$current_input_method, "single")) {
-        return(invisible(NULL))
-      }
-
-      observed_flow_state(
-        list(
-          status = "loading",
-          message = "Retrieving observed trailing 7-day average flows.",
-          updated_at = Sys.time()
-        )
-      )
-
-      clc <- safe_observed_summary(
-        trailing_seven_summary(
-          read_cdec_daily_values("CLC", 76)
-        )
-      )
-
-      trp <- safe_observed_summary(
-        trailing_seven_summary(
-          read_cdec_daily_values("TRP", 70)
-        )
-      )
-
-      vns <- safe_observed_summary(
-        trailing_seven_summary(
-          read_cdec_daily_values("VNS", 41)
-        )
-      )
-
-      fpt <- safe_observed_summary(
-        trailing_seven_summary(
-          read_cdec_daily_values("FPT", 20)
-        )
-      )
-
-      nhg <- safe_observed_summary(
-        trailing_seven_summary(
-          read_cdec_daily_values("NHG", 23)
-        )
-      )
-
-      mok <- safe_observed_summary(
-        trailing_seven_summary(
-          read_usgs_daily_values(
-            site_number = "11325500",
-            parameter_code = "00060",
-            end_date = as.Date("2024-09-30"),
-            lookback_days = 45
-          )
-        )
-      )
-
-      cos <- safe_observed_summary(
-        trailing_seven_summary(
-          read_usgs_daily_values(
-            site_number = "11335000",
-            parameter_code = "00060"
-          )
-        )
-      )
-
-      xgeo_a <- safe_observed_summary(
-        trailing_seven_summary(
-          read_usgs_daily_values(
-            site_number = "11447890",
-            parameter_code = "72137"
-          )
-        )
-      )
-
-      xgeo_c <- safe_observed_summary(
-        trailing_seven_summary(
-          read_usgs_daily_values(
-            site_number = "11447905",
-            parameter_code = "72137"
-          )
-        )
-      )
-
-      exp_result <- if (isTRUE(clc$ok) && isTRUE(trp$ok)) {
-        list(
-          ok = TRUE,
-          value = clc$data$value + trp$data$value,
-          start_date = max(clc$data$start_date, trp$data$start_date),
-          end_date = min(clc$data$end_date, trp$data$end_date),
-          message = NULL
-        )
-      } else {
-        list(
-          ok = FALSE,
-          message = paste(
-            c(
-              if (!isTRUE(clc$ok)) paste0("CLC: ", clc$message) else NULL,
-              if (!isTRUE(trp$ok)) paste0("TRP: ", trp$message) else NULL
-            ),
-            collapse = " "
-          )
-        )
-      }
-
-      ver_result <- if (isTRUE(vns$ok)) {
-        c(list(ok = TRUE), vns$data)
-      } else {
-        list(ok = FALSE, message = vns$message)
-      }
-
-      sac_result <- if (isTRUE(fpt$ok)) {
-        c(list(ok = TRUE), fpt$data)
-      } else {
-        list(ok = FALSE, message = fpt$message)
-      }
-
-      east_result <- if (
-        isTRUE(mok$ok) &&
-        isTRUE(nhg$ok) &&
-        isTRUE(cos$ok)
-      ) {
-        list(
-          ok = TRUE,
-          value = mok$data$value + nhg$data$value + cos$data$value,
-          start_date = min(
-            mok$data$start_date,
-            nhg$data$start_date,
-            cos$data$start_date
-          ),
-          end_date = max(
-            mok$data$end_date,
-            nhg$data$end_date,
-            cos$data$end_date
-          ),
-          message = NULL
-        )
-      } else {
-        list(
-          ok = FALSE,
-          message = paste(
-            c(
-              if (!isTRUE(mok$ok)) paste0("MOK: ", mok$message) else NULL,
-              if (!isTRUE(nhg$ok)) paste0("CAL: ", nhg$message) else NULL,
-              if (!isTRUE(cos$ok)) paste0("COS: ", cos$message) else NULL
-            ),
-            collapse = " "
-          )
-        )
-      }
-
-      xgeo_result <- if (
-        isTRUE(xgeo_a$ok) &&
-        isTRUE(xgeo_c$ok)
-      ) {
-        list(
-          ok = TRUE,
-          value = xgeo_a$data$value - xgeo_c$data$value,
-          start_date = max(
-            xgeo_a$data$start_date,
-            xgeo_c$data$start_date
-          ),
-          end_date = min(
-            xgeo_a$data$end_date,
-            xgeo_c$data$end_date
-          ),
-          message = NULL
-        )
-      } else {
-        list(
-          ok = FALSE,
-          message = paste(
-            c(
-              if (!isTRUE(xgeo_a$ok)) {
-                paste0("XGEO_A: ", xgeo_a$message)
-              } else {
-                NULL
-              },
-              if (!isTRUE(xgeo_c$ok)) {
-                paste0("XGEO_C: ", xgeo_c$message)
-              } else {
-                NULL
-              }
-            ),
-            collapse = " "
-          )
-        )
-      }
-
-      state <- list(
-        status = "ready",
-        updated_at = Sys.time(),
-        EXP = exp_result,
-        VER = ver_result,
-        SAC = sac_result,
-        EAST = east_result,
-        XGEO = xgeo_result,
-        MOK = if (isTRUE(mok$ok)) mok$data else NULL
-      )
-
-      observed_flow_state(state)
-
-      if (isTRUE(exp_result$ok)) {
-        updateNumericInput(
-          session,
-          "current_ptm_exp",
-          value = round(exp_result$value, 0)
-        )
-      }
-
-      if (isTRUE(ver_result$ok)) {
-        updateNumericInput(
-          session,
-          "current_ptm_ver",
-          value = round(ver_result$value, 0)
-        )
-      }
-
-      if (isTRUE(sac_result$ok)) {
-        updateNumericInput(
-          session,
-          "current_ptm_sac",
-          value = round(sac_result$value, 0)
-        )
-      }
-
-      if (isTRUE(east_result$ok)) {
-        updateNumericInput(
-          session,
-          "current_ptm_east",
-          value = round(east_result$value, 0)
-        )
-      }
-
-      if (isTRUE(xgeo_result$ok)) {
-        updateNumericInput(
-          session,
-          "current_ptm_xgeo",
-          value = round(xgeo_result$value, 0)
-        )
-      }
-
-      failed_labels <- c(
-        if (!isTRUE(exp_result$ok)) "EXP" else NULL,
-        if (!isTRUE(ver_result$ok)) "VER" else NULL,
-        if (!isTRUE(sac_result$ok)) "SAC" else NULL,
-        if (!isTRUE(east_result$ok)) "EAST" else NULL,
-        if (!isTRUE(xgeo_result$ok)) "XGEO" else NULL
-      )
-
-      if (length(failed_labels) > 0) {
-        showNotification(
-          paste0(
-            "Live values are temporarily unavailable for: ",
-            paste(failed_labels, collapse = ", "),
-            ". Existing input values are being used; re-select the input method to retry."
-          ),
-          type = "warning",
-          duration = 10
-        )
-      }
-    },
-    ignoreInit = FALSE
-  )
-
   
   find_latest_master <- function() {
     files <- list.files(
@@ -1289,30 +208,14 @@ server <- function(input, output, session) {
       distinct(DSM2_Node, .keep_all = TRUE) %>%
       select(DSM2_Node, Location, Region, X, Y)
     
-    ptm7_model_names <- c(
-      "PTM Emulator 7-Day Entrainment",
-      "PTM 7-Day Entrainment"
-    )
-    
-    ptm30_model_names <- c(
-      "PTM Emulator 30-Day Entrainment",
-      "PTM 30-Day Entrainment"
-    )
-    
     nodes_7d <- combined %>%
-      filter(
-        Model %in% ptm7_model_names,
-        !is.na(DSM2_Node)
-      ) %>%
+      filter(Model == "PTM 7-Day Entrainment", !is.na(DSM2_Node)) %>%
       distinct(DSM2_Node) %>%
       arrange(as.numeric(DSM2_Node)) %>%
       pull(DSM2_Node)
     
     nodes_30d <- combined %>%
-      filter(
-        Model %in% ptm30_model_names,
-        !is.na(DSM2_Node)
-      ) %>%
+      filter(Model == "PTM 30-Day Entrainment", !is.na(DSM2_Node)) %>%
       distinct(DSM2_Node) %>%
       arrange(as.numeric(DSM2_Node)) %>%
       pull(DSM2_Node)
@@ -1819,50 +722,6 @@ server <- function(input, output, session) {
     
     dplyr::bind_rows(all_path_lines)
   }
-  make_empty_comparison_map <- function(message) {
-    
-    leaflet() %>%
-      addProviderTiles(
-        providers$CartoDB.Positron
-      ) %>%
-      addPolygons(
-        data = st_transform(
-          delta_boundary,
-          4326
-        ),
-        fillColor = "#eef7f9",
-        fillOpacity = 0.2,
-        color = "#0a7e8c",
-        weight = 1,
-        group = "Delta Boundary"
-      ) %>%
-      addPolylines(
-        data = st_transform(
-          delta_channels,
-          4326
-        ),
-        color = "#2b8cbe",
-        weight = 1,
-        opacity = 0.6,
-        group = "Channels"
-      ) %>%
-      addControl(
-        html = paste0(
-          "<div style='background:white;padding:12px 14px;",
-          "border-radius:6px;border:1px solid #bbb;",
-          "box-shadow:0 2px 6px rgba(0,0,0,0.2);",
-          "font-size:14px;max-width:360px;'>",
-          message,
-          "</div>"
-        ),
-        position = "topright"
-      ) %>%
-      leaflet::setView(
-        lng = -121.60,
-        lat = 38.05,
-        zoom = 9
-      )
-  }
   make_ptm_results <- function(condition, scenario_name, exp, ver, sac, east, xgeo) {
     ref <- reference_data()
     
@@ -1898,8 +757,8 @@ server <- function(input, output, session) {
     }
     
     bind_rows(
-      make_one(ptm7_model, "PTM Emulator 7-Day Entrainment", ref$nodes_7d),
-      make_one(ptm30_model, "PTM Emulator 30-Day Entrainment", ref$nodes_30d)
+      make_one(ptm7_model, "PTM 7-Day Entrainment", ref$nodes_7d),
+      make_one(ptm30_model, "PTM 30-Day Entrainment", ref$nodes_30d)
     )
   }
   
@@ -1942,7 +801,7 @@ server <- function(input, output, session) {
       Condition = condition,
       Input_Method = "single",
       Scenario_Name = scenario_name,
-      Model = c("ECO-PTM Emulator Survival", "ECO-PTM Emulator Interior Routing"),
+      Model = c("ECO-PTM Survival", "ECO-PTM Interior Routing"),
       Prediction_Raw = c(survival_raw, interior_raw),
       Prediction_Final = bound_percent(c(survival_raw, interior_raw)),
       Output_Unit = "Percent",
@@ -2226,163 +1085,225 @@ server <- function(input, output, session) {
   download_usgs_daily_flow <- function(
     site_number,
     start_date,
-    end_date,
-    search_buffer_days = 14
+    end_date
   ) {
-
+    
     start_date <- as.Date(start_date)
     end_date <- as.Date(end_date)
-
-    query_start <- start_date - search_buffer_days
-    query_end <- end_date + search_buffer_days
-
+    
     query_url <- paste0(
       "https://waterservices.usgs.gov/nwis/iv/",
-      "?format=json",
+      "?format=rdb",
       "&sites=", site_number,
-      "&startDT=", format(query_start, "%Y-%m-%d"),
-      "&endDT=", format(query_end + 1, "%Y-%m-%d"),
+      "&startDT=", format(start_date, "%Y-%m-%d"),
+      "&endDT=", format(end_date + 1, "%Y-%m-%d"),
       "&parameterCd=00060",
       "&siteStatus=all"
     )
-
-    response_lines <- download_observed_source_file(
-      url = query_url,
-      fileext = ".json",
-      attempts = 3,
-      pause_seconds = 1
+    
+    temporary_file <- tempfile(
+      fileext = ".txt"
     )
-
-    response_text <- paste(
-      response_lines,
-      collapse = "\n"
+    
+    old_timeout <- getOption("timeout")
+    
+    on.exit(
+      {
+        options(timeout = old_timeout)
+        
+        if (file.exists(temporary_file)) {
+          unlink(temporary_file)
+        }
+      },
+      add = TRUE
     )
-
-    response_json <- tryCatch(
-      jsonlite::fromJSON(
-        response_text,
-        simplifyVector = FALSE
-      ),
-      error = function(error_condition) {
-        stop(
-          paste0(
-            "USGS JSON response for site ",
-            site_number,
-            " could not be parsed: ",
-            conditionMessage(error_condition)
-          )
+    
+    options(
+      timeout = max(
+        120,
+        old_timeout
+      )
+    )
+    
+    download_status <- tryCatch(
+      {
+        utils::download.file(
+          url = query_url,
+          destfile = temporary_file,
+          mode = "wb",
+          method = "libcurl",
+          quiet = TRUE
         )
+        
+        TRUE
+      },
+      error = function(e) {
+        FALSE
+      },
+      warning = function(w) {
+        invokeRestart("muffleWarning")
       }
     )
-
-    time_series <- response_json$value$timeSeries
-
+    
     if (
-      is.null(time_series) ||
-      length(time_series) == 0
+      !isTRUE(download_status) ||
+      !file.exists(temporary_file) ||
+      file.info(temporary_file)$size == 0
     ) {
       stop(
         paste0(
-          "USGS site ",
+          "Could not download XGEO source data from USGS site ",
           site_number,
-          " returned no discharge time series near the requested dates."
+          ". Check the internet connection and try again."
         )
       )
     }
-
-    observation_rows <- list()
-    row_index <- 1L
-
-    for (series_item in time_series) {
-
-      value_groups <- series_item$values
-
-      if (
-        is.null(value_groups) ||
-        length(value_groups) == 0
-      ) {
-        next
-      }
-
-      for (value_group in value_groups) {
-
-        observations <- value_group$value
-
-        if (
-          is.null(observations) ||
-          length(observations) == 0
-        ) {
-          next
-        }
-
-        for (observation in observations) {
-
-          observation_rows[[row_index]] <- data.frame(
-            DATE_TIME = as.character(
-              observation$dateTime
-            ),
-            FLOW = suppressWarnings(
-              as.numeric(
-                observation$value
-              )
-            ),
-            stringsAsFactors = FALSE
+    
+    text_lines <- readLines(
+      temporary_file,
+      warn = FALSE
+    )
+    
+    data_lines <- text_lines[
+      !grepl(
+        "^#",
+        text_lines
+      ) &
+        nzchar(
+          trimws(
+            text_lines
           )
-
-          row_index <- row_index + 1L
-        }
-      }
-    }
-
-    if (length(observation_rows) == 0) {
+        )
+    ]
+    
+    if (length(data_lines) < 3) {
       stop(
         paste0(
           "USGS site ",
           site_number,
-          " returned no usable discharge observations."
+          " returned no usable discharge records for ",
+          format(start_date),
+          " through ",
+          format(end_date),
+          "."
         )
       )
     }
-
-    usgs_values <- bind_rows(
-      observation_rows
+    
+    usgs_data <- utils::read.delim(
+      text = paste(
+        data_lines,
+        collapse = "\n"
+      ),
+      header = TRUE,
+      sep = "\t",
+      stringsAsFactors = FALSE,
+      check.names = FALSE,
+      na.strings = c(
+        "",
+        "Ice",
+        "Eqp",
+        "Ssn",
+        "Rat",
+        "Dis"
+      )
     )
-
+    
+    # The second non-comment RDB row contains field-width/type codes.
+    if (
+      nrow(usgs_data) > 0 &&
+      grepl(
+        "^[0-9]+[a-zA-Z]$",
+        as.character(
+          usgs_data$agency_cd[1]
+        )
+      )
+    ) {
+      usgs_data <- usgs_data[
+        -1,
+        ,
+        drop = FALSE
+      ]
+    }
+    
+    date_time_column <- names(usgs_data)[
+      normalize_archive_name(
+        names(usgs_data)
+      ) %in% c(
+        "DATETIME",
+        "DATE"
+      )
+    ][1]
+    
+    discharge_columns <- names(usgs_data)[
+      grepl(
+        "00060",
+        names(usgs_data),
+        fixed = TRUE
+      ) &
+        !grepl(
+          "_cd$",
+          names(usgs_data),
+          ignore.case = TRUE
+        )
+    ]
+    
+    if (
+      is.na(date_time_column) ||
+      length(discharge_columns) == 0
+    ) {
+      stop(
+        paste0(
+          "USGS response for site ",
+          site_number,
+          " did not contain the expected date-time and discharge fields."
+        )
+      )
+    }
+    
+    discharge_column <- discharge_columns[1]
+    
     parsed_date_time <- suppressWarnings(
       as.POSIXct(
-        usgs_values$DATE_TIME,
+        usgs_data[[date_time_column]],
         tz = "America/Los_Angeles"
       )
     )
-
+    
+    # A second parser is useful when timestamps include an explicit
+    # UTC offset that the local R installation handles differently.
     missing_date_time <- is.na(
       parsed_date_time
     )
-
+    
     if (any(missing_date_time)) {
       parsed_date_time[missing_date_time] <- suppressWarnings(
         as.POSIXct(
-          usgs_values$DATE_TIME[missing_date_time],
-          format = "%Y-%m-%dT%H:%M:%S%z",
+          usgs_data[[date_time_column]][missing_date_time],
+          format = "%Y-%m-%d %H:%M",
           tz = "America/Los_Angeles"
         )
       )
     }
-
+    
+    flow_values <- suppressWarnings(
+      as.numeric(
+        usgs_data[[discharge_column]]
+      )
+    )
+    
     daily_data <- data.frame(
       DATE = as.Date(
         parsed_date_time,
         tz = "America/Los_Angeles"
       ),
-      FLOW = usgs_values$FLOW
+      FLOW = flow_values
     ) %>%
       filter(
         !is.na(DATE),
-        is.finite(FLOW)
+        !is.na(FLOW)
       ) %>%
-      group_by(
-        DATE
-      ) %>%
+      group_by(DATE) %>%
       summarise(
         FLOW = mean(
           FLOW,
@@ -2390,126 +1311,31 @@ server <- function(input, output, session) {
         ),
         .groups = "drop"
       ) %>%
-      arrange(
-        DATE
+      filter(
+        DATE >= start_date,
+        DATE <= end_date
       )
-
-    if (nrow(daily_data) == 0) {
-      stop(
+    
+    validate(
+      need(
+        nrow(daily_data) > 0,
         paste0(
-          "No usable daily discharge values were available from USGS site ",
+          "No daily discharge values were available from USGS site ",
           site_number,
-          " within ",
-          search_buffer_days,
-          " days of the requested period."
+          " for the required dates."
         )
       )
-    }
-
+    )
+    
     daily_data
   }
-
-
-  fill_with_nearest_available_date <- function(
-    available_data,
-    required_dates,
-    value_columns
-  ) {
-
-    required_dates <- sort(
-      unique(
-        as.Date(
-          required_dates
-        )
-      )
-    )
-
-    available_data <- available_data %>%
-      mutate(
-        DATE = as.Date(
-          DATE
-        )
-      ) %>%
-      filter(
-        !is.na(DATE)
-      ) %>%
-      arrange(
-        DATE
-      )
-
-    if (
-      nrow(available_data) == 0 ||
-      length(required_dates) == 0
-    ) {
-      return(
-        tibble::tibble()
-      )
-    }
-
-    nearest_rows <- lapply(
-      required_dates,
-      function(required_date) {
-
-        usable_rows <- available_data %>%
-          filter(
-            if_all(
-              all_of(
-                value_columns
-              ),
-              ~ !is.na(.x)
-            )
-          )
-
-        if (nrow(usable_rows) == 0) {
-          return(NULL)
-        }
-
-        nearest_index <- which.min(
-          abs(
-            as.numeric(
-              usable_rows$DATE - required_date
-            )
-          )
-        )
-
-        selected_row <- usable_rows[
-          nearest_index,
-          ,
-          drop = FALSE
-        ]
-
-        selected_row$SOURCE_DATE <- selected_row$DATE
-        selected_row$DATE <- required_date
-
-        selected_row
-      }
-    )
-
-    nearest_rows <- nearest_rows[
-      !vapply(
-        nearest_rows,
-        is.null,
-        logical(1)
-      )
-    ]
-
-    if (length(nearest_rows) == 0) {
-      return(
-        tibble::tibble()
-      )
-    }
-
-    bind_rows(
-      nearest_rows
-    )
-  }
-
-
+  
+  
   get_archive_xgeo <- function(
     file_path,
     required_dates
   ) {
-
+    
     required_dates <- sort(
       unique(
         as.Date(
@@ -2517,38 +1343,38 @@ server <- function(input, output, session) {
         )
       )
     )
-
+    
     required_dates <- required_dates[
       !is.na(
         required_dates
       )
     ]
-
+    
     validate(
       need(
         length(required_dates) > 0,
-        "No valid archive dates were available for calculating XGEO."
+        "No valid archive dates were available for downloading XGEO."
       )
     )
-
+    
     archive_date_folder <- dirname(
       file_path
     )
-
+    
     cache_file <- file.path(
       archive_date_folder,
       "XGEO_USGS_daily.csv"
     )
-
+    
     cached_xgeo <- tibble::tibble(
       DATE = as.Date(character()),
       XGEO_A = numeric(),
       XGEO_C = numeric(),
       XGEO = numeric()
     )
-
+    
     if (file.exists(cache_file)) {
-
+      
       cached_xgeo <- tryCatch(
         {
           readr::read_csv(
@@ -2577,89 +1403,56 @@ server <- function(input, output, session) {
         }
       )
     }
-
-    complete_cached_dates <- cached_xgeo$DATE[
-      !is.na(cached_xgeo$XGEO_A) &
-        !is.na(cached_xgeo$XGEO_C) &
-        !is.na(cached_xgeo$XGEO)
-    ]
-
+    
     missing_dates <- setdiff(
       required_dates,
-      complete_cached_dates
+      cached_xgeo$DATE
     )
-
+    
     if (length(missing_dates) > 0) {
-
+      
       download_start <- min(
         missing_dates
       )
-
+      
       download_end <- max(
         missing_dates
       )
-
-      xgeo_a_download <- tryCatch(
-        {
-          download_usgs_daily_flow(
-            site_number = "11447890",
-            start_date = download_start,
-            end_date = download_end,
-            search_buffer_days = 14
-          ) %>%
-            rename(
-              XGEO_A = FLOW
-            )
-        },
-        error = function(error_condition) {
-          NULL
-        }
-      )
-
-      xgeo_c_download <- tryCatch(
-        {
-          download_usgs_daily_flow(
-            site_number = "11447905",
-            start_date = download_start,
-            end_date = download_end,
-            search_buffer_days = 14
-          ) %>%
-            rename(
-              XGEO_C = FLOW
-            )
-        },
-        error = function(error_condition) {
-          NULL
-        }
-      )
-
-      available_xgeo <- full_join(
-        if (is.null(xgeo_a_download)) {
-          tibble::tibble(
-            DATE = as.Date(character()),
-            XGEO_A = numeric()
-          )
-        } else {
-          xgeo_a_download
-        },
-        if (is.null(xgeo_c_download)) {
-          tibble::tibble(
-            DATE = as.Date(character()),
-            XGEO_C = numeric()
-          )
-        } else {
-          xgeo_c_download
-        },
+      
+      xgeo_a <- download_usgs_daily_flow(
+        site_number = "11447890",
+        start_date = download_start,
+        end_date = download_end
+      ) %>%
+        rename(
+          XGEO_A = FLOW
+        )
+      
+      xgeo_c <- download_usgs_daily_flow(
+        site_number = "11447905",
+        start_date = download_start,
+        end_date = download_end
+      ) %>%
+        rename(
+          XGEO_C = FLOW
+        )
+      
+      downloaded_xgeo <- full_join(
+        xgeo_a,
+        xgeo_c,
         by = "DATE"
       ) %>%
-        bind_rows(
-          cached_xgeo %>%
-            select(
-              DATE,
-              XGEO_A,
-              XGEO_C
-            )
+        arrange(
+          DATE
         ) %>%
+        mutate(
+          XGEO = XGEO_A - XGEO_C
+        )
+      
+      cached_xgeo <- bind_rows(
+        cached_xgeo,
+        downloaded_xgeo
+      ) %>%
         arrange(
           DATE
         ) %>%
@@ -2667,43 +1460,16 @@ server <- function(input, output, session) {
           DATE,
           .keep_all = TRUE
         )
-
-      filled_xgeo <- fill_with_nearest_available_date(
-        available_data = available_xgeo,
-        required_dates = missing_dates,
-        value_columns = c(
-          "XGEO_A",
-          "XGEO_C"
-        )
-      )
-
-      if (nrow(filled_xgeo) > 0) {
-
-        filled_xgeo <- filled_xgeo %>%
-          mutate(
-            XGEO = XGEO_A - XGEO_C
-          ) %>%
-          select(
-            DATE,
-            XGEO_A,
-            XGEO_C,
-            XGEO
-          )
-
-        cached_xgeo <- bind_rows(
+      
+      try(
+        readr::write_csv(
           cached_xgeo,
-          filled_xgeo
-        ) %>%
-          arrange(
-            DATE
-          ) %>%
-          distinct(
-            DATE,
-            .keep_all = TRUE
-          )
-      }
+          cache_file
+        ),
+        silent = TRUE
+      )
     }
-
+    
     result <- cached_xgeo %>%
       filter(
         DATE %in% required_dates
@@ -2711,7 +1477,7 @@ server <- function(input, output, session) {
       arrange(
         DATE
       )
-
+    
     missing_after_download <- setdiff(
       required_dates,
       result$DATE[
@@ -2720,124 +1486,25 @@ server <- function(input, output, session) {
         )
       ]
     )
-
-    if (length(missing_after_download) > 0) {
-
-      nearest_cached <- fill_with_nearest_available_date(
-        available_data = cached_xgeo %>%
-          filter(
-            !is.na(XGEO_A),
-            !is.na(XGEO_C),
-            !is.na(XGEO)
-          ),
-        required_dates = missing_after_download,
-        value_columns = c(
-          "XGEO_A",
-          "XGEO_C",
-          "XGEO"
-        )
-      )
-
-      if (nrow(nearest_cached) > 0) {
-
-        result <- bind_rows(
-          result,
-          nearest_cached %>%
-            select(
-              DATE,
-              XGEO_A,
-              XGEO_C,
-              XGEO
-            )
-        ) %>%
-          arrange(
-            DATE
-          ) %>%
-          distinct(
-            DATE,
-            .keep_all = TRUE
-          )
-      }
-    }
-
-    still_missing <- setdiff(
-      required_dates,
-      result$DATE[
-        !is.na(
-          result$XGEO
-        )
-      ]
-    )
-
-    if (length(still_missing) > 0) {
-
-      # Final non-stopping safeguard. This is used only when neither the
-      # USGS service nor the local cache contains a nearby complete record.
-      fallback_rows <- tibble::tibble(
-        DATE = as.Date(
-          still_missing
-        ),
-        XGEO_A = 0,
-        XGEO_C = 0,
-        XGEO = 0
-      )
-
-      result <- bind_rows(
-        result,
-        fallback_rows
-      ) %>%
-        arrange(
-          DATE
-        ) %>%
-        distinct(
-          DATE,
-          .keep_all = TRUE
-        )
-
-      warning(
+    
+    validate(
+      need(
+        length(missing_after_download) == 0,
         paste0(
-          "No nearby USGS XGEO records were available for ",
+          "XGEO could not be calculated for these date(s): ",
           paste(
             format(
-              still_missing
+              missing_after_download
             ),
             collapse = ", "
           ),
-          ". XGEO was set to 0 so the emulator could continue."
-        ),
-        call. = FALSE
+          "."
+        )
       )
-    }
-
-    cached_xgeo <- bind_rows(
-      cached_xgeo,
-      result
-    ) %>%
-      arrange(
-        DATE
-      ) %>%
-      distinct(
-        DATE,
-        .keep_all = TRUE
-      )
-
-    try(
-      readr::write_csv(
-        cached_xgeo,
-        cache_file
-      ),
-      silent = TRUE
     )
-
-    result %>%
-      filter(
-        DATE %in% required_dates
-      ) %>%
-      arrange(
-        DATE
-      )
+    
+    result
   }
-
   
   
   read_archive_csv <- function(file_path) {
@@ -3554,30 +2221,10 @@ server <- function(input, output, session) {
       )
     )
     
-    latest_dcc <- measured %>%
-      filter(
-        !is.na(DCC)
-      ) %>%
-      slice_tail(
-        n = 1
-      ) %>%
-      pull(
-        DCC
-      )
-
-    if (length(latest_dcc) == 0) {
-      latest_dcc <- 0
-    }
-
     mean_archive_inputs(
       measured
     ) %>%
       mutate(
-        # DCC is a daily status: 0 = closed and 1 = open.
-        # Use the status recorded on the latest measured date.
-        DCC = as.numeric(
-          latest_dcc[1]
-        ),
         Window_Start_Date = min(
           measured$DATE
         ),
@@ -3743,7 +2390,7 @@ server <- function(input, output, session) {
       predict_ptm_from_windows(
         rolling_7,
         ptm7_model,
-        "PTM Emulator 7-Day Entrainment",
+        "PTM 7-Day Entrainment",
         ref$nodes_7d,
         "Observed Conditions",
         scenario_name,
@@ -3754,7 +2401,7 @@ server <- function(input, output, session) {
       predict_ptm_from_windows(
         measured_30,
         ptm30_model,
-        "PTM Emulator 30-Day Entrainment",
+        "PTM 30-Day Entrainment",
         ref$nodes_30d,
         "Observed Conditions",
         scenario_name,
@@ -3789,7 +2436,7 @@ server <- function(input, output, session) {
     predict_ptm_from_windows(
       forecast_7,
       ptm7_model,
-      "PTM Emulator 7-Day Entrainment",
+      "PTM 7-Day Entrainment",
       ref$nodes_7d,
       "Forecast Conditions",
       scenario_name,
@@ -4069,7 +2716,7 @@ server <- function(input, output, session) {
     
     plot_data <- data %>%
       filter(
-        Model == "PTM Emulator 7-Day Entrainment",
+        Model == "PTM 7-Day Entrainment",
         !is.na(Window_End_Date)
       )
     
@@ -4582,367 +3229,7 @@ server <- function(input, output, session) {
     )
     
   }
-  make_ptm_spatial_comparison_map <- function(
-    df,
-    threshold
-  ) {
-    
-    validate(
-      need(
-        nrow(df) > 0,
-        "Select compatible PTM runs to compare."
-      ),
-      need(
-        "Saved_Run_ID" %in% names(df),
-        "PTM comparison data are missing Saved_Run_ID."
-      ),
-      need(
-        "DSM2_Node" %in% names(df),
-        "PTM comparison data are missing DSM2_Node."
-      ),
-      need(
-        "Prediction_Final" %in% names(df),
-        "PTM comparison data are missing Prediction_Final."
-      )
-    )
-    
-    threshold <- suppressWarnings(
-      as.numeric(
-        threshold
-      )
-    )
-    
-    threshold <- threshold[1]
-    
-    if (is.na(threshold)) {
-      threshold <- 25
-    }
-    
-    map_df <- df
-    
-    if (!"Location" %in% names(map_df)) {
-      map_df$Location <- NA_character_
-    }
-    
-    if (!"Region" %in% names(map_df)) {
-      map_df$Region <- NA_character_
-    }
-    
-    if (!"X" %in% names(map_df)) {
-      map_df$X <- NA_real_
-    }
-    
-    if (!"Y" %in% names(map_df)) {
-      map_df$Y <- NA_real_
-    }
-    
-    # For archive-current rolling results, keep the latest window per saved run.
-    if (
-      "Window_End_Date" %in% names(map_df) &&
-      any(!is.na(map_df$Window_End_Date))
-    ) {
-      
-      map_df <- map_df %>%
-        mutate(
-          Window_End_Date_Map = as.Date(
-            Window_End_Date,
-            origin = "1970-01-01"
-          )
-        ) %>%
-        group_by(
-          Saved_Run_ID
-        ) %>%
-        filter(
-          is.na(Window_End_Date_Map) |
-            Window_End_Date_Map == max(
-              Window_End_Date_Map,
-              na.rm = TRUE
-            )
-        ) %>%
-        ungroup() %>%
-        select(
-          -Window_End_Date_Map
-        )
-    }
-    
-    run_ids <- unique(
-      map_df$Saved_Run_ID
-    )
-    
-    validate(
-      need(
-        length(run_ids) >= 1,
-        "No selected PTM runs are available for spatial comparison."
-      )
-    )
-    
-    run_colors <- viridisLite::viridis(
-      length(run_ids),
-      option = "D",
-      end = 0.9
-    )
-    
-    names(run_colors) <- run_ids
-    
-    m <- leaflet() %>%
-      addProviderTiles(
-        providers$CartoDB.Positron
-      ) %>%
-      addPolygons(
-        data = st_transform(
-          delta_boundary,
-          4326
-        ),
-        fillColor = "#eef7f9",
-        fillOpacity = 0.2,
-        color = "#0a7e8c",
-        weight = 1,
-        group = "Delta Boundary"
-      ) %>%
-      addPolylines(
-        data = st_transform(
-          delta_channels,
-          4326
-        ),
-        color = "#2b8cbe",
-        weight = 1,
-        opacity = 0.55,
-        group = "Channels"
-      )
-    
-    overlay_groups <- c(
-      "Delta Boundary",
-      "Channels"
-    )
-    
-    skipped_messages <- character(0)
-    
-    for (run_id in run_ids) {
-      
-      scenario_df <- map_df %>%
-        filter(
-          Saved_Run_ID == run_id
-        )
-      
-      scenario_color <- run_colors[[run_id]]
-      
-      sf_nodes <- scenario_df %>%
-        filter(
-          !is.na(X),
-          !is.na(Y),
-          !is.na(Prediction_Final)
-        ) %>%
-        transmute(
-          Saved_Run_ID,
-          DSM2_Node,
-          Location,
-          Region,
-          entrainment = Prediction_Final,
-          X,
-          Y
-        )
-      
-      if (nrow(sf_nodes) < 3) {
-        
-        skipped_messages <- c(
-          skipped_messages,
-          paste0(
-            run_id,
-            ": fewer than 3 mapped PTM nodes were available."
-          )
-        )
-        
-        next
-      }
-      
-      sf_nodes <- sf_nodes %>%
-        st_as_sf(
-          coords = c("X", "Y"),
-          crs = 4326,
-          remove = FALSE
-        ) %>%
-        st_transform(
-          26910
-        )
-      
-      display_nodes <- st_transform(
-        sf_nodes,
-        4326
-      )
-      
-      node_group <- paste0(
-        "Nodes - ",
-        run_id
-      )
-      
-      overlay_groups <- c(
-        overlay_groups,
-        node_group
-      )
-      
-      # Add nodes even if polygons fail.
-      m <- m %>%
-        addCircleMarkers(
-          data = display_nodes,
-          radius = ~4 + entrainment / 100 * 8,
-          color = scenario_color,
-          fillColor = scenario_color,
-          fillOpacity = 0.75,
-          stroke = TRUE,
-          weight = 1,
-          popup = ~paste0(
-            "<div style='font-size:15px;line-height:1.45;min-width:280px;'>",
-            "<b>Scenario:</b> ",
-            Saved_Run_ID,
-            "<br><b>DSM2 Node:</b> ",
-            DSM2_Node,
-            "<br><b>Location:</b> ",
-            Location,
-            "<br><b>Region:</b> ",
-            Region,
-            "<br><b>Entrainment:</b> ",
-            sprintf(
-              "%.0f",
-              entrainment
-            ),
-            "%",
-            "</div>"
-          ),
-          group = node_group
-        )
-      
-      zones <- tryCatch(
-        make_entrainment_zones(
-          sf_nodes,
-          threshold
-        ),
-        error = function(e) {
-          
-          skipped_messages <<- c(
-            skipped_messages,
-            paste0(
-              run_id,
-              ": risk-zone polygons could not be created. ",
-              conditionMessage(e)
-            )
-          )
-          
-          NULL
-        },
-        shiny.silent.error = function(e) {
-          
-          skipped_messages <<- c(
-            skipped_messages,
-            paste0(
-              run_id,
-              ": risk-zone polygons could not be created."
-            )
-          )
-          
-          NULL
-        }
-      )
-      
-      if (is.null(zones)) {
-        next
-      }
-      
-      high_group <- paste0(
-        "High Risk - ",
-        run_id
-      )
-      
-      low_group <- paste0(
-        "Low Risk - ",
-        run_id
-      )
-      
-      overlay_groups <- c(
-        overlay_groups,
-        low_group,
-        high_group
-      )
-      
-      m <- m %>%
-        addPolygons(
-          data = zones$low,
-          fillColor = scenario_color,
-          fillOpacity = 0.08,
-          color = scenario_color,
-          opacity = 0.45,
-          weight = 1,
-          dashArray = "4,4",
-          popup = paste0(
-            "<b>Scenario:</b> ",
-            run_id,
-            "<br><b>Zone:</b> Low Risk",
-            "<br><b>Threshold:</b> < ",
-            threshold,
-            "%"
-          ),
-          group = low_group
-        ) %>%
-        addPolygons(
-          data = zones$high,
-          fillColor = scenario_color,
-          fillOpacity = 0.30,
-          color = scenario_color,
-          opacity = 0.95,
-          weight = 2,
-          popup = paste0(
-            "<b>Scenario:</b> ",
-            run_id,
-            "<br><b>Zone:</b> High Risk",
-            "<br><b>Threshold:</b> >= ",
-            threshold,
-            "%"
-          ),
-          group = high_group
-        )
-    }
-    
-    if (length(skipped_messages) > 0) {
-      
-      m <- m %>%
-        addControl(
-          html = paste0(
-            "<div style='background:white;padding:10px 12px;",
-            "border-radius:6px;border:1px solid #bbb;",
-            "box-shadow:0 2px 6px rgba(0,0,0,0.2);",
-            "font-size:13px;max-width:420px;'>",
-            "<b>PTM spatial comparison note</b><br>",
-            paste(
-              skipped_messages,
-              collapse = "<br>"
-            ),
-            "</div>"
-          ),
-          position = "topleft"
-        )
-    }
-    
-    m %>%
-      addLegend(
-        position = "bottomright",
-        colors = run_colors,
-        labels = names(run_colors),
-        title = "Compared Scenarios",
-        opacity = 0.85
-      ) %>%
-      addLayersControl(
-        overlayGroups = unique(
-          overlay_groups
-        ),
-        options = layersControlOptions(
-          collapsed = FALSE
-        )
-      ) %>%
-      leaflet::setView(
-        lng = -121.60,
-        lat = 38.05,
-        zoom = 9
-      )
-  }
+  
   make_ptm_map <- function(df, threshold) {
     validate(need(nrow(df) > 0, "Run the model to display results."))
     
@@ -5316,201 +3603,7 @@ server <- function(input, output, session) {
       point = lwgeom::st_linesubstring(river_centerline, fraction, fraction)
     )
   }
-  make_eh_spatial_comparison_map <- function(df) {
-    
-    validate(
-      need(
-        nrow(df) > 0,
-        "Select compatible Event Horizon runs to compare."
-      ),
-      need(
-        all(
-          c(
-            "Saved_Run_ID",
-            "Prediction_Final"
-          ) %in% names(df)
-        ),
-        "Event Horizon comparison data are missing required fields."
-      )
-    )
-    
-    # If archive-current results include multiple rolling windows,
-    # keep the latest window per saved run.
-    map_df <- df
-    
-    if (
-      "Window_End_Date" %in% names(map_df) &&
-      any(!is.na(map_df$Window_End_Date))
-    ) {
-      
-      map_df <- map_df %>%
-        mutate(
-          Window_End_Date_Map = as.Date(
-            Window_End_Date,
-            origin = "1970-01-01"
-          )
-        ) %>%
-        group_by(
-          Saved_Run_ID
-        ) %>%
-        filter(
-          is.na(Window_End_Date_Map) |
-            Window_End_Date_Map == max(
-              Window_End_Date_Map,
-              na.rm = TRUE
-            )
-        ) %>%
-        ungroup() %>%
-        select(
-          -Window_End_Date_Map
-        )
-    }
-    
-    run_ids <- unique(
-      map_df$Saved_Run_ID
-    )
-    
-    run_colors <- viridisLite::viridis(
-      length(run_ids),
-      option = "D",
-      end = 0.9
-    )
-    
-    names(run_colors) <- run_ids
-    
-    channels_display <- st_transform(
-      dsm2_channels,
-      4326
-    )
-    
-    nodes_display <- st_transform(
-      dsm2_nodes,
-      4326
-    )
-    
-    m <- leaflet() %>%
-      addProviderTiles(
-        providers$CartoDB.Positron
-      ) %>%
-      addPolylines(
-        data = channels_display,
-        color = "#9ECAE1",
-        weight = 1,
-        opacity = 0.65,
-        group = "DSM2 Channels"
-      ) %>%
-      addCircleMarkers(
-        data = nodes_display %>%
-          dplyr::filter(
-            DSM2_Node == 72
-          ),
-        radius = 7,
-        color = "#1F1F1F",
-        fillColor = "#FFD34E",
-        fillOpacity = 1,
-        weight = 2,
-        label = "Start node 72: Clifton Court Forebay",
-        group = "Start Node"
-      )
-    
-    overlay_groups <- c(
-      "DSM2 Channels",
-      "Start Node"
-    )
-    
-    for (run_id in run_ids) {
-      
-      scenario_df <- map_df %>%
-        filter(
-          Saved_Run_ID == run_id
-        ) %>%
-        slice(1)
-      
-      scenario_color <- run_colors[[run_id]]
-      
-      eh_lines <- tryCatch(
-        make_event_horizon_path_geometry(
-          distance_miles = scenario_df$Prediction_Final[1],
-          regions = c("OMR")
-        ),
-        error = function(e) NULL,
-        shiny.silent.error = function(e) NULL
-      )
-      
-      if (is.null(eh_lines)) {
-        next
-      }
-      
-      eh_lines_display <- st_transform(
-        eh_lines,
-        4326
-      )
-      
-      line_group <- paste0(
-        "Event Horizon - ",
-        run_id
-      )
-      
-      overlay_groups <- c(
-        overlay_groups,
-        line_group
-      )
-      
-      m <- m %>%
-        addPolylines(
-          data = eh_lines_display,
-          color = scenario_color,
-          weight = 5,
-          opacity = 0.90,
-          popup = paste0(
-            "<div style='font-size:15px;line-height:1.45;min-width:280px;'>",
-            "<b>Scenario:</b> ",
-            run_id,
-            "<br><b>Event Horizon:</b> ",
-            sprintf(
-              "%.0f",
-              scenario_df$Prediction_Final[1]
-            ),
-            " river miles",
-            if (
-              "Risk_Level_Percent" %in% names(scenario_df)
-            ) {
-              paste0(
-                "<br><b>Risk level:</b> ",
-                scenario_df$Risk_Level_Percent[1],
-                "%"
-              )
-            } else {
-              ""
-            },
-            "</div>"
-          ),
-          group = line_group
-        )
-    }
-    
-    m %>%
-      addLegend(
-        position = "bottomright",
-        colors = run_colors,
-        labels = names(run_colors),
-        title = "Compared Scenarios",
-        opacity = 0.85
-      ) %>%
-      addLayersControl(
-        overlayGroups = unique(
-          overlay_groups
-        ),
-        options = layersControlOptions(
-          collapsed = FALSE
-        )
-      ) %>%
-      leaflet::setView(
-        lng = -121.60,
-        lat = 38.05,
-        zoom = 10
-      )
-  }
+  
   make_eh_map <- function(df) {
     
     validate(
@@ -5836,22 +3929,6 @@ server <- function(input, output, session) {
             Scenario_Name,
             "<br>Condition: ",
             Condition,
-            if (
-              "Window_End_Date" %in% names(scenario_point)
-            ) {
-              paste0(
-                "<br>Observed date: ",
-                format(
-                  as.Date(
-                    Window_End_Date,
-                    origin = "1970-01-01"
-                  ),
-                  "%m/%d/%Y"
-                )
-              )
-            } else {
-              ""
-            },
             "<br>Export: ",
             fmt_int(EXP),
             " cfs",
@@ -5910,7 +3987,7 @@ server <- function(input, output, session) {
           "% Risk"
         ),
         subtitle =
-          "The selected emulator result(s) are highlighted in red.",
+          "The selected model run is highlighted in red.",
         x = "Combined Export, EXP (cfs)",
         y = "Vernalis Flow, VER (cfs)"
       ) +
@@ -6645,7 +4722,7 @@ server <- function(input, output, session) {
       
       dates <- result_data %>%
         filter(
-          Model == "PTM Emulator 7-Day Entrainment",
+          Model == "PTM 7-Day Entrainment",
           !is.na(Window_End_Date)
         ) %>%
         pull(
@@ -6691,7 +4768,7 @@ server <- function(input, output, session) {
       
       data <- ptm_result() %>%
         filter(
-          Model == "PTM Emulator 7-Day Entrainment"
+          Model == "PTM 7-Day Entrainment"
         ) %>%
         distinct(
           DSM2_Node,
@@ -6803,7 +4880,7 @@ server <- function(input, output, session) {
         )]],
         paste(
           condition_label,
-          ": 7-Day Rolling Entrainment Prediction"
+          ": PTM 7-Day Rolling Predictions"
         )
       )
     })
@@ -6816,14 +4893,14 @@ server <- function(input, output, session) {
       
       data <- latest_result_window(
         ptm_result(),
-        "PTM Emulator 7-Day Entrainment"
+        "PTM 7-Day Entrainment"
       )
       
       make_ptm_bar(
         data,
         paste(
           condition_label,
-          ": PTM Emulator 7-Day Entrainment"
+          ": PTM 7-Day Entrainment"
         )
       )
     })
@@ -6836,14 +4913,14 @@ server <- function(input, output, session) {
       
       data <- latest_result_window(
         ptm_result(),
-        "PTM Emulator 30-Day Entrainment"
+        "PTM 30-Day Entrainment"
       )
       
       make_ptm_bar(
         data,
         paste(
           condition_label,
-          ": PTM Emulator 30-Day Entrainment"
+          ": PTM 30-Day Entrainment"
         )
       )
     })
@@ -6856,7 +4933,7 @@ server <- function(input, output, session) {
       
       ptm_data <- selected_result_window(
         ptm_result(),
-        "PTM Emulator 7-Day Entrainment",
+        "PTM 7-Day Entrainment",
         input[[paste0(
           prefix,
           "_ptm7_map_date"
@@ -6884,7 +4961,7 @@ server <- function(input, output, session) {
       
       data <- latest_result_window(
         ptm_result(),
-        "PTM Emulator 30-Day Entrainment"
+        "PTM 30-Day Entrainment"
       )
       
       make_ptm_map(
@@ -6924,7 +5001,7 @@ server <- function(input, output, session) {
         
         data <- selected_result_window(
           ptm_result(),
-          "PTM Emulator 7-Day Entrainment",
+          "PTM 7-Day Entrainment",
           input[[paste0(
             prefix,
             "_ptm7_map_date"
@@ -6939,7 +5016,7 @@ server <- function(input, output, session) {
           )]],
           title = paste(
             condition_label,
-            ": PTM Emulator 7-Day Entrainment Risk Map"
+            ": PTM 7-Day Entrainment Risk Map"
           )
         )
         
@@ -6982,7 +5059,7 @@ server <- function(input, output, session) {
         
         data <- latest_result_window(
           ptm_result(),
-          "PTM Emulator 30-Day Entrainment"
+          "PTM 30-Day Entrainment"
         )
         
         plot <- make_ptm_png_plot(
@@ -6993,7 +5070,7 @@ server <- function(input, output, session) {
           )]],
           title = paste(
             condition_label,
-            ": PTM Emulator 30-Day Entrainment Risk Map"
+            ": PTM 30-Day Entrainment Risk Map"
           )
         )
         
@@ -7018,21 +5095,15 @@ server <- function(input, output, session) {
       
       latest_result_window(
         ptm_result(),
-        "PTM Emulator 7-Day Entrainment"
+        "PTM 7-Day Entrainment"
       ) %>%
         transmute(
           Window_End_Date = if (
             "Window_End_Date" %in% names(.)
           ) {
-            format(
-              as.Date(
-                Window_End_Date,
-                origin = "1970-01-01"
-              ),
-              "%m/%d/%Y"
-            )
+            Window_End_Date
           } else {
-            NA_character_
+            as.Date(NA)
           },
           
           DSM2_Node,
@@ -7061,21 +5132,15 @@ server <- function(input, output, session) {
       
       latest_result_window(
         ptm_result(),
-        "PTM Emulator 30-Day Entrainment"
+        "PTM 30-Day Entrainment"
       ) %>%
         transmute(
           Window_End_Date = if (
             "Window_End_Date" %in% names(.)
           ) {
-            format(
-              as.Date(
-                Window_End_Date,
-                origin = "1970-01-01"
-              ),
-              "%m/%d/%Y"
-            )
+            Window_End_Date
           } else {
-            NA_character_
+            as.Date(NA)
           },
           
           DSM2_Node,
@@ -7125,21 +5190,9 @@ server <- function(input, output, session) {
             )
           ) {
             paste(
-              format(
-                as.Date(
-                  Window_Start_Date,
-                  origin = "1970-01-01"
-                ),
-                "%m/%d/%Y"
-              ),
+              Window_Start_Date,
               "to",
-              format(
-                as.Date(
-                  Window_End_Date,
-                  origin = "1970-01-01"
-                ),
-                "%m/%d/%Y"
-              )
+              Window_End_Date
             )
           } else {
             NA_character_
@@ -7345,15 +5398,9 @@ server <- function(input, output, session) {
           Window_End_Date = if (
             "Window_End_Date" %in% names(.)
           ) {
-            format(
-              as.Date(
-                Window_End_Date,
-                origin = "1970-01-01"
-              ),
-              "%m/%d/%Y"
-            )
+            Window_End_Date
           } else {
-            NA_character_
+            as.Date(NA)
           },
           
           Scenario_Name,
@@ -7382,66 +5429,6 @@ server <- function(input, output, session) {
     })
     
     
-    output[[paste0(
-      prefix,
-      "_eh7_table"
-    )]] <- renderTable({
-
-      result <- eh_result()
-
-      req(
-        nrow(result) > 0
-      )
-
-      if (
-        "Window_End_Date" %in% names(result) &&
-        any(
-          !is.na(
-            result$Window_End_Date
-          )
-        )
-      ) {
-        result <- result %>%
-          mutate(
-            Observed_Date = as.Date(
-              Window_End_Date,
-              origin = "1970-01-01"
-            )
-          ) %>%
-          arrange(
-            Observed_Date
-          ) %>%
-          slice_tail(
-            n = 7
-          )
-      } else {
-        result <- result %>%
-          mutate(
-            Observed_Date = as.Date(NA)
-          )
-      }
-
-      result %>%
-        transmute(
-          Observed_Date = ifelse(
-            is.na(Observed_Date),
-            NA_character_,
-            format(
-              Observed_Date,
-              "%m/%d/%Y"
-            )
-          ),
-
-          Event_Horizon_Miles = sprintf(
-            "%.1f",
-            as.numeric(
-              Prediction_Final
-            )
-          )
-        )
-    })
-
-
     output[[paste0(
       prefix,
       "_eh_map"
@@ -7499,26 +5486,9 @@ server <- function(input, output, session) {
       prefix,
       "_eh_scatter"
     )]] <- renderPlotly({
-
-      input_method <- input[[paste0(
-        prefix,
-        "_input_method"
-      )]]
-
-      scatter_data <- if (
-        is_current &&
-        identical(
-          input_method,
-          "folder"
-        )
-      ) {
-        eh_result()
-      } else {
-        selected_eh_result()
-      }
-
+      
       make_eh_scatter(
-        scatter_data
+        selected_eh_result()
       )
     })
     
@@ -7645,69 +5615,6 @@ server <- function(input, output, session) {
     "forecast",
     "Forecast Conditions"
   )
-  output$comparison_spatial_map <- renderLeaflet({
-    
-    df <- comparison_data()
-    
-    validate(
-      need(
-        nrow(df) > 0,
-        "Select compatible runs to compare on the map."
-      )
-    )
-    
-    selected_model <- input$comparison_model
-    
-    threshold <- suppressWarnings(
-      as.numeric(
-        input$comparison_map_threshold
-      )
-    )
-    
-    threshold <- threshold[1]
-    
-    if (is.na(threshold)) {
-      threshold <- 25
-    }
-    
-    if (
-      selected_model %in%
-      c(
-        "PTM Emulator 7-Day Entrainment",
-        "PTM Emulator 30-Day Entrainment"
-      )
-    ) {
-      
-      make_ptm_spatial_comparison_map(
-        df = df,
-        threshold = threshold
-      )
-      
-    } else if (
-      identical(
-        selected_model,
-        "Event Horizon"
-      )
-    ) {
-      
-      make_eh_spatial_comparison_map(
-        df = df
-      )
-      
-    } else {
-      
-      make_empty_comparison_map(
-        paste(
-          "<b>Spatial comparison is not available for this model.</b>",
-          "<br>",
-          "PTM Emulator models support spatial risk-zone overlays.",
-          "Event Horizon supports pathway-line overlays.",
-          "ECO-PTM currently returns model-level outputs without map geometry."
-        )
-      )
-      
-    }
-  })
   
   output$comparison_run_selector <- renderUI({
     
@@ -7773,59 +5680,31 @@ server <- function(input, output, session) {
     
     if (
       input$comparison_model %in%
-      c(
-        "PTM Emulator 7-Day Entrainment",
-        "PTM Emulator 30-Day Entrainment"
-      )
+      c("PTM 7-Day Entrainment", "PTM 30-Day Entrainment")
     ) {
-      
-      if (!"Location" %in% names(plot_df)) {
-        plot_df$Location <- NA_character_
-      }
-      
       plot_df <- plot_df %>%
         mutate(
-          DSM2_Node_Num = suppressWarnings(
-            as.numeric(
-              DSM2_Node
-            )
-          ),
-          
-          Node_Label = ifelse(
-            is.na(Location) | Location == "",
-            as.character(DSM2_Node),
-            paste0(
-              DSM2_Node,
-              " - ",
-              Location
+          DSM2_Node_Num = suppressWarnings(as.numeric(DSM2_Node)),
+          DSM2_Node = factor(
+            DSM2_Node,
+            levels = rev(
+              unique(
+                DSM2_Node[
+                  order(DSM2_Node_Num, DSM2_Node)
+                ]
+              )
             )
           )
-        ) %>%
-        arrange(
-          DSM2_Node_Num,
-          DSM2_Node
         )
-      
-      plot_df$Node_Label <- factor(
-        plot_df$Node_Label,
-        levels = rev(
-          unique(
-            plot_df$Node_Label
-          )
-        )
-      )
       
       p <- plot_ly(
         plot_df,
         x = ~Prediction_Final,
-        y = ~Node_Label,
+        y = ~DSM2_Node,
         color = ~Run_Label,
         type = "bar",
         orientation = "h",
-        text = ~sprintf(
-          "%.0f",
-          Prediction_Final
-        ),
+        text = ~sprintf("%.0f", Prediction_Final),
         textposition = "auto",
         hovertext = ~hover_text,
         hoverinfo = "text"
@@ -7834,25 +5713,14 @@ server <- function(input, output, session) {
           barmode = "group",
           xaxis = list(
             title = "<b>Predicted Entrainment (%)</b>",
-            tickfont = list(
-              size = 13
-            )
+            tickfont = list(size = 13)
           ),
           yaxis = list(
-            title = "<b>DSM2 Node and Location</b>",
-            tickfont = list(
-              size = 12
-            ),
+            title = "<b>DSM2 Node</b>",
+            tickfont = list(size = 13),
             automargin = TRUE
-          ),
-          margin = list(
-            l = 300,
-            r = 60,
-            t = 80,
-            b = 120
           )
         )
-      
     } else {
       p <- plot_ly(
         plot_df,
@@ -7993,7 +5861,7 @@ server <- function(input, output, session) {
                   if (
                     identical(
                       model_name,
-                      "PTM Emulator 7-Day Entrainment"
+                      "PTM 7-Day Entrainment"
                     )
                   ) {
                     
@@ -8074,7 +5942,7 @@ server <- function(input, output, session) {
     if (
       identical(
         input$omri_comparison_model,
-        "PTM Emulator 7-Day Entrainment"
+        "PTM 7-Day Entrainment"
       )
     ) {
       
@@ -8164,7 +6032,7 @@ server <- function(input, output, session) {
     if (
       identical(
         input$omri_comparison_model,
-        "PTM Emulator 7-Day Entrainment"
+        "PTM 7-Day Entrainment"
       )
     ) {
       
@@ -8647,7 +6515,7 @@ server <- function(input, output, session) {
     xgeo_equation <- equation("XGEO", c("XGEO_A", "XGEO_C"), "-")
     
     qaqc_source_values <- c(
-      "Click the link in <strong> Model Parameters </strong> to view the map",
+      "See <strong> Map </strong> for details",
       link("Historical O & M Reports - Available by Request", "https://water.ca.gov/Programs/State-Water-Project/Operations-and-Maintenance/Monthly-and-Annual-Operations-Reports"),
       link("Historical O & M Reports - Available by Request", "https://water.ca.gov/Programs/State-Water-Project/Operations-and-Maintenance/Monthly-and-Annual-Operations-Reports"),
       link("USGS - 11303500", "https://waterdata.usgs.gov/monitoring-location/USGS-11303500/#dataTypeId=daily-00060-0&period=P1Y&showFieldMeasurements=true"),
@@ -8660,7 +6528,7 @@ server <- function(input, output, session) {
     )
     
     realtime_source_values <- c(
-      "Click the link in <strong> Model Parameters </strong> to view the map",
+      "See <strong> Map </strong> for details",
       link("CDEC - CLC", "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=CLC"),
       link("CDEC - TRP", "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=TRP"),
       link("CDEC - VNS", "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=VNS"),
@@ -8828,7 +6696,7 @@ server <- function(input, output, session) {
       link("USGS - 11335000", "https://waterdata.usgs.gov/monitoring-location/USGS-11335000/#dataTypeId=daily-00060-0&period=P1Y&showFieldMeasurements=true"),
       link("USGS - 11447890", "https://waterdata.usgs.gov/monitoring-location/USGS-11447890/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true"),
       link("USGS - 11447905", "https://waterdata.usgs.gov/monitoring-location/USGS-11447905/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true"),
-      "{15+5k???k=0,1,???,13}"
+      "{15 + 5k | k = 0, 1, ..., 13}"
     )
     
     realtime_source_values <- c(
@@ -8840,7 +6708,7 @@ server <- function(input, output, session) {
       link("USGS - 11335000", "https://waterdata.usgs.gov/monitoring-location/USGS-11335000/"),
       link("USGS - 11447890", "https://waterdata.usgs.gov/monitoring-location/USGS-11447890/"),
       link("USGS - 11447905", "https://waterdata.usgs.gov/monitoring-location/USGS-11447905/"),
-      "{15+5k???k=0,1,???,13}"
+      "{15 + 5k | k = 0, 1, ..., 13}"
     )
     
     input_data <- data.frame(
@@ -8964,93 +6832,6 @@ server <- function(input, output, session) {
       )
   })
   
-  node_data <- readr::read_csv(
-    file.path("STN_EMULATOR", "models", "delta_locations_coordinates.csv"),
-    show_col_types = FALSE
-  )
-  
-  nodes_7day <- c(1,7,21,25,34,39,41,75,86,99,113,145,174,232,469)
-  
-  node_data_7day <- node_data[
-    node_data$DSM2_Node %in% nodes_7day,
-    ,
-    drop = FALSE
-  ]
-  
-  create_node_map <- function(data, marker_color) {
-    leaflet::leaflet(data) |>
-      leaflet::addProviderTiles(leaflet::providers$Esri.WorldImagery) |>
-      leaflet::addAwesomeMarkers(
-        lng = ~X,
-        lat = ~Y,
-        icon = leaflet::awesomeIcons(
-          icon = "map-marker",
-          library = "fa",
-          markerColor = marker_color,
-          iconColor = "white"
-        ),
-        popup = ~paste0(
-          "<strong>Node: </strong>", DSM2_Node,
-          "<br><strong>Location: </strong>", Location,
-          "<br><strong>Region: </strong>", Region
-        )
-      ) |>
-      leaflet::addLabelOnlyMarkers(
-        lng = ~X,
-        lat = ~Y,
-        label = ~as.character(DSM2_Node),
-        labelOptions = leaflet::labelOptions(
-          noHide = TRUE,
-          direction = "center",
-          textOnly = TRUE,
-          offset = c(0, -17),
-          textsize = "11px",
-          style = list(
-            "color" = "white",
-            "font-weight" = "bold",
-            "text-shadow" = "0 0 2px black"
-          )
-        )
-      ) |>
-      leaflet::setView(
-        lng = -121.60,
-        lat = 38.05,
-        zoom = 15
-      )
-  }
-  
-  observeEvent(input$open_node_map_7day, {
-    showModal(
-      modalDialog(
-        title = "DSM2 Location Nodes: 7-Day Model",
-        leaflet::leafletOutput("node_map_7day", height = "650px"),
-        size = "l",
-        easyClose = TRUE,
-        footer = modalButton("Close")
-      )
-    )
-  })
-  
-  observeEvent(input$open_node_map_30day, {
-    showModal(
-      modalDialog(
-        title = "DSM2 Location Nodes: 30-Day Model",
-        leaflet::leafletOutput("node_map_30day", height = "650px"),
-        size = "l",
-        easyClose = TRUE,
-        footer = modalButton("Close")
-      )
-    )
-  })
-  
-  output$node_map_7day <- leaflet::renderLeaflet({
-    create_node_map(node_data_7day, "orange")
-  })
-  
-  output$node_map_30day <- leaflet::renderLeaflet({
-    create_node_map(node_data, "blue")
-  })
-  
   output$ptm_parameters_table <- render_gt({
     
     map_link <- function(text, input_id) paste0(
@@ -9082,7 +6863,7 @@ server <- function(input, output, session) {
         "127",
         "12700",
         "35",
-        map_link("15 available nodes", "open_node_map_7day"),
+        "15 available nodes",
         "321.580 - 14763.154",
         "639.961 - 62032.795",
         "6155.703 - 86690.764",
@@ -9096,7 +6877,7 @@ server <- function(input, output, session) {
         "127",
         "12700",
         "36",
-        map_link("39 available nodes", "open_node_map_30day"),
+        "39 available nodes",
         "321.580 - 14763.154",
         "639.961 - 62032.795",
         "6155.703 - 86690.764",
@@ -9331,5 +7112,7 @@ server <- function(input, output, session) {
         data_row.padding = px(8)
       )
   })
+
+  ptm_maps_server(input = input,output = output,session = session)
   
 }
