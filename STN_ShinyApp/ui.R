@@ -368,7 +368,27 @@ run_page <- function(prefix, title, theme_class) {
                         prefix,
                         prefix
                       ),
-                      
+
+                      if (is_current) {
+                        conditionalPanel(
+                          condition = sprintf(
+                            "input.%s_input_method == 'single'",
+                            prefix
+                          ),
+                          tags$div(
+                            class = "alert alert-warning",
+                            style = "padding:10px 12px; margin-bottom:12px; font-size:13px;",
+                            tags$b("30-Day Input Reminder"),
+                            tags$br(),
+                            paste(
+                              "The values currently shown in the input boxes are populated using",
+                              "7-day observed-condition averages. Before running the PTM 30-Day emulator,",
+                              "replace the default input values with the appropriate 30-day average flows."
+                            )
+                          )
+                        )
+                      },
+
                       tags$h4("30-Day Entrainment Risk Map"),
                       
                       tags$p(
@@ -689,6 +709,15 @@ ui <- dashboardPage(
   dashboardBody(
     tags$head(
       tags$style(HTML("
+        /* Keep figure and table headings visually prominent throughout the app. */
+        .tab-content h4,
+        .box-title,
+        .figure-title,
+        .table-title,
+        .emulator-figure-title{
+          font-weight:700 !important;
+        }
+
         .main-header .logo{width:300px!important;height:60px!important;line-height:60px!important;background:white;color:#0a7e8c;border-bottom:3px solid #0a7e8c}
         .main-header .navbar{min-height:60px;background:white;border-bottom:3px solid #0a7e8c}
         .main-sidebar{width:300px!important;background:#fbfeff;border-right:1px solid #d8edf1}

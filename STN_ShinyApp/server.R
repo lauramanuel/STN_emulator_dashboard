@@ -8485,19 +8485,40 @@ server <- function(input, output, session) {
   
   output$about_info_table <- render_gt({
     data <- data.frame(
-      Name = c("Adam Witt", "Puneet Khatavkar", "Jo Anna Beck", "Josh Israel"),
-      Role = c("Activity Lead","Quality review", "Contracting Officers Representative", "Reclamation Activity Oversight"),
-      Email = c("adam.witt@stantec.com", "", "jbeck@usbr.gov", "jaisrael@usbr.gov")
+      Name = c(
+        "Adam Witt",
+        "Puneet Khatavkar",
+        "Laura Manuel",
+        "Roja Kaveh Garna",
+        "Jo Anna Beck",
+        "Josh Israel"
+      ),
+      Role = c(
+        "Activity Lead",
+        "Quality review",
+        "App Developer",
+        "App Developer",
+        "Contracting Officers Representative",
+        "Reclamation Activity Oversight"
+      ),
+      Email = c(
+        "adam.witt@stantec.com",
+        "Puneet.Khatavkar@stantec.com",
+        "Laura.Manuel@stantec.com",
+        "Roja.KavehGarna@stantec.com",
+        "jbeck@usbr.gov",
+        "jaisrael@usbr.gov"
+      )
     )
     about_info_table <- gt(data)
     about_info_table |>
       tab_row_group(
         label = html("<strong><em>Bureau of Reclamation,</strong><br>Bay-Delta Office</em>"), 
-        rows = 3:4
+        rows = 5:6
       )|>
       tab_row_group(
         label = html("<strong><em>Stantec Inc.,</strong><br>Sacramento C St. Office</em>"), 
-        rows = 1:2
+        rows = 1:4
       )|>
       cols_align(
         align = "center",
