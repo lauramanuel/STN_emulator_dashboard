@@ -50,7 +50,7 @@ run_page <- function(prefix, title, theme_class) {
               "Use Observed Conditions with Enter a Single Set of Values for a user-defined single-value run."
             )
           ),
-          
+
           conditionalPanel(
             condition = sprintf("input.%s_input_method == 'upload'", prefix),
             tags$div(
@@ -72,7 +72,21 @@ run_page <- function(prefix, title, theme_class) {
               
               tags$p(
                 class = "figure-note",
-                "Select a run date from the box above."
+                if (is_current) {
+                  paste(
+                    "Observed-condition calculations use measured rows.",
+                    "The PTM Emulator 7-day and Event Horizon models use seven rolling",
+                    "7-day windows ending on the last seven measured dates.",
+                    "The PTM Emulator 30-day and ECO-PTM Emulator models use the most recent",
+                    "30-day measured average."
+                  )
+                } else {
+                  paste(
+                    "Forecast calculations use the first seven forecast days",
+                    "for the selected OMRI scenario. Forecast XGEO is held",
+                    "constant at the value from the latest measured date."
+                  )
+                }
               )
             )
           )
@@ -101,16 +115,14 @@ run_page <- function(prefix, title, theme_class) {
           # ==========================================================
           tabPanel(
             "PTM and Event Horizon Emulators",
-            
+
             fluidRow(
-              class = "emulator-top-row",
-              
               box(
                 width = 4,
                 title = "Emulator Inputs (PTM and Event Horizon)",
                 status = status_name,
                 solidHeader = TRUE,
-                
+
                 tags$div(
                   class = "alert alert-info",
                   style = "padding:10px 12px; margin-bottom:12px; font-size:13px;",
@@ -120,122 +132,118 @@ run_page <- function(prefix, title, theme_class) {
                   tags$br(),
                   HTML("&#8226; <b>PTM 30-Day</b> emulator uses <b>30-day average flow</b> inputs.")
                 ),
-                
+
                 conditionalPanel(
                   condition = sprintf("input.%s_input_method == 'single'", prefix),
-                  
+
                   textInput(
                     paste0(prefix, "_ptm_name"),
                     "Scenario Name (User Defined):",
                     if (is_current) {
                       "Observed Conditions Run 1"
                     } else {
-                      "Forecast Conditions Run 1"
+                      paste(title, "PTM Run Single Values")
                     }
                   ),
-                  
+
                   if (is_current) {
                     tags$div(
                       class = "alert alert-info observed-flow-intro",
                       "Input flow values are shown below in each box. Boxes are populated with observed conditions when current source data are available."
                     )
                   },
-                  
+
                   numericInput(
                     paste0(prefix, "_ptm_exp"),
                     "EXP: Combined CVP and SWP Export (cfs):",
                     6000
                   ),
-                  
+
                   if (is_current) {
                     uiOutput(paste0(prefix, "_ptm_exp_note"))
                   },
-                  
+
                   numericInput(
                     paste0(prefix, "_ptm_ver"),
                     "VER: San Joaquin River Flow at Vernalis Flow (cfs):",
                     3000
                   ),
-                  
+
                   if (is_current) {
                     uiOutput(paste0(prefix, "_ptm_ver_note"))
                   },
-                  
+
                   tags$div(
                     class = "alert alert-info",
                     style = "padding:8px 10px;margin-bottom:8px;font-size:12px;",
                     tags$b("PTM emulator input only: "),
                     "SAC is used by the PTM emulators and is not used by the Event Horizon emulator."
                   ),
-                  
+
                   numericInput(
                     paste0(prefix, "_ptm_sac"),
                     "SAC: Sacramento River Flow at Freeport Flow (cfs):",
                     18000
                   ),
-                  
+
                   if (is_current) {
                     uiOutput(paste0(prefix, "_ptm_sac_note"))
                   },
-                  
+
                   numericInput(
                     paste0(prefix, "_ptm_east"),
                     "EAST: East-Side River Flow (cfs):",
                     1500
                   ),
-                  
+
                   if (is_current) {
                     uiOutput(paste0(prefix, "_ptm_east_note"))
                   },
-                  
+
                   numericInput(
                     paste0(prefix, "_ptm_xgeo"),
                     "XGEO: Interior Delta Flow (cfs):",
                     3000
                   ),
-                  
+
                   if (is_current) {
                     uiOutput(paste0(prefix, "_ptm_xgeo_note"))
                   }
                 ),
-                
+
                 conditionalPanel(
                   condition = sprintf("input.%s_input_method == 'folder'", prefix),
-                  
+
                   textInput(
                     paste0(prefix, "_ptm_archive_name"),
-                    "Scenario Name (User Defined):",
-                    if (is_current) {
-                      "Observed Conditions Run 1"
-                    } else {
-                      "Forecast Conditions Run 1"
-                    }
+                    "Scenario Name (Input Method: Archive Folder):",
+                    paste(title, "PTM Emulator Run: Archive Folder")
                   ),
-                  
+
                   uiOutput(paste0(prefix, "_ptm_archive_summary"))
                 ),
-                
+
                 conditionalPanel(
                   condition = sprintf(
                     "input.%s_input_method == 'folder' && '%s' == 'forecast'",
                     prefix,
                     prefix
                   ),
-                  
+
                   tags$p(
                     class = "figure-note",
                     style = "margin-top:6px;font-size:12px;",
                     "Note: Forecast calculations hold XGEO constant at the latest observed value."
                   )
                 ),
-                
+
                 selectInput(
                   paste0(prefix, "_ptm_threshold"),
                   "Entrainment Risk/Event Horizon Risk Threshold (%):",
                   choices = seq(15, 80, by = 5),
                   selected = 25
                 ),
-                
+
                 actionButton(
                   paste0("run_", prefix, "_ptm"),
                   if (is_current) {
@@ -247,9 +255,9 @@ run_page <- function(prefix, title, theme_class) {
                   class = "btn-success",
                   width = "100%"
                 ),
-                
+
                 br(), br(),
-                
+
                 downloadButton(
                   paste0("download_", prefix, "_ptm"),
                   "Download PTM Emulator Results (CSV)",
@@ -257,25 +265,25 @@ run_page <- function(prefix, title, theme_class) {
                   style = "width:100%;"
                 )
               ),
-              
+
               box(
                 width = 8,
                 title = "PTM Emulator Results: All Supported Nodes",
                 status = status_name,
                 solidHeader = TRUE,
-                
+
                 tabsetPanel(
                   id = paste0(prefix, "_ptm_result_tabs"),
-                  
+
                   tabPanel(
                     "7-Day: 15 Nodes",
-                    
-                    tags$h4("7-Day Entrainment Risk Map"),
-                    
+
+                    tags$h4("PTM 7-Day Entrainment and Event Horizon Map"),
+
                     uiOutput(
                       paste0(prefix, "_eh_summary")
                     ),
-                    
+
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'current'",
@@ -284,50 +292,42 @@ run_page <- function(prefix, title, theme_class) {
                       ),
                       uiOutput(paste0(prefix, "_ptm7_map_date_ui"))
                     ),
-                    
+
                     tags$p(
                       class = "figure-note",
                       paste(
-                        "The map contains PTM emulator results from the 7-day",
-                        if (is_current) {
-                          "observed conditions"
-                        } else {
-                          "forecast conditions"
-                        },
-                        "input values. Results include PTM emulator estimated",
-                        "entrainment at each node, a contour polygon that",
-                        "interpolates a boundary between nodes based on the",
-                        "user defined entrainment risk threshold, and the",
-                        "entrainment event horizon. Click a node for details."
+                        "The archive-current map can be stepped through the",
+                        "seven rolling windows. Click a node for details.",
+                        "Risk-zone polygons are an approximation based on emulator node availability."
                       )
                     ),
-                    
+
                     leafletOutput(
                       paste0(prefix, "_ptm7_map"),
                       height = 500
                     ),
-                    
+
                     downloadButton(
                       paste0("download_", prefix, "_ptm7_map"),
                       "Download Map (PNG)",
                       class = "btn-primary map-download"
                     ),
-                    
+
                     br(), br(),
-                    
+
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'current'",
                         prefix,
                         prefix
                       ),
-                      
+
                       tags$h4(
-                        "7-Day Rolling Entrainment Prediction"
+                        "PTM Emulator 7-Day Rolling Prediction Time Series"
                       ),
-                      
+
                       uiOutput(paste0(prefix, "_ptm7_timeseries_nodes_ui")),
-                      
+
                       tags$p(
                         class = "figure-note",
                         paste(
@@ -335,24 +335,24 @@ run_page <- function(prefix, title, theme_class) {
                           "windows ending on the last seven measured dates."
                         )
                       ),
-                      
+
                       plotlyOutput(
                         paste0(prefix, "_ptm7_timeseries"),
                         height = 600
                       )
                     )
                   ),
-                  
+
                   tabPanel(
                     "30-Day: 39 Nodes",
-                    
+
                     conditionalPanel(
                       condition = sprintf(
                         "input.%s_input_method == 'folder' && '%s' == 'forecast'",
                         prefix,
                         prefix
                       ),
-                      
+
                       tags$div(
                         class = "alert alert-info",
                         paste(
@@ -361,7 +361,7 @@ run_page <- function(prefix, title, theme_class) {
                         )
                       )
                     ),
-                    
+
                     conditionalPanel(
                       condition = sprintf(
                         "!(input.%s_input_method == 'folder' && '%s' == 'forecast')",
@@ -369,70 +369,42 @@ run_page <- function(prefix, title, theme_class) {
                         prefix
                       ),
 
-                      if (is_current) {
-                        conditionalPanel(
-                          condition = sprintf(
-                            "input.%s_input_method == 'single'",
-                            prefix
-                          ),
-                          tags$div(
-                            class = "alert alert-warning",
-                            style = "padding:10px 12px; margin-bottom:12px; font-size:13px;",
-                            tags$b("30-Day Input Reminder"),
-                            tags$br(),
-                            paste(
-                              "The values currently shown in the input boxes are populated using",
-                              "7-day observed-condition averages. Before running the PTM 30-Day emulator,",
-                              "replace the default input values with the appropriate 30-day average flows."
-                            )
-                          )
-                        )
-                      },
+                      tags$h4("PTM Emulator 30-Day Entrainment Risk Map"),
 
-                      tags$h4("30-Day Entrainment Risk Map"),
-                      
                       tags$p(
                         class = "figure-note",
                         paste(
-                          "The map contains PTM emulator results from the 30-day",
-                          if (is_current) {
-                            "observed conditions"
-                          } else {
-                            "forecast conditions"
-                          },
-                          "input values. Results include PTM emulator estimated",
-                          "entrainment at each node and a contour polygon that",
-                          "interpolates a boundary between nodes based on the",
-                          "user defined entrainment risk threshold."
+                          "Archive-current results use the most recent",
+                          "30 measured days."
                         )
                       ),
-                      
+
                       leafletOutput(
                         paste0(prefix, "_ptm30_map"),
                         height = 500
                       ),
-                      
+
                       downloadButton(
                         paste0("download_", prefix, "_ptm30_map"),
                         "Download Map (PNG)",
                         class = "btn-primary map-download"
                       ),
-                      
+
                       br(), br(),
-                      
+
                       tags$h4(
-                        "30-Day Estimated Entrainment Barchart by Locations (DSM2 Node)"
+                        "PTM Emulator 30-Day Entrainment by DSM2 Node"
                       ),
-                      
+
                       plotlyOutput(
                         paste0(prefix, "_ptm30_plot"),
                         height = 900
                       ),
-                      
+
                       br(),
-                      
-                      tags$h4("30-Day Estimated Entrainment Percentage by Location (DSM2 Node)"),
-                      
+
+                      tags$h4("PTM Emulator 30-Day Node Results"),
+
                       div(
                         class = "wide-table-scroll",
                         tableOutput(paste0(prefix, "_ptm30_table"))
@@ -442,39 +414,43 @@ run_page <- function(prefix, title, theme_class) {
                 )
               )
             ),
-            
+
             conditionalPanel(
               condition = sprintf(
                 "input.%s_ptm_result_tabs == '7-Day: 15 Nodes'",
                 prefix
               ),
-              
+
               fluidRow(
                 box(
                   width = 12,
                   status = status_name,
                   solidHeader = FALSE,
                   class = "combined-emulator-plots-box",
-                  
+
                   fluidRow(
                     column(
                       width = 6,
-                      
+
                       tags$h4(
                         class = "emulator-figure-title",
-                        
-                        "7-Day Estimated Entrainment Barchart by Locations (DSM2 Node)"
+
+                        if (is_current) {
+                          "Observed PTM 7-Day Entrainment by DSM2 Node"
+                        } else {
+                          "Forecast PTM 7-Day Entrainment by DSM2 Node"
+                        }
                       ),
-                      
+
                       plotlyOutput(
                         paste0(prefix, "_ptm7_plot"),
                         height = 620
                       )
                     ),
-                    
+
                     column(
                       width = 6,
-                      
+
                       tags$h4(
                         class = "emulator-figure-title",
                         "Event Horizon: River Miles from Clifton Court Forebay"
@@ -496,27 +472,16 @@ run_page <- function(prefix, title, theme_class) {
                   )
                 )
               ),
-              
+
               fluidRow(
                 box(
-                  width = 8,
-                  title = "7-Day Estimated Entrainment Percentage by Location (DSM2 Node)",
+                  width = 12,
+                  title = "PTM Emulator 7-Day Node Results",
                   status = status_name,
                   solidHeader = TRUE,
-                  
+
                   tableOutput(
                     paste0(prefix, "_ptm7_table")
-                  )
-                ),
-                
-                box(
-                  width = 4,
-                  title = "7-Day Event Horizon Distance by Observed Date",
-                  status = status_name,
-                  solidHeader = TRUE,
-                  
-                  tableOutput(
-                    paste0(prefix, "_eh7_table")
                   )
                 )
               )
@@ -552,22 +517,11 @@ run_page <- function(prefix, title, theme_class) {
               ),
               
               fluidRow(
-                class = "emulator-top-row",
-                
                 box(
                   width = 4,
-                  title = "ECO-PTM Emulator Inputs",
+                  title = "ECO-PTM Emulator Inputs (30-day average flows)",
                   status = status_name,
                   solidHeader = TRUE,
-                  
-                  
-                  tags$div(
-                    class = "alert alert-info",
-                    style = "padding:10px 12px; margin-bottom:12px; font-size:13px;",
-                    tags$b("Input Averaging"),
-                    tags$br(),
-                    "ECO-PTM emulator uses 30-day average flow inputs."
-                  ),
                   
                   conditionalPanel(
                     condition = sprintf(
@@ -578,26 +532,12 @@ run_page <- function(prefix, title, theme_class) {
                     textInput(
                       paste0(prefix, "_eco_name"),
                       "Scenario Name (User Defined):",
-                      if (is_current) {
-                        "Observed Conditions Run 1"
-                      } else {
-                        "Forecast Conditions Run 1"
-                      }
-                    ),
-                    
-                    tags$div(
-                      class = "alert alert-info",
-                      style = "padding:10px 12px; margin-bottom:12px; font-size:13px;",
-                      paste(
-                        "Input flow values are shown in the boxes below.",
-                        "The existing values are randomly generated and should",
-                        "be replaced with the 30-day average flow at each site."
-                      )
+                      paste(title, "ECO-PTM Emulator Run: Single Values")
                     ),
                     
                     numericInput(
                       paste0(prefix, "_eco_sac"),
-                      "SAC: Sacramento River Flow at Freeport Flow (cfs):",
+                      "SAC: Freeport Flow (cfs):",
                       18000
                     ),
                     numericInput(
@@ -627,12 +567,8 @@ run_page <- function(prefix, title, theme_class) {
                     
                     textInput(
                       paste0(prefix, "_eco_archive_name"),
-                      "Scenario Name (User Defined):",
-                      if (is_current) {
-                        "Observed Conditions Run 1"
-                      } else {
-                        "Forecast Conditions Run 1"
-                      }
+                      "Scenario Name (Input Method: Archive Folder):",
+                      paste(title, "ECO-PTM Emulator Run: Archive Folder")
                     ),
                     
                     tags$p(
@@ -678,7 +614,7 @@ run_page <- function(prefix, title, theme_class) {
             )
           ),
           
-          
+
         )
       )
     )
@@ -709,15 +645,6 @@ ui <- dashboardPage(
   dashboardBody(
     tags$head(
       tags$style(HTML("
-        /* Keep figure and table headings visually prominent throughout the app. */
-        .tab-content h4,
-        .box-title,
-        .figure-title,
-        .table-title,
-        .emulator-figure-title{
-          font-weight:700 !important;
-        }
-
         .main-header .logo{width:300px!important;height:60px!important;line-height:60px!important;background:white;color:#0a7e8c;border-bottom:3px solid #0a7e8c}
         .main-header .navbar{min-height:60px;background:white;border-bottom:3px solid #0a7e8c}
         .main-sidebar{width:300px!important;background:#fbfeff;border-right:1px solid #d8edf1}
@@ -753,29 +680,6 @@ ui <- dashboardPage(
         .observed-flow-note a{
           font-weight:600;
         }
-        /* Align the input and results panels to the height of the taller panel. */
-        .emulator-top-row{
-          display:flex;
-          flex-wrap:wrap;
-          align-items:stretch;
-        }
-        .emulator-top-row > [class*='col-']{
-          display:flex;
-        }
-        .emulator-top-row > [class*='col-'] > .box{
-          width:100%;
-          height:100%;
-          margin-bottom:15px;
-        }
-        @media (max-width:991px){
-          .emulator-top-row{
-            display:block;
-          }
-          .emulator-top-row > [class*='col-']{
-            display:block;
-          }
-        }
-
         body{font-family:Segoe UI;color:#333}
 
         .figure-note {
@@ -869,30 +773,7 @@ ui <- dashboardPage(
         font-size: 17px;
         font-weight: 700;
         }
-          ")),
-          tags$script(HTML("
-      function resizeLeafletMaps() {
-        setTimeout(function() {
-          window.dispatchEvent(new Event('resize'));
-        }, 250);
-    
-        setTimeout(function() {
-          window.dispatchEvent(new Event('resize'));
-        }, 750);
-      }
-    
-      $(document).on('shown.bs.tab', 'a[data-toggle=\"tab\"]', function() {
-        resizeLeafletMaps();
-      });
-    
-      $(document).on('shown.bs.tab', 'a[data-toggle=\"pill\"]', function() {
-        resizeLeafletMaps();
-      });
-    
-      $(document).on('click', '.sidebar-menu a', function() {
-        resizeLeafletMaps();
-      });
-    "))
+      "))
     ),
     
     tabItems(
@@ -1153,17 +1034,12 @@ ui <- dashboardPage(
           
           tabPanel(
             "General Scenario Comparison",
-            
-            # ----------------------------------------------------------
-            # Top panel: controls + entrainment / model comparison chart
-            # ----------------------------------------------------------
             fluidRow(
               box(
                 width = 4,
                 title = "Comparison Controls",
                 status = "primary",
                 solidHeader = TRUE,
-                
                 selectInput(
                   "comparison_model",
                   "Model:",
@@ -1173,11 +1049,7 @@ ui <- dashboardPage(
                     "ECO-PTM Emulator Survival",
                     "ECO-PTM Emulator Interior Routing",
                     "Event Horizon"
-                  )
-                ),
-                
-                conditionalPanel(
-                  condition = "input.comparison_model == 'PTM Emulator 7-Day Entrainment' || input.comparison_model == 'PTM Emulator 30-Day Entrainment'",
+                  ),
                   selectInput(
                     "comparison_map_threshold",
                     "Map Risk Threshold (%):",
@@ -1185,9 +1057,7 @@ ui <- dashboardPage(
                     selected = 25
                   )
                 ),
-                
                 uiOutput("comparison_run_selector"),
-                
                 downloadButton(
                   "download_comparison",
                   "Download Comparison (CSV)",
@@ -1195,33 +1065,17 @@ ui <- dashboardPage(
                   style = "width:100%;"
                 )
               ),
-              
               box(
                 width = 8,
-                title = "Scenario Comparison Chart",
+                title = "Scenario Comparison",
                 status = "primary",
                 solidHeader = TRUE,
-                
-                tags$p(
-                  class = "figure-note",
-                  paste(
-                    "Compare compatible model runs saved during the current Shiny session.",
-                    "For PTM Emulator models, the chart compares predicted entrainment",
-                    "by DSM2 node. For Event Horizon, the chart compares predicted",
-                    "river-mile distance across selected scenarios."
-                  )
-                ),
-                
-                plotlyOutput(
-                  "comparison_plot",
-                  height = 700
-                )
+                tags$p(class = "figure-note", "Compare any compatible model runs saved during the current Shiny session."),
+                plotlyOutput("comparison_plot", height = 700),
+                br(),
+                div(class = "wide-table-scroll", tableOutput("comparison_table"))
               )
             ),
-            
-            # ----------------------------------------------------------
-            # Middle panel: entrainment risk and event horizon map
-            # ----------------------------------------------------------
             fluidRow(
               box(
                 width = 12,
@@ -1244,41 +1098,12 @@ ui <- dashboardPage(
                   height = 650
                 )
               )
-            ),
-            
-            # ----------------------------------------------------------
-            # Bottom panel: detailed results table
-            # ----------------------------------------------------------
-            fluidRow(
-              box(
-                width = 12,
-                title = "Detailed Scenario Comparison Results",
-                status = "primary",
-                solidHeader = TRUE,
-                
-                tags$p(
-                  class = "figure-note",
-                  paste(
-                    "Detailed tabular results for the selected compatible runs.",
-                    "Use this table to inspect node-level PTM predictions, Event Horizon",
-                    "distances, model inputs, archive metadata, and saved-run identifiers."
-                  )
-                ),
-                
-                div(
-                  class = "wide-table-scroll",
-                  tableOutput("comparison_table")
-                )
-              )
             )
           ),
           
           tabPanel(
             "OMRI Archive Comparison",
             
-            # ----------------------------------------------------------
-            # Top panel: controls + OMRI comparison chart
-            # ----------------------------------------------------------
             fluidRow(
               box(
                 width = 4,
@@ -1296,16 +1121,6 @@ ui <- dashboardPage(
                     "Event Horizon"
                   ),
                   selected = "PTM Emulator 7-Day Entrainment"
-                ),
-                
-                conditionalPanel(
-                  condition = "input.omri_comparison_model == 'PTM Emulator 7-Day Entrainment'",
-                  selectInput(
-                    "omri_comparison_map_threshold",
-                    "Map Risk Threshold (%):",
-                    choices = seq(15, 80, by = 5),
-                    selected = 25
-                  )
                 ),
                 
                 conditionalPanel(
@@ -1338,15 +1153,16 @@ ui <- dashboardPage(
               
               box(
                 width = 8,
-                title = "OMRI Forecast Scenario Comparison Chart",
+                title = "OMRI Forecast Scenario Comparison",
                 status = "primary",
                 solidHeader = TRUE,
                 
                 tags$p(
                   class = "figure-note",
                   paste(
-                    "For every selected archive date, the app reads each available OMRI CSV,",
-                    "calculates the seven-day forecast average, carries forward the latest measured XGEO,",
+                    "For every selected archive date, the app reads each",
+                    "available OMRI CSV, calculates the seven-day forecast",
+                    "average, carries forward the latest measured XGEO,",
                     "and compares the forecast emulator results."
                   )
                 ),
@@ -1356,53 +1172,9 @@ ui <- dashboardPage(
                 plotlyOutput(
                   "omri_comparison_plot",
                   height = 750
-                )
-              )
-            ),
-            
-            # ----------------------------------------------------------
-            # Middle panel: OMRI spatial map
-            # ----------------------------------------------------------
-            fluidRow(
-              box(
-                width = 12,
-                title = "OMRI Forecast Scenario Spatial Comparison Map",
-                status = "primary",
-                solidHeader = TRUE,
-                
-                tags$p(
-                  class = "figure-note",
-                  paste(
-                    "This map compares spatial outputs for all available OMRI forecast scenarios",
-                    "from the selected archive date(s). For PTM Emulator comparisons, high- and",
-                    "low-risk zones are overlaid by OMRI scenario. For Event Horizon comparisons,",
-                    "the predicted channel-path reaches are overlaid in different colors."
-                  )
                 ),
                 
-                leafletOutput(
-                  "omri_comparison_spatial_map",
-                  height = 650
-                )
-              )
-            ),
-            
-            # ----------------------------------------------------------
-            # Bottom panel: OMRI detailed table
-            # ----------------------------------------------------------
-            fluidRow(
-              box(
-                width = 12,
-                title = "Detailed OMRI Forecast Scenario Results",
-                status = "primary",
-                solidHeader = TRUE,
-                
-                tags$p(
-                  class = "figure-note",
-                  paste(
-                    "Detailed tabular results for the selected archive date(s) and OMRI scenario(s)."
-                  )
-                ),
+                br(),
                 
                 div(
                   class = "wide-table-scroll",
@@ -1429,7 +1201,7 @@ ui <- dashboardPage(
                     solidHeader = FALSE,
                     h3("Quick Overview", style = "margin-left: 10px;"),
                     style = "text-align: Justify;margin-left: 10px;margin-right:60px;",
-                    p(style = "margin-left: 10px;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)'s hydraulic footprint project."),
+                    p(style = "margin-left: 10px;", "This ShinyApp makes forecast and/or presents hindcast results on the particle entrainment within the Sacramento-San Joaquin Delta. The real-time simulations and predictions are used for providing quick assessment and help with the potential effects of CVP and SWP alternative operations on listed species. This interactive application is designed based on the machine learning models that were originally developed for the Contra Costa Water District (CCWD)???s hydraulic footprint project."),
                     h5("Here are three types of models:", style = "margin-left: 10px;"),
                     div(style = "margin-left:60px",
                         h5("- DSM2 ECO-PTM emulator models",
@@ -1442,9 +1214,6 @@ ui <- dashboardPage(
                            tags$a(" (part 3)", href = "#intro-event-horizon")
                         )
                     ),
-                    h5(style = "margin-left:10px;",
-                       tags$a("Model Visualization Tools",href = "#vis-tool"),
-                       " are also provided for the ECO-PTM and PTM entrainment models to help users interpret LightGBM decision logic, trace the hydrologic conditions and sample support associated with specific nodes and leaves, compare decision pathways across trees and time horizons, and interactively investigate model structure, thresholds, and outputs."),
                     h3("Data Availability", style = "margin-left: 10px;"),
                     
                     p(style = "margin-left: 10px;",
@@ -1513,7 +1282,7 @@ ui <- dashboardPage(
                       fluidRow(
                         column(width = 7,
                                box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                                   leaflet::leafletOutput("eco_ptm_map", width = "100%", height = "650px")
+                                   tags$iframe(src = "ECOPTM_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
                                )
                         ),
                         column(width = 5,
@@ -1529,101 +1298,34 @@ ui <- dashboardPage(
                       tags$hr(),
                       fluidRow(
                         column(width = 7,
-                               box(title = "DSM2 Nodes and Model Input Stations",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                                   tabsetPanel(id = "ptm_map_tabs",type = "tabs",
-                                               tabPanel(title = "7-Day",leaflet::leafletOutput("node_station_map_7day",width = "100%",height = "620px")),
-                                               tabPanel(title = "30-Day",leaflet::leafletOutput("node_station_map_30day",width = "100%",height = "620px"))
-                                   )
+                               box(title = "Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
+                                   tags$iframe(src = "PTM_Entrainment_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
                                )
                         ),
                         column(width = 5,
                                box(title = "Model Parameters",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                                   div(style = "height:650px;overflow-y:auto;",
-                                       gt::gt_output("ptm_parameters_table")
-                                   )
+                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("ptm_parameters_table"))
                                )
                         )
                       )
-                  ),        
+                  ),         
                   box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
                       h3(id = "intro-event-horizon","P3 Model for the Entrainment Event Horizon",style = "margin-left:10px;"),
                       gt::gt_output("horizon_inputs_table"),
                       tags$hr(),
                       fluidRow(
-                        column(width = 7,
-                               box(title = "Model Input Locations",width = 12,height = "740px",status = "primary",solidHeader = TRUE,
-                                   leaflet::leafletOutput("horizon_map",width = "100%",height = "670px")
-                               )
-                        ),
-                        
-                        column(width = 5,
-                               box(title = "Inputs Data Range",width = 12,height = "320px",status = "primary",solidHeader = TRUE,
-                                   div(style = "height:350px;overflow-y:auto;",
-                                       gt::gt_output("horizon_datarange_table")
-                                   )
-                               ),
-                               
-                               box(title = "Model Parameters",width = 12,height = "400px",status = "primary",solidHeader = TRUE,
-                                   div(style = "height:350px;overflow-y:auto;",
-                                       gt::gt_output("horizon_parameter_table")
-                                   )
-                               )
-                        )
-                      )
-                  ),  
-                  box(style = "margin-left:20px;",width = 12,solidHeader = FALSE,
-                      h3(id = "vis-tool","Model Visualization Tools",style = "margin-left:10px;"),
-                      h5("This tool visualizes the model structure and helps users:",style = "margin-left:30px;"),
-                      tags$ul(
-                        class = "vis-bullet-list",
-                        tags$li("Understand how the LightGBM models make internal decisions."),
-                        tags$li("Identify the combination of hydrologic conditions associated with a particular leaf."),
-                        tags$li("Compare decision logic across trees, model outcomes, and time horizons."),
-                        tags$li("Number of training samples at the node"),
-                        tags$li("Investigate unusual thresholds, feature usage, or leaf outputs."),
-                        tags$li("Communicate and review model structure through an interactive visualization."),
-                        style = "margin-left:60px;"
-                      ),
-                      h5("Important limitations:",style = "margin-left:30px;"),
-                      tags$ul(
-                        class = "vis-bullet-list",
-                        tags$li("Each diagram represents only one tree and one selected leaf, not the complete ensemble prediction."),
-                        tags$li("The displayed leaf value is the output or contribution of that individual tree. It should not be interpreted as the final model prediction, which requires combining contributions from all trees."),
-                        tags$li("Users enter Tree and Leaf indices rather than actual hydrologic inputs. These pages are therefore model-explanation tools, not scenario-prediction calculators."),
-                        tags$li("The gray “Other condition” nodes are conceptual context only and are not full representations of the actual alternative subtrees."),
-                        tags$li("The model data are embedded in the HTML files, but the network-visualization library is loaded from an external CDN."),
-                        style = "margin-left:60px;"
-                      ),                      
-                      h5("Clicking a node or edge displays information such as:",style = "margin-left:30px;"),
-                      tags$ul(
-                        class = "vis-bullet-list",
-                        tags$li("Feature used at the split"),
-                        tags$li("Numeric split threshold"),
-                        tags$li("Direction taken by missing values"),
-                        tags$li("Number of training samples at the node"),
-                        tags$li("Leaf depth"),
-                        tags$li("Output value of the selected tree leaf"),
-                        style = "margin-left:60px;"
-                      ),                      
-                      tags$style(HTML(".vis-bullet-list {padding-left: 25px;}.vis-bullet-list li {margin-bottom: 5px;padding-left: 5px;}.vis-bullet-list li::marker {font-size: 1.2em;}")),
-                      
-                      tags$hr(),
-                      
-                      fluidRow(
                         column(width = 6,
-                               box(title = "ECO-PTM Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                                   h5("This tool visualizes the internal decision path of an individual tree within the ECO-PTM LightGBM models. DSM2 ECO-PTM emulator models for end-of-150-day combined through-Delta survival and routing into the inteior Delta (Georgiana Slough and Delta Cross Channel) of salmon particles.",style = "margin-left:10px;"),  
-                                   tags$iframe(src = "ECOPTM_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                               box(title = "Inputs Data Range",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
+                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_datarange_table"))
                                )
                         ),
                         column(width = 6,
-                               box(title = "PTM entrainment Model Visualization Tool",width = 12,height = "720px",status = "primary",solidHeader = TRUE,
-                                   h5("This tool visualizes decision paths within the PTM entrainment emulator models. DSM2 PTM emulator models for end-of-7-day and 30-day percent entainment of surface-oriented particles into the CVP and SWP export facilities (Cliftonr Court Forebay and Jones Pumping Plant).",style = "margin-left:10px;"),
-                                   tags$iframe(src = "PTM_Entrainment_path_explorer.html",width = "100%",height = "650px",style = "display:block;border:none;")
+                               box(title = "Model Parameters",width = 12,height = "420px",status = "primary",solidHeader = TRUE,
+                                   div(style = "height:650px;overflow-y:auto;",gt::gt_output("horizon_parameter_table"))
                                )
                         )
                       )
-                  ),
+                  ),         
                 )
             )
         )
@@ -1631,4 +1333,3 @@ ui <- dashboardPage(
     )
   )
 )
-
