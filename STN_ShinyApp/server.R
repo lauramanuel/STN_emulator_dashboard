@@ -958,8 +958,7 @@ server <- function(input, output, session) {
       isTRUE(state$EAST$ok)
     ) {
       special_note <- paste0(
-        "EAST = MOK + CAL + COS. The MOK daily record used here ends ",
-        format(state$MOK$end_date, "%m/%d/%Y"),
+        "EAST = MOK + CAL + COS. The MOK daily record used here ends 09/30/2025",
         "; its latest available seven daily values are combined with the ",
         "current CAL and COS trailing averages."
       )
