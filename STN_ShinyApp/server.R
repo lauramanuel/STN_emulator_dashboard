@@ -105,6 +105,90 @@ fmt_int <- function(x) {
     trim = TRUE
   )
 }
+
+fmt_one <- function(x) {
+  format(
+    round(x, 1),
+    nsmall = 1,
+    big.mark = ",",
+    scientific = FALSE,
+    trim = TRUE
+  )
+}
+
+format_comparison_table <- function(df) {
+  if (!is.data.frame(df) || nrow(df) == 0) {
+    return(df)
+  }
+
+  if ("Risk_Level_Percent" %in% names(df)) {
+    df$Risk_Level_Percent <- fmt_int(
+      df$Risk_Level_Percent
+    )
+  }
+
+  input_columns <- intersect(
+    names(df),
+    c(
+      "EXP",
+      "VER",
+      "SAC",
+      "EAST",
+      "XGEO",
+      "YOL",
+      "YOLO",
+      "MOKE",
+      "MOK"
+    )
+  )
+
+  if (length(input_columns) > 0) {
+    df[input_columns] <- lapply(
+      df[input_columns],
+      fmt_int
+    )
+  }
+
+  prediction_columns <- intersect(
+    names(df),
+    c(
+      "Prediction_Raw",
+      "Prediction_Final"
+    )
+  )
+
+  if (length(prediction_columns) > 0) {
+    is_event_horizon <- if ("Model" %in% names(df)) {
+      grepl(
+        "Event Horizon",
+        as.character(df$Model),
+        ignore.case = TRUE
+      )
+    } else {
+      rep(FALSE, nrow(df))
+    }
+
+    for (column_name in prediction_columns) {
+      values <- suppressWarnings(
+        as.numeric(
+          df[[column_name]]
+        )
+      )
+
+      df[[column_name]] <- ifelse(
+        is.na(values),
+        as.character(df[[column_name]]),
+        ifelse(
+          is_event_horizon,
+          fmt_one(values),
+          fmt_int(values)
+        )
+      )
+    }
+  }
+
+  df
+}
 parse_dsm2_channel_definition <- function(path) {
   
   lines <- readLines(path, warn = FALSE)
@@ -7526,9 +7610,11 @@ server <- function(input, output, session) {
           },
           
           Scenario_Name,
-          Risk_Level_Percent,
-          
-          Event_Horizon_Miles = fmt_int(
+          Risk_Level_Percent = fmt_int(
+            Risk_Level_Percent
+          ),
+
+          Event_Horizon_Miles = fmt_one(
             Prediction_Final
           ),
           
@@ -7601,11 +7687,8 @@ server <- function(input, output, session) {
             )
           ),
 
-          Event_Horizon_Miles = sprintf(
-            "%.1f",
-            as.numeric(
-              Prediction_Final
-            )
+          Event_Horizon_Miles = fmt_one(
+            Prediction_Final
           )
         )
     })
@@ -7912,7 +7995,31 @@ server <- function(input, output, session) {
   })
   
   output$comparison_table <- renderTable({
-    comparison_data()
+    comparison_table_data <- format_comparison_table(
+      comparison_data()
+    )
+
+    if ("Window_Start_Date" %in% names(comparison_table_data)) {
+      comparison_table_data$Window_Start_Date <- format(
+        as.Date(
+          comparison_table_data$Window_Start_Date,
+          origin = "1970-01-01"
+        ),
+        "%m/%d/%Y"
+      )
+    }
+
+    if ("Window_End_Date" %in% names(comparison_table_data)) {
+      comparison_table_data$Window_End_Date <- format(
+        as.Date(
+          comparison_table_data$Window_End_Date,
+          origin = "1970-01-01"
+        ),
+        "%m/%d/%Y"
+      )
+    }
+
+    comparison_table_data
   })
   
   
@@ -8228,8 +8335,6 @@ server <- function(input, output, session) {
       all_results
     }
   )
-  
-  
   output$omri_comparison_status <- renderUI({
     
     if (input$build_omri_comparison == 0) {
@@ -8274,10 +8379,21 @@ server <- function(input, output, session) {
   output$omri_comparison_table <- renderTable({
     
     data <- omri_comparison_results()
-    
+
+    result_model <- unique(
+      as.character(
+        data$Model
+      )
+    )
+
+    result_model <- result_model[
+      !is.na(result_model) &
+        nzchar(result_model)
+    ][1]
+
     if (
       identical(
-        input$omri_comparison_model,
+        result_model,
         "PTM Emulator 7-Day Entrainment"
       )
     ) {
@@ -8286,8 +8402,20 @@ server <- function(input, output, session) {
         transmute(
           Archive_Date,
           OMRI_Scenario,
-          Window_Start_Date,
-          Window_End_Date,
+          Window_Start_Date = format(
+            as.Date(
+              Window_Start_Date,
+              origin = "1970-01-01"
+            ),
+            "%m/%d/%Y"
+          ),
+          Window_End_Date = format(
+            as.Date(
+              Window_End_Date,
+              origin = "1970-01-01"
+            ),
+            "%m/%d/%Y"
+          ),
           DSM2_Node,
           Location,
           Entrainment_Percentage = fmt_int(
@@ -8314,10 +8442,24 @@ server <- function(input, output, session) {
         transmute(
           Archive_Date,
           OMRI_Scenario,
-          Window_Start_Date,
-          Window_End_Date,
-          Risk_Level_Percent,
-          Event_Horizon_Miles = fmt_int(
+          Window_Start_Date = format(
+            as.Date(
+              Window_Start_Date,
+              origin = "1970-01-01"
+            ),
+            "%m/%d/%Y"
+          ),
+          Window_End_Date = format(
+            as.Date(
+              Window_End_Date,
+              origin = "1970-01-01"
+            ),
+            "%m/%d/%Y"
+          ),
+          Risk_Level_Percent = fmt_int(
+            Risk_Level_Percent
+          ),
+          Event_Horizon_Miles = fmt_one(
             Prediction_Final
           ),
           EXP = fmt_int(
@@ -8356,6 +8498,17 @@ server <- function(input, output, session) {
       )
     )
     
+    result_model <- unique(
+      as.character(
+        data$Model
+      )
+    )
+
+    result_model <- result_model[
+      !is.na(result_model) &
+        nzchar(result_model)
+    ][1]
+
     data <- data %>%
       mutate(
         Comparison_Label = paste0(
@@ -8367,7 +8520,7 @@ server <- function(input, output, session) {
     
     if (
       identical(
-        input$omri_comparison_model,
+        result_model,
         "PTM Emulator 7-Day Entrainment"
       )
     ) {
@@ -8379,7 +8532,7 @@ server <- function(input, output, session) {
               DSM2_Node
             )
           ),
-
+          
           Node_Label = ifelse(
             is.na(Location) | Location == "",
             as.character(DSM2_Node),
@@ -8394,7 +8547,7 @@ server <- function(input, output, session) {
           DSM2_Node_Number,
           DSM2_Node
         )
-
+      
       plot_data$Node_Label <- factor(
         plot_data$Node_Label,
         levels = rev(
@@ -8403,7 +8556,7 @@ server <- function(input, output, session) {
           )
         )
       )
-
+      
       plot_data <- plot_data %>%
         mutate(
           Hover_Text = paste0(
@@ -8563,6 +8716,8 @@ server <- function(input, output, session) {
         )
     }
   })
+  
+  
   output$omri_comparison_spatial_map <- renderLeaflet({
     
     if (
@@ -8599,7 +8754,16 @@ server <- function(input, output, session) {
         )
       )
     
-    selected_model <- input$omri_comparison_model
+    selected_model <- unique(
+      as.character(
+        data$Model
+      )
+    )
+
+    selected_model <- selected_model[
+      !is.na(selected_model) &
+        nzchar(selected_model)
+    ][1]
     
     if (identical(selected_model, "PTM Emulator 7-Day Entrainment")) {
       
