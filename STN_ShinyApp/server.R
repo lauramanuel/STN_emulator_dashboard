@@ -7916,6 +7916,7 @@ server <- function(input, output, session) {
     comparison_data()
   })
   
+  
   output$comparison_plot <- renderPlotly({
     df <- comparison_data()
     validate(need(nrow(df) > 0, "Select compatible runs to compare."))
@@ -7969,6 +7970,20 @@ server <- function(input, output, session) {
               " - ",
               Location
             )
+          ),
+          
+          Legend_Label = vapply(
+            Run_Label,
+            function(x) {
+              paste(
+                strwrap(
+                  x,
+                  width = 28
+                ),
+                collapse = "<br>"
+              )
+            },
+            character(1)
           )
         ) %>%
         arrange(
