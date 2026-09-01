@@ -1,0 +1,48 @@
+name: Update MOKE Daily Data
+
+on:
+  schedule:
+    # 16:00 UTC = 9:00 AM Pacific during PDT / 8:00 AM Pacific during PST.
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-moke:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: STN_ShinyApp
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install R packages
+        run: |
+          install.packages(c("httr2", "rvest"), repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
+
+      - name: Update MOKE data
+        run: Rscript scripts/update_MOKE_EBMUD.R
+
+      - name: Commit updated MOKE CSV
+        working-directory: .
+        run: |
+          if git diff --quiet -- STN_ShinyApp/data/MOKE_daily.csv; then
+            echo "No new MOKE data to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add STN_ShinyApp/data/MOKE_daily.csv
+          git commit -m "Update MOKE daily data"
+          git push

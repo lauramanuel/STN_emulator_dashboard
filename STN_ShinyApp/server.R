@@ -287,7 +287,7 @@ observed_source_links <- list(
   VNS = cdec_daily_link("VNS"),
   FPT = cdec_daily_link("FPT"),
   NHG = cdec_daily_link("NHG"),
-  MOK = "https://waterdata.usgs.gov/monitoring-location/USGS-11325500/#dataTypeId=daily-00060-0&period=P1Y&showFieldMeasurements=true",
+  MOK = "https://www.ebmud.com/water/about-your-water/water-supply/water-supply-reports/daily-water-supply-report",
   COS = "https://waterdata.usgs.gov/monitoring-location/USGS-11335000/#dataTypeId=daily-00060-0&period=P1Y&showFieldMeasurements=true",
   XGEO_A = "https://waterdata.usgs.gov/monitoring-location/USGS-11447890/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true",
   XGEO_C = "https://waterdata.usgs.gov/monitoring-location/USGS-11447905/#dataTypeId=daily-72137-0&period=P1Y&showFieldMeasurements=true"
@@ -683,6 +683,82 @@ read_cdec_daily_values <- function(
   result
 }
 
+read_moke_daily_values <- function(
+  file_path = file.path("data", "MOKE_daily.csv")
+) {
+  if (!file.exists(file_path)) {
+    stop(
+      paste0(
+        "MOKE daily file was not found: ",
+        file_path,
+        "."
+      )
+    )
+  }
+
+  raw_data <- utils::read.csv(
+    file_path,
+    skip = 4,
+    header = FALSE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+
+  if (ncol(raw_data) < 2) {
+    stop(
+      "MOKE daily file does not contain the expected date and flow columns."
+    )
+  }
+
+  result <- data.frame(
+    Date = as.Date(
+      sub(
+        " .*",
+        "",
+        as.character(raw_data[[1]])
+      ),
+      format = "%m/%d/%Y"
+    ),
+    Value = suppressWarnings(
+      as.numeric(
+        gsub(
+          ",",
+          "",
+          as.character(raw_data[[2]]),
+          fixed = TRUE
+        )
+      )
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  result <- result[
+    !is.na(result$Date) &
+      is.finite(result$Value),
+    ,
+    drop = FALSE
+  ]
+
+  result <- result[
+    !duplicated(result$Date, fromLast = TRUE),
+    ,
+    drop = FALSE
+  ]
+
+  result <- result[
+    order(result$Date),
+    ,
+    drop = FALSE
+  ]
+
+  if (nrow(result) == 0) {
+    stop("No usable daily MOKE values were found in MOKE_daily.csv.")
+  }
+
+  result
+}
+
+
 read_usgs_daily_values <- function(
   site_number,
   parameter_code,
@@ -837,6 +913,37 @@ trailing_seven_summary <- function(data) {
   }
 
   selected <- utils::tail(data, 7)
+
+  list(
+    value = mean(selected$Value, na.rm = TRUE),
+    start_date = min(selected$Date),
+    end_date = max(selected$Date),
+    dates = selected$Date,
+    values = selected$Value
+  )
+}
+
+
+trailing_thirty_summary <- function(data) {
+  data <- data[
+    !is.na(data$Date) &
+      is.finite(data$Value) &
+      data$Value > -9000,
+    ,
+    drop = FALSE
+  ]
+
+  data <- data[
+    order(data$Date),
+    ,
+    drop = FALSE
+  ]
+
+  if (nrow(data) < 30) {
+    stop("Fewer than thirty usable daily values were available.")
+  }
+
+  selected <- utils::tail(data, 30)
 
   list(
     value = mean(selected$Value, na.rm = TRUE),
@@ -1042,8 +1149,8 @@ server <- function(input, output, session) {
       isTRUE(state$EAST$ok)
     ) {
       special_note <- paste0(
-        "EAST = MOK + CAL + COS. The MOK daily record used here ends 09/30/2025",
-        "; its latest available seven daily values are combined with the ",
+        "EAST = MOK + CAL + COS. MOK uses the trailing 7-day average of ",
+        "EBMUD Mokelumne River below WID daily flow; it is combined with the ",
         "current CAL and COS trailing averages."
       )
     }
@@ -1052,7 +1159,7 @@ server <- function(input, output, session) {
       "EAST",
       list(
         list(
-          text = "MOK (USGS 11325500)",
+          text = "MOK: EBMUD Mokelumne River below WID",
           url = observed_source_links$MOK
         ),
         list(
@@ -1130,12 +1237,46 @@ server <- function(input, output, session) {
         )
       )
 
-      mok <- safe_observed_summary(
-        trailing_seven_summary(
-          read_usgs_daily_values(
-            site_number = "11325500",
-            parameter_code = "00060",
-            end_date = as.Date("2024-09-30"),
+      moke_daily <- tryCatch(
+        read_moke_daily_values(),
+        error = function(error_condition) {
+          error_condition
+        }
+      )
+
+      mok <- if (inherits(moke_daily, "error")) {
+        list(
+          ok = FALSE,
+          data = NULL,
+          message = conditionMessage(moke_daily)
+        )
+      } else {
+        safe_observed_summary(
+          trailing_seven_summary(
+            moke_daily
+          )
+        )
+      }
+
+      mok_30 <- if (inherits(moke_daily, "error")) {
+        list(
+          ok = FALSE,
+          data = NULL,
+          message = conditionMessage(moke_daily)
+        )
+      } else {
+        safe_observed_summary(
+          trailing_thirty_summary(
+            moke_daily
+          )
+        )
+      }
+
+      fpt_30 <- safe_observed_summary(
+        trailing_thirty_summary(
+          read_cdec_daily_values(
+            "FPT",
+            20,
             lookback_days = 45
           )
         )
@@ -1323,6 +1464,86 @@ server <- function(input, output, session) {
           session,
           "current_ptm_xgeo",
           value = round(xgeo_result$value, 0)
+        )
+      }
+
+      if (isTRUE(fpt_30$ok)) {
+        updateNumericInput(
+          session,
+          "current_eco_sac",
+          value = round(fpt_30$data$value, 0)
+        )
+
+        removeUI(
+          selector = "#current_eco_sac_observed_note",
+          immediate = TRUE
+        )
+
+        insertUI(
+          selector = "#current_eco_sac",
+          where = "afterEnd",
+          ui = tags$div(
+            id = "current_eco_sac_observed_note",
+            class = "observed-flow-note",
+            tags$b(
+              paste0(
+                "Trailing 30-day average flow as of ",
+                format(fpt_30$data$end_date, "%m/%d/%Y"),
+                ": ",
+                format_observed_value(fpt_30$data$value),
+                " cfs."
+              )
+            ),
+            tags$br(),
+            "Source: ",
+            tags$a(
+              href = observed_source_links$FPT,
+              target = "_blank",
+              rel = "noopener noreferrer",
+              "FPT FLOW CFS (sensor 20)"
+            )
+          ),
+          immediate = TRUE
+        )
+      }
+
+      if (isTRUE(mok_30$ok)) {
+        updateNumericInput(
+          session,
+          "current_eco_moke",
+          value = round(mok_30$data$value, 0)
+        )
+
+        removeUI(
+          selector = "#current_eco_moke_observed_note",
+          immediate = TRUE
+        )
+
+        insertUI(
+          selector = "#current_eco_moke",
+          where = "afterEnd",
+          ui = tags$div(
+            id = "current_eco_moke_observed_note",
+            class = "observed-flow-note",
+            tags$b(
+              paste0(
+                "Trailing 30-day average flow as of ",
+                format(mok_30$data$end_date, "%m/%d/%Y"),
+                ": ",
+                format_observed_value(mok_30$data$value),
+                " cfs."
+              )
+            ),
+            tags$br(),
+            "Source: ",
+            tags$a(
+              href = observed_source_links$MOK,
+              target = "_blank",
+              rel = "noopener noreferrer",
+              "EBMUD Mokelumne River below WID"
+            )
+          ),
+          immediate = TRUE
         )
       }
 
